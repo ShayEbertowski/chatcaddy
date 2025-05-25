@@ -1,20 +1,18 @@
-import { TText } from './types';
-
-export const typography: {
-    heading: TText;
-    body: TText;
-    small: TText;
-} = {
+export const typography = {
     heading: {
+        fontSize: 20,
+        fontWeight: '700' as const,
+    },
+    subheading: {
         fontSize: 18,
-        fontWeight: '600',
+        fontWeight: '600' as const,
     },
     body: {
-        fontSize: 14,
-        fontWeight: '400',
+        fontSize: 16,
+        fontWeight: '400' as const,
     },
-    small: {
-        fontSize: 12,
-        fontWeight: '400',
+    caption: {
+        fontSize: 14,
+        fontWeight: '400' as const,
     },
 };

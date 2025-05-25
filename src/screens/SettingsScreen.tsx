@@ -11,7 +11,9 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ThemedSafeArea } from '../components/ThemedSafeArea';
+import { useColors } from '../hooks/useColors';
+import { useThemeMode } from '../theme/ThemeProvider';
 
 
 const API_KEY_STORAGE_KEY = 'openai_api_key';
@@ -23,6 +25,11 @@ export default function SettingsScreen() {
   const [editable, setEditable] = useState(true);
   const [hasSavedKey, setHasSavedKey] = useState(false);
   const [tapBehavior, setTapBehavior] = useState('preview');
+
+  const colors = useColors();
+  const styles = getStyles(colors);
+  const { mode, setMode } = useThemeMode(); // mode = 'light' | 'dark' | 'system'
+
 
   useEffect(() => {
     const loadKey = async () => {
@@ -126,10 +133,9 @@ export default function SettingsScreen() {
     }
   };
 
-
-
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+
+    <ThemedSafeArea>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>OpenAI API Key</Text>
@@ -196,116 +202,153 @@ export default function SettingsScreen() {
 
         </View>
 
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Appearance</Text>
+          <View style={styles.toggleRow}>
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                mode === 'light' && styles.toggleButtonSelected,
+              ]}
+              onPress={() => setMode('light')}
+            >
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  mode === 'light' && styles.toggleButtonTextSelected,
+                ]}
+              >
+                Light
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                mode === 'dark' && styles.toggleButtonSelected,
+              ]}
+              onPress={() => setMode('dark')}
+            >
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  mode === 'dark' && styles.toggleButtonTextSelected,
+                ]}
+              >
+                Dark
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.toggleButton,
+                mode === 'system' && styles.toggleButtonSelected,
+              ]}
+              onPress={() => setMode('system')}
+            >
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  mode === 'system' && styles.toggleButtonTextSelected,
+                ]}
+              >
+                System
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+
       </ScrollView>
-    </SafeAreaView>
+    </ThemedSafeArea>
 
   );
 }
 
-const styles = StyleSheet.create({
-  section: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  inlineButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-  },
-  buttonSpacer: {
-    width: 12,
-  },
-  clearButtonWrapper: {
-    marginTop: 16,
-    alignItems: 'flex-start',
-  },
-  input: {
-    borderColor: '#ccc',
-    borderWidth: 1,
-    padding: 10,
-    borderRadius: 6,
-    fontSize: 16,
-    backgroundColor: '#f9f9f9',
-  },
-  disabledInput: {
-    backgroundColor: '#eee',
-    color: '#555',
-  },
-  scroll: {
-    flexGrow: 1,
-    paddingVertical: 32,
-    paddingHorizontal: 20,
-  },
-  keyActionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-  },
+const getStyles = (colors: ReturnType<typeof useColors>) =>
+  StyleSheet.create({
+    scroll: {
+      flexGrow: 1,
+      paddingVertical: 32,
+      paddingHorizontal: 20,
+    },
+    section: {
+      backgroundColor: colors.card, // use your theme's card color
+      padding: 16,
+      borderRadius: 10,
+      marginBottom: 24,
+      shadowColor: colors.cardShadow ?? '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 3,
+      elevation: 1,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: 12,
+      color: colors.text,
+    },
+    input: {
+      borderColor: colors.border,
+      borderWidth: 1,
+      padding: 10,
+      borderRadius: 6,
+      fontSize: 16,
+      backgroundColor: colors.inputBackground ?? '#f9f9f9',
+      color: colors.text,
+    },
+    disabledInput: {
+      backgroundColor: colors.disabledBackground ?? '#eee',
+      color: colors.secondaryText,
+    },
+    keyActionsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 12,
+    },
+    actionButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+    },
+    actionButtonText: {
+      color: colors.onPrimary,
+      fontWeight: '600',
+      fontSize: 14,
+    },
+    clearButton: {
+      marginTop: 12,
+      alignSelf: 'center',
+    },
+    clearButtonText: {
+      color: colors.error ?? 'red',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    toggleRow: {
+      flexDirection: 'row',
+      backgroundColor: colors.toggleBackground ?? colors.inputBackground,
+      borderRadius: 8,
+      overflow: 'hidden',
+      marginTop: 10,
+    },
+    toggleButton: {
+      flex: 1,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    toggleButtonSelected: {
+      backgroundColor: colors.primary,
+    },
+    toggleButtonText: {
+      color: colors.text,
+      fontWeight: '500',
+    },
+    toggleButtonTextSelected: {
+      color: colors.onPrimary,
+      fontWeight: '700',
+    },
+  });
 
-  actionButton: {
-    backgroundColor: '#007aff',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-
-  actionButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-
-  clearButton: {
-    marginTop: 12,
-    alignSelf: 'center',
-  },
-
-  clearButtonText: {
-    color: 'red',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  toggleRow: {
-    flexDirection: 'row',
-    backgroundColor: '#eee',
-    borderRadius: 8,
-    overflow: 'hidden',
-    marginTop: 10,
-  },
-
-  toggleButton: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-
-  toggleButtonSelected: {
-    backgroundColor: '#007aff',
-  },
-
-  toggleButtonText: {
-    color: '#333',
-    fontWeight: '500',
-  },
-
-  toggleButtonTextSelected: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-
-
-
-});

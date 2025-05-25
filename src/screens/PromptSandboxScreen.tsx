@@ -24,6 +24,7 @@ import { MainTabParamList } from '../types/navigation';
 import { generateSmartTitle } from '../utils/generateSmartTitle';
 import { savePrompt } from '../utils/savePrompt';
 import { runPrompt } from '../utils/runPrompt';
+import { useColors } from '../hooks/useColors';
 
 
 export default function PromptSandboxScreen() {
@@ -37,8 +38,11 @@ export default function PromptSandboxScreen() {
   const [autoSuggestTitle, setAutoSuggestTitle] = useState(true);
   const [showResponse, setShowResponse] = useState(true); // placeholder if you want response later
   const saveButtonDisabled = inputText.trim() === '';
-  const saveButtonTextColor = saveButtonDisabled ? '#999' : '#007aff';
-  const saveButtonIconColor = saveButtonDisabled ? '#999' : '#007aff';
+  const colors = useColors();
+  const styles = getStyles(colors);
+  const saveButtonIconColor = saveButtonDisabled ? colors.secondaryText : colors.primary;
+  const saveButtonTextColor = saveButtonDisabled ? colors.secondaryText : colors.primary;
+
 
   const handleRun = async () => {
     setHasRun(true);
@@ -132,9 +136,9 @@ export default function PromptSandboxScreen() {
             style={[
               styles.button,
               {
-                backgroundColor: '#f4f4f4',
+                backgroundColor: colors.card,
                 borderWidth: 1,
-                borderColor: saveButtonDisabled ? '#ccc' : '#007aff',
+                borderColor: saveButtonDisabled ? colors.border : colors.primary,
               }
             ]}
             onPress={handleSavePrompt}
@@ -146,12 +150,13 @@ export default function PromptSandboxScreen() {
 
 
           <TouchableOpacity
-            style={[styles.button, styles.runButton]}
+            style={[styles.button, { backgroundColor: colors.primary }]}
             onPress={handleRun}
           >
-            <MaterialIcons name="play-arrow" size={18} color="#fff" />
-            <Text style={[styles.buttonText, { color: '#fff' }]}>Run</Text>
+            <MaterialIcons name="play-arrow" size={18} color={colors.onPrimary} />
+            <Text style={[styles.buttonText, { color: colors.onPrimary }]}>Run</Text>
           </TouchableOpacity>
+
         </View>
 
         <SavePromptModal
@@ -181,123 +186,80 @@ export default function PromptSandboxScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  section: {
-    backgroundColor: '#f2f2f7', //light mode: '#f2f2f7' dark mode: 'light mode: '#1c1c1e'
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginBottom: 12
-  },
+const getStyles = (colors: ReturnType<typeof useColors>) =>
+  StyleSheet.create({
+    section: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      marginBottom: 12,
+    },
 
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#8e8e93',
-    marginTop: 24,
-    marginBottom: 12
-  },
+    response: {
+      padding: 12,
+      color: colors.text,
+    },
 
-  container: {
-    flex: 1,
-  },
-  scroll: {
-    padding: 20,
-    paddingBottom: 100,
-  },
-  response: {
-    // backgroundColor: '#ffffff',
-    padding: 12,
-    // borderRadius: 6,
-    // color: '#333',
-  },
-  clearButton: {
-    color: 'red',
-    fontWeight: '400',
-    fontSize: 15, // ← match `sectionTitle`
-    paddingTop: 16, // ← adjust this to nudge vertically into alignment
-  },
-  responseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 2,
-    marginBottom: 8,
-  },
+    clearButton: {
+      color: colors.error,
+      fontWeight: '400',
+      fontSize: 15,
+      paddingTop: 16,
+    },
 
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12, // ← adjust spacing between buttons
-    marginHorizontal: 12
-  },
+    loadingText: {
+      fontSize: 15,
+      color: colors.secondaryText,
+    },
 
-  button: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 10,
-    gap: 6,
-  },
-  runButton: {
-    backgroundColor: '#007aff',
-  },
+    emptyVariableText: {
+      color: colors.secondaryText,
+      fontSize: 14,
+      fontStyle: 'italic',
+      textAlign: 'center',
+      paddingHorizontal: 20,
+    },
 
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
+    runButton: {
+      backgroundColor: colors.primary,
+    },
 
-  iconButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
+    buttonText: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
 
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
+    buttonRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: 12,
+      marginHorizontal: 12,
+    },
 
-  runButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
+    button: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 14,
+      borderRadius: 10,
+      gap: 6,
+    },
 
+    container: {
+      flex: 1,
+    },
 
+    scroll: {
+      padding: 20,
+      paddingBottom: 100,
+    },
 
-  runIcon: {
-    marginRight: 6,
-  },
-
-  emptyVariableContainer: {
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-
-  emptyVariableIcon: {
-    marginBottom: 12,
-  },
-
-  emptyVariableText: {
-    color: '#666',
-    fontSize: 14,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-  },
-
-  loadingText: {
-    fontSize: 15,
-    color: '#555',
-  },
-});
+    loadingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      padding: 12,
+    },
+  });

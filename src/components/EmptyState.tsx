@@ -1,8 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useColorScheme } from 'react-native';
-import { light, dark } from '../theme/colors';
+import { useColors } from '../hooks/useColors'; // Adjust if needed
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 
@@ -12,25 +11,27 @@ type EmptyStateProps = {
 };
 
 export default function EmptyState({ bounceValue, onCreatePress }: EmptyStateProps) {
-    const isDark = useColorScheme() === 'dark';
-    const colors = isDark ? dark : light;
+    const colors = useColors();
 
     return (
         <Animated.View style={[styles.container, { transform: [{ scale: bounceValue }] }]}>
-            <MaterialIcons name="library-books" size={64} color="#ccc" />
+            <MaterialIcons name="library-books" size={64} color={colors.secondaryText} />
             <Text style={[styles.title, { color: colors.text }]}>Your Prompt Library is Empty</Text>
-            <Text style={[styles.subtitle, { color: colors.mutedText }]}>
+            <Text style={[styles.subtitle, { color: colors.secondaryText }]}>
                 Save prompts from the Sandbox to see them here.
             </Text>
             <TouchableOpacity
                 style={[styles.button, { backgroundColor: colors.primary }]}
                 onPress={onCreatePress}
             >
-                <Text style={styles.buttonText}>Create Your First Prompt</Text>
+                <Text style={[styles.buttonText, { color: colors.onPrimary }]}>
+                    Create Your First Prompt
+                </Text>
             </TouchableOpacity>
         </Animated.View>
     );
 }
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -55,8 +56,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
     },
     buttonText: {
-        color: '#fff',
-        fontWeight: '600',
+        fontWeight: '600' as const,
         fontSize: 16,
     },
 });

@@ -13,6 +13,7 @@ import { useVariableStore } from '../stores/useVariableStore';
 import CollapsibleSection from './CollapsibleSection';
 import { placeholderText } from '../styles/shared';
 import { getVariableIcon } from '../utils/getVariableIcon';
+import { useColors } from '../hooks/useColors';
 
 type PromptPart =
     | { type: 'text'; value: string }
@@ -38,11 +39,11 @@ export default function RichPromptEditor({
     const [showVariables, setShowVariables] = useState(false);
     const [showPreview, setShowPreview] = useState(true);
 
-
-
     const filledValues = useVariableStore((state) => state.values);
     const setVariable = useVariableStore((state) => state.setVariable);
 
+    const colors = useColors();
+    const styles = getStyles(colors);
 
     const handleEditVariable = (name: string) => {
         setIsEditingVariable(true);
@@ -195,7 +196,9 @@ export default function RichPromptEditor({
                 selection={selection}
                 multiline
                 style={styles.input}
-                placeholder="Try anything here..." />
+                placeholder="Try anything here..."
+                placeholderTextColor={colors.secondaryText}
+            />
 
             <CollapsibleSection
                 title="variables"
@@ -204,7 +207,7 @@ export default function RichPromptEditor({
             >
                 <View style={styles.chipContainer}>
                     {usedVars.length === 0 ? (
-                        <Text style={{ color: '#999', fontStyle: 'italic', paddingVertical: 6 }}>
+                        <Text style={{ color: colors.secondaryText, fontStyle: 'italic', paddingVertical: 6 }}>
                             No variables yet. Add one above.
                         </Text>
                     ) : (
@@ -272,27 +275,19 @@ export default function RichPromptEditor({
 
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
     section: {
-        backgroundColor: '#f2f2f7', //light mode: '#f2f2f7' dark mode: 'light mode: '#1c1c1e'
+        backgroundColor: colors.card,
         borderRadius: 12,
         paddingVertical: 10,
         paddingHorizontal: 16,
-        marginBottom: 12
+        marginBottom: 12,
     },
-
-    sectionTitle: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#8e8e93',
-        marginTop: 24,
-        marginBottom: 12
-    },
-
     divider: {
-        height: StyleSheet.hairlineWidth, // usually 1px
-        backgroundColor: '#c6c6c8', // iOS light divider (or '#d1d1d6')
-        marginVertical: 12, // spacing above and below
+        height: 1.5, // a bit thicker
+        backgroundColor: colors.border, // theme-aware
+        marginVertical: 16, // more spacing to breathe
+        opacity: 0.6, // softens it a bit for elegance
     },
 
     container: {
@@ -306,32 +301,23 @@ const styles = StyleSheet.create({
     input: {
         fontSize: 16,
         borderWidth: 1,
-        borderColor: '#ccc',
+        borderColor: colors.border,
         padding: 16,
         borderRadius: 6,
         minHeight: 60,
+        color: colors.text,
+        backgroundColor: colors.inputBackground,
     },
     addButton: {
-        backgroundColor: '#007AFF',
+        backgroundColor: colors.primary,
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 6,
     },
     addButtonText: {
-        color: 'white',
+        color: colors.onPrimary,
         fontWeight: '600',
     },
-    renderedPrompt: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 4,
-        alignItems: 'center',
-        marginTop: 12,
-    },
-    text: {
-        fontSize: 16,
-    },
-
     chipContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
@@ -339,17 +325,17 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     chip: {
-        backgroundColor: '#f5f5f5',
+        backgroundColor: colors.inputBackground,
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 20,
         marginRight: 6,
         marginBottom: 6,
     },
-
     chipText: {
         fontSize: 16,
         fontWeight: '500',
+        color: colors.text,
     },
     previewContainer: {
         marginTop: 16,
@@ -357,23 +343,22 @@ const styles = StyleSheet.create({
     previewLabel: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#555',
+        color: colors.secondaryText,
         marginBottom: 4,
     },
     previewText: {
         fontSize: 16,
-        color: '#222',
+        color: colors.text,
         flexWrap: 'wrap',
         lineHeight: 22,
-        paddingBottom: 12
+        paddingBottom: 12,
     },
     previewVariable: {
-        backgroundColor: '#eee',
-        color: '#555',
+        backgroundColor: colors.inputBackground,
+        color: colors.text,
         fontStyle: 'italic',
         fontWeight: 'bold',
         paddingHorizontal: 4,
         borderRadius: 4,
     },
-
 });

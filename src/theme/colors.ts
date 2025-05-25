@@ -1,18 +1,41 @@
+// theme/colors.ts
 
 export const light = {
-    primary: '#007aff',
-    background: '#fff',
-    text: '#333',
-    mutedText: '#666',
+    primary: '#007AFF',
+    onPrimary: '#ffffff',
+    background: '#ffffff',
+
+    text: '#1c1c1e',
+    mutedText: '#6e6e73',
+    secondaryText: '#8e8e93', // subtle gray (used in iOS UI)
+
+    card: '#ffffff',
+    cardShadow: '#000000',
+
     border: '#ccc',
-    cardShadow: '#000',
+    inputBackground: '#f9f9f9',
+    disabledBackground: '#eeeeee',
+
+    error: 'red',
+    toggleBackground: '#eeeeee',
 };
 
 export const dark = {
-    primary: '#0a84ff',
-    background: '#1c1c1e',
-    text: '#f2f2f2',
-    mutedText: '#aaa',
-    border: '#444',
-    cardShadow: '#000', // or more subtle like '#00000066'
+    primary: '#0A84FF',
+    onPrimary: '#ffffff',
+    background: '#000000',
+
+    text: '#ffffff',
+    mutedText: '#999999',
+    secondaryText: '#aaaaaa', // softer than full white
+
+    card: '#1c1c1e',
+    cardShadow: '#000000',
+
+    border: '#444444',
+    inputBackground: '#2c2c2e',
+    disabledBackground: '#3a3a3c',
+
+    error: '#ff453a',
+    toggleBackground: '#3a3a3c',
 };

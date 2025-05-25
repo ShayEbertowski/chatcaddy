@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     StyleSheet,
 } from 'react-native';
+import { useColors } from '../hooks/../../hooks/useColors';
 
 type SavePromptModalProps = {
     visible: boolean;
@@ -25,6 +26,9 @@ export default function SavePromptModal({
     onCancel,
     onConfirm,
 }: SavePromptModalProps) {
+    const colors = useColors();
+    const styles = getStyles(colors);
+
     return (
         <Modal transparent animationType="fade" visible={visible} onRequestClose={onCancel}>
             <View style={styles.overlay}>
@@ -38,6 +42,7 @@ export default function SavePromptModal({
                             onChangeText={onChangeTitle}
                             style={styles.input}
                             placeholder="Give your prompt a short title"
+                            placeholderTextColor={colors.secondaryText}
                         />
 
                         <Text style={[styles.label, { marginTop: 12 }]}>Prompt:</Text>
@@ -58,75 +63,77 @@ export default function SavePromptModal({
     );
 }
 
-const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 24,
-    },
-    container: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 24,
-        width: '100%',
-        maxWidth: 400,
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    box: {
-        backgroundColor: '#f9f9f9',
-        padding: 12,
-        borderRadius: 8,
-        marginVertical: 12,
-        width: '100%',
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#444',
-    },
-    prompt: {
-        fontSize: 14,
-        color: '#333',
-        marginTop: 4,
-    },
-    input: {
-        fontSize: 14,
-        color: '#333',
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 6,
-        padding: 8,
-        marginTop: 4,
-        backgroundColor: '#fff',
-    },
-    buttonRow: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        width: '100%',
-    },
-    button: {
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        backgroundColor: '#007aff',
-        borderRadius: 6,
-        marginLeft: 10,
-    },
-    buttonText: {
-        color: '#fff',
-        fontWeight: '600',
-    },
-    cancel: {
-        backgroundColor: '#f0f0f0',
-    },
-    cancelText: {
-        color: '#555',
-    },
-});
+const getStyles = (colors: ReturnType<typeof useColors>) =>
+    StyleSheet.create({
+        overlay: {
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 24,
+        },
+        container: {
+            backgroundColor: colors.card,
+            borderRadius: 12,
+            padding: 24,
+            width: '100%',
+            maxWidth: 400,
+            alignItems: 'center',
+        },
+        title: {
+            fontSize: 18,
+            fontWeight: '600',
+            marginBottom: 8,
+            textAlign: 'center',
+            color: colors.text,
+        },
+        box: {
+            backgroundColor: colors.inputBackground,
+            padding: 12,
+            borderRadius: 8,
+            marginVertical: 12,
+            width: '100%',
+        },
+        label: {
+            fontSize: 14,
+            fontWeight: '600',
+            color: colors.text,
+        },
+        prompt: {
+            fontSize: 14,
+            color: colors.text,
+            marginTop: 4,
+        },
+        input: {
+            fontSize: 14,
+            color: colors.text,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: 6,
+            padding: 8,
+            marginTop: 4,
+            backgroundColor: colors.background,
+        },
+        buttonRow: {
+            flexDirection: 'row',
+            justifyContent: 'flex-end',
+            width: '100%',
+        },
+        button: {
+            paddingVertical: 10,
+            paddingHorizontal: 16,
+            backgroundColor: colors.primary,
+            borderRadius: 6,
+            marginLeft: 10,
+        },
+        buttonText: {
+            color: colors.onPrimary,
+            fontWeight: '600',
+        },
+        cancel: {
+            backgroundColor: colors.toggleBackground,
+        },
+        cancelText: {
+            color: colors.text,
+        },
+    });

@@ -8,7 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "x": "npx expo start --clear",
-    "quick-commit": "bash ./scripts/quick-commit.sh"
+    "qp": "bash ./scripts/quick-commit.sh" 
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",

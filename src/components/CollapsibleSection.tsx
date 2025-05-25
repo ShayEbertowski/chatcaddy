@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useColors } from '../hooks/useColors';
+
 
 type Props = {
     title: string;
@@ -10,6 +12,9 @@ type Props = {
 };
 
 export default function CollapsibleSection({ title, isOpen, onToggle, children }: Props) {
+    const colors = useColors();
+    const styles = getStyles(colors);
+
     return (
         <View style={styles.wrapper}>
             <TouchableOpacity
@@ -17,11 +22,13 @@ export default function CollapsibleSection({ title, isOpen, onToggle, children }
                 style={styles.header}
                 activeOpacity={0.7}
             >
-                <Text style={styles.title}>{isOpen ? `Hide ${title}` : `Show ${title}`}</Text>
+                <Text style={styles.title}>
+                    {isOpen ? `Hide ${title}` : `Show ${title}`}
+                </Text>
                 <MaterialIcons
                     name={isOpen ? 'expand-less' : 'expand-more'}
                     size={20}
-                    color="#8e8e93"
+                    color={colors.secondaryText} // ← ✅ dynamic icon color
                 />
             </TouchableOpacity>
 
@@ -30,21 +37,24 @@ export default function CollapsibleSection({ title, isOpen, onToggle, children }
     );
 }
 
-const styles = StyleSheet.create({
-    wrapper: {
-        marginTop: 16,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#8e8e93',
-    },
-    body: {
-        marginTop: 12,
-    },
-});
+
+const getStyles = (colors: ReturnType<typeof useColors>) =>
+    StyleSheet.create({
+        wrapper: {
+            marginTop: 16,
+        },
+        header: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        title: {
+            fontSize: 15,
+            fontWeight: '600',
+            color: colors.text, // ← was '#8e8e93'
+        },
+        body: {
+            marginTop: 12,
+        },
+    });
+

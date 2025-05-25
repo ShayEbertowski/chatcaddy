@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
+import { useColors } from '../hooks/useColors';
 
 type BaseModalProps = {
     visible: boolean;
@@ -12,6 +13,9 @@ export default function BaseModal({
     onRequestClose,
     children,
 }: BaseModalProps) {
+    const colors = useColors();
+    const styles = getStyles(colors);
+
     return (
         <Modal
             transparent
@@ -26,20 +30,21 @@ export default function BaseModal({
     );
 }
 
-const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-    },
-    container: {
-        backgroundColor: '#fff', // will move to theme later
-        borderRadius: 10,
-        padding: 20,
-        width: '100%',
-        maxWidth: 400,
-        elevation: 5,
-    },
-});
+const getStyles = (colors: ReturnType<typeof useColors>) =>
+    StyleSheet.create({
+        overlay: {
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+        },
+        container: {
+            backgroundColor: colors.card,
+            borderRadius: 10,
+            padding: 20,
+            width: '100%',
+            maxWidth: 400,
+            elevation: 5,
+        },
+    });
