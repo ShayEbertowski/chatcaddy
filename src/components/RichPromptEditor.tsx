@@ -236,15 +236,10 @@ export default function RichPromptEditor({
                                         const rawValue = useVariableStore.getState().getVariable(chunk.value);
                                         const isMissing = !rawValue?.trim();
                                         const display = isMissing ? '⚠️' : rawValue;
-                                        const icon = isMissing ? getVariableIcon(chunk.value) : undefined;
+                                        const icon = isMissing ? undefined : getVariableIcon(chunk.value);
 
                                         return (
-                                            <Text
-                                                key={i}
-                                                style={[
-                                                    styles.previewVariable,
-                                                ]}
-                                            >
+                                            <Text key={i} style={styles.previewVariable}>
                                                 {icon ? `${icon} ` : ''}
                                                 {display}
                                             </Text>
@@ -253,6 +248,7 @@ export default function RichPromptEditor({
 
                                     return <Text key={i}>{chunk.value}</Text>;
                                 })}
+
                             </Text>
                         </View>
                     )}

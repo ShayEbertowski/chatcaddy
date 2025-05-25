@@ -11,7 +11,11 @@ import {
 import {
   useRoute,
   RouteProp,
+  useIsFocused,
+  useNavigation,
+  NavigatorScreenParams,
 } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { v4 as uuidv4 } from 'uuid';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -20,11 +24,13 @@ import SavePromptModal from '../components/modals/SavePromptModal';
 import RichPromptEditor from '../components/RichPromptEditor';
 import { useVariableStore } from '../stores/useVariableStore';
 import { placeholderText } from '../styles/shared';
-import { MainTabParamList } from '../types/navigation';
 import { generateSmartTitle } from '../utils/generateSmartTitle';
-import { savePrompt } from '../utils/savePrompt';
+import { Prompt, savePrompt } from '../utils/savePrompt';
 import { runPrompt } from '../utils/runPrompt';
 import { useColors } from '../hooks/useColors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MainTabParamList } from '../types/navigation';
+
 
 
 export default function PromptSandboxScreen() {
@@ -42,6 +48,18 @@ export default function PromptSandboxScreen() {
   const styles = getStyles(colors);
   const saveButtonIconColor = saveButtonDisabled ? colors.secondaryText : colors.primary;
   const saveButtonTextColor = saveButtonDisabled ? colors.secondaryText : colors.primary;
+  const [selectedFolder, setSelectedFolder] = useState('Uncategorized');
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [promptsLoaded, setPromptsLoaded] = useState(false);
+  const isEditing = !!route.params?.editId;
+  const isFocused = useIsFocused();
+  const [pendingReset, setPendingReset] = useState(false);
+  type RootStackParamList = {
+    Main: NavigatorScreenParams<MainTabParamList>;
+  };
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [confirmDiscardVisible, setConfirmDiscardVisible] = useState(false);
+  const [onDiscardConfirmed, setOnDiscardConfirmed] = useState<() => void>(() => { });
 
 
   const handleRun = async () => {
@@ -64,17 +82,37 @@ export default function PromptSandboxScreen() {
 
 
   const handleSavePrompt = async () => {
+    if (!promptsLoaded) {
+      Alert.alert('Please wait', 'Still loading existing prompts.');
+      return;
+    }
+
+    const normalize = (str: string) => str.trim().toLowerCase();
+
+    const duplicate = prompts.find(
+      (p) =>
+        normalize(p.content) === normalize(inputText) &&
+        p.folder === selectedFolder
+    );
+
+    if (duplicate) {
+      Alert.alert('Duplicate', 'This prompt already exists.');
+      return;
+    }
+
     const suggested = await generateSmartTitle(inputText);
     setPromptTitle(suggested);
     setShowConfirmSaveModal(true);
   };
 
+
   useEffect(() => {
-    if (route.params?.prefill) {
-      setInputText(route.params.prefill);
-      if (route.params.autoRun) {
-        handleRun();
-      }
+    const { prefill, autoRun, editId } = route.params || {};
+
+    // Only populate if this is an edit
+    if (editId && prefill) {
+      setInputText(prefill);
+      if (autoRun) handleRun();
     }
   }, [route.params]);
 
@@ -89,6 +127,82 @@ export default function PromptSandboxScreen() {
       });
     }
   }, [inputText, autoSuggestTitle]);
+
+  useEffect(() => {
+    const loadPrompts = async () => {
+      const stored = await AsyncStorage.getItem('@prompt_library');
+      if (stored) {
+        setPrompts(JSON.parse(stored));
+      }
+      setPromptsLoaded(true);
+    };
+    loadPrompts();
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      if (!isEditing) return;
+
+      e.preventDefault();
+
+      Alert.alert(
+        'Discard changes?',
+        'You are editing a prompt. Are you sure you want to leave?',
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => { } },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => {
+              setInputText('');
+              setResponse('');
+              useVariableStore.getState().clearAll();
+              navigation.dispatch(e.data.action); // Proceed
+            },
+          },
+        ]
+      );
+    };
+
+    const unsubscribe = navigation.addListener('beforeRemove', handler);
+    return unsubscribe;
+  }, [navigation, isEditing]);
+
+  useEffect(() => {
+    if (!isFocused && isEditing && !pendingReset) {
+      Alert.alert(
+        'Discard changes?',
+        'You are editing a prompt. Discard your changes?',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+            onPress: () => {
+              // 👇 Force tab switch back to Sandbox
+              navigation.navigate('Main', { screen: 'Sandbox', params: {} });
+            },
+          },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => {
+              setInputText('');
+              setResponse('');
+              setPromptTitle('');
+              useVariableStore.getState().clearAll();
+              setPendingReset(true);
+            },
+          },
+        ]
+      );
+    }
+
+    if (isFocused) {
+      setPendingReset(false);
+    }
+  }, [isFocused, isEditing]);
+
+
 
 
   return (
@@ -129,6 +243,7 @@ export default function PromptSandboxScreen() {
             </View>
           </CollapsibleSection>
 
+
         </ScrollView>
 
         <View style={styles.buttonRow}>
@@ -159,6 +274,7 @@ export default function PromptSandboxScreen() {
 
         </View>
 
+
         <SavePromptModal
           visible={showConfirmSaveModal}
           title={promptTitle}
@@ -170,17 +286,23 @@ export default function PromptSandboxScreen() {
               id: uuidv4(),
               title: promptTitle.trim() || 'Untitled',
               content: inputText,
+              folder: selectedFolder, // 👈 include the folder!
             };
 
             try {
               await savePrompt(newPrompt);
               console.log('✅ Prompt saved');
               setShowConfirmSaveModal(false);
+              setInputText('');
+              setResponse('');
+              useVariableStore.getState().clearAll();
             } catch {
               Alert.alert('Error', 'Failed to save prompt.');
             }
           }}
+          selectedFolder={selectedFolder}
         />
+
       </SafeAreaView >
     </>
   );

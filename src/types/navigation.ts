@@ -5,6 +5,7 @@ export type MainTabParamList = {
   Sandbox: {
     prefill?: string;
     autoRun?: boolean;
+    editId?: string;
   };
   Settings: undefined;
 };

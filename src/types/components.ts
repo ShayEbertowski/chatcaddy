@@ -18,3 +18,10 @@ export type Props = {
     onPress: (event: GestureResponderEvent) => void;
 };
 
+export type Prompt = {
+    id: string;
+    title: string;
+    content: string;
+    folder: string
+};
+

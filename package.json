@@ -8,7 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "x": "npx expo start --clear",
-    "qp": "bash ./scripts/quick-commit.sh" 
+    "qp": "bash ./scripts/quick-commit.sh"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -29,7 +29,8 @@
     "react-native-screens": "~4.10.0",
     "react-native-svg": "15.11.2",
     "uuid": "^11.1.0",
-    "zustand": "^5.0.5"
+    "zustand": "^5.0.5",
+    "expo-blur": "~14.1.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

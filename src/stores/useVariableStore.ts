@@ -5,7 +5,9 @@ type VariableState = {
     setVariable: (key: string, value: string) => void;
     getVariable: (key: string) => string | undefined;
     removeVariable: (key: string) => void;
+    clearAll: () => void; // 👈 add this line
 };
+
 
 export const useVariableStore = create<VariableState>((set, get) => ({
     values: {},
@@ -26,4 +28,7 @@ export const useVariableStore = create<VariableState>((set, get) => ({
             delete newValues[key];
             return { values: newValues };
         }),
+
+    clearAll: () => set({ values: {} }),
+
 }));

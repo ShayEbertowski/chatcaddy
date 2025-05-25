@@ -1,11 +1,13 @@
-// src/utils/generateSmartTitle.ts
-
 import * as SecureStore from 'expo-secure-store';
+import { Alert } from 'react-native';
 
 export async function generateSmartTitle(prompt: string): Promise<string> {
     try {
         const apiKey = await SecureStore.getItemAsync('openai_api_key');
-        if (!apiKey) return 'Untitled';
+        if (!apiKey) {
+            Alert.alert('Missing API Key', 'No OpenAI API key found in SecureStore.');
+            return 'Untitled';
+        }
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -31,10 +33,16 @@ export async function generateSmartTitle(prompt: string): Promise<string> {
         });
 
         const data = await response.json();
-        const title = data.choices?.[0]?.message?.content?.trim() || 'Untitled';
+        const title = data.choices?.[0]?.message?.content?.trim();
+
+        if (!title) {
+            Alert.alert('No title returned', JSON.stringify(data, null, 2));
+            return 'Untitled';
+        }
+
         return title;
-    } catch (error) {
-        console.error('Title generation failed:', error);
+    } catch (error: any) {
+        Alert.alert('Smart Title Error', error?.message || 'Unknown error');
         return 'Untitled';
     }
 }

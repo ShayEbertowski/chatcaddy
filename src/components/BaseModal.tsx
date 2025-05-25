@@ -1,17 +1,20 @@
 import React from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useColors } from '../hooks/useColors';
 
 type BaseModalProps = {
     visible: boolean;
     onRequestClose: () => void;
     children: React.ReactNode;
+    blur?: boolean;
 };
 
 export default function BaseModal({
     visible,
     onRequestClose,
     children,
+    blur = true, // default to true for modal feel
 }: BaseModalProps) {
     const colors = useColors();
     const styles = getStyles(colors);
@@ -24,7 +27,12 @@ export default function BaseModal({
             onRequestClose={onRequestClose}
         >
             <View style={styles.overlay}>
-                <View style={styles.container}>{children}</View>
+                {blur && (
+                    <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />
+                )}
+                <View style={styles.modalCard}>
+                    {children}
+                </View>
             </View>
         </Modal>
     );
@@ -34,17 +42,22 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
         overlay: {
             flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.3)',
             justifyContent: 'center',
             alignItems: 'center',
             padding: 20,
+            position: 'relative',
         },
-        container: {
+        modalCard: {
             backgroundColor: colors.card,
-            borderRadius: 10,
-            padding: 20,
+            borderRadius: 20,
+            padding: 24,
             width: '100%',
             maxWidth: 400,
-            elevation: 5,
+            elevation: 10,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.25,
+            shadowRadius: 20,
+            zIndex: 10,
         },
     });

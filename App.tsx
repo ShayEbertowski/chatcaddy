@@ -21,41 +21,6 @@ const isValidIconName = (name: string): name is keyof typeof IoniconGlyphs => {
   return name in IoniconGlyphs;
 };
 
-function MainTabs() {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => {
-        let iconName: string = 'apps';
-
-        if (route.name === 'Library') iconName = 'book-outline';
-        else if (route.name === 'Sandbox') iconName = 'chatbubble-outline';
-        else if (route.name === 'Settings') iconName = 'settings-outline';
-
-        const safeIconName: keyof typeof IoniconGlyphs =
-          isValidIconName(iconName) ? iconName : 'alert';
-
-        return {
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name={safeIconName} size={size} color={color} />
-          ),
-          tabBarActiveTintColor: '#007aff',
-          tabBarInactiveTintColor: '#8e8e93',
-          tabBarStyle: {
-            backgroundColor: '#f9f9f9',
-            borderTopColor: '#c6c6c8',
-            borderTopWidth: 0.5,
-          },
-          headerShown: false,
-        };
-      }}
-    >
-      <Tab.Screen name="Library" component={PromptLibraryScreen} />
-      <Tab.Screen name="Sandbox" component={PromptSandboxScreen} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
-    </Tab.Navigator>
-  );
-}
-
 function AppRoot() {
   return (
     <ThemeProvider>
@@ -107,6 +72,7 @@ function AppWithTheme() {
             borderTopWidth: 0.5,
           },
           headerShown: false,
+          unmountOnBlur: false, // ✅ this is the key
         };
       }}
     >
@@ -114,6 +80,7 @@ function AppWithTheme() {
       <Tab.Screen name="Sandbox" component={PromptSandboxScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
+
   );
 
   return (

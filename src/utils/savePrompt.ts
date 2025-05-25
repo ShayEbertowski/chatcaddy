@@ -6,6 +6,7 @@ export type Prompt = {
     id: string;
     title: string;
     content: string;
+    folder: string;
 };
 
 export async function savePrompt(prompt: Prompt): Promise<void> {

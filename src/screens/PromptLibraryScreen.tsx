@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   Animated,
   Easing,
+  View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
@@ -15,14 +16,22 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import EmptyState from '../components/EmptyState';
 import PromptCard from '../components/PromptCard';
+import { Prompt } from '../types/components';
 
 const PROMPT_STORAGE_KEY = '@prompt_library';
 
 export default function PromptLibraryScreen() {
-  const [prompts, setPrompts] = useState([]);
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [tapBehavior, setTapBehavior] = useState('preview');
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const bounceValue = useRef(new Animated.Value(1)).current;
+
+  const [selectedFolder, setSelectedFolder] = useState('All');
+  const [isPickerVisible, setPickerVisible] = useState(false);
+
+  const filteredPrompts = prompts.filter(p =>
+    selectedFolder === 'All' || p.folder === selectedFolder
+  );
 
   useEffect(() => {
     const loadPrompts = async () => {
@@ -36,9 +45,12 @@ export default function PromptLibraryScreen() {
       }
     };
 
+    loadPrompts(); // 👈 load immediately on mount
+
     const unsubscribe = navigation.addListener('focus', loadPrompts);
     return unsubscribe;
   }, [navigation]);
+
 
   useEffect(() => {
     const loadTapBehavior = async () => {
@@ -92,8 +104,27 @@ export default function PromptLibraryScreen() {
       title={item.title}
       content={item.content}
       onPress={() => handlePromptTap(item.content)}
+      onEdit={() =>
+        navigation.navigate('Main', {
+          screen: 'Sandbox',
+          params: {
+            editId: item.id,
+            prefill: item.content,
+            autoRun: false, // or true if you want it to auto-run when editing
+          },
+        })
+      }
+      onDelete={() => handleDeletePrompt(item.id)}
+      onRun={() => handlePromptTap(item.content)}
     />
   );
+
+  const handleDeletePrompt = async (id: string) => {
+    const updated = prompts.filter((p) => p.id !== id);
+    setPrompts(updated);
+    await AsyncStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(updated));
+  };
+
 
   const renderEmptyState = () => (
     <EmptyState
@@ -104,15 +135,49 @@ export default function PromptLibraryScreen() {
     />
   );
 
+  const toggleFolderPicker = () => {
+    setPickerVisible((prev) => !prev);
+  };
+
+  const folders = ['All', 'Inspiration', 'Dev', 'Marketing'];
+
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
-        data={prompts}
+        data={filteredPrompts}
         keyExtractor={(item) => item.id}
         renderItem={renderPromptItem}
-        ListEmptyComponent={renderEmptyState}
+        ListHeaderComponent={
+          <><View style={styles.dropdownWrapper}>
+            <TouchableOpacity onPress={toggleFolderPicker} style={styles.dropdown}>
+              <Text style={styles.dropdownText}>{selectedFolder}</Text>
+              <MaterialIcons name="arrow-drop-down" size={24} color="#888" />
+            </TouchableOpacity>
+          </View><View style={{ height: 8 }} /></>
+        }
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}
       />
+
+      {isPickerVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            {folders.map((folder) => (
+              <TouchableOpacity
+                key={folder}
+                onPress={() => {
+                  setSelectedFolder(folder);
+                  setPickerVisible(false);
+                }}
+                style={styles.modalItem}
+              >
+                <Text style={styles.modalItemText}>{folder}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
+
+
     </SafeAreaView>
   );
 }
@@ -175,4 +240,65 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
   },
+  dropdownWrapper: {
+    paddingTop: 16,
+    paddingBottom: 12,
+    paddingHorizontal: 20,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+
+  dropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f2f2f7',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+
+  dropdownText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+
+  modal: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    width: '80%',
+    maxWidth: 300,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+
+  modalItem: {
+    paddingVertical: 12,
+  },
+
+  modalItemText: {
+    fontSize: 16,
+    color: '#333',
+    textAlign: 'center',
+  },
+
+
 });

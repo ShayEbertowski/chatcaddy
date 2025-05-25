@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Modal,
     View,
@@ -16,6 +16,7 @@ type SavePromptModalProps = {
     onChangeTitle: (text: string) => void;
     onCancel: () => void;
     onConfirm: () => void;
+    selectedFolder: string;
 };
 
 export default function SavePromptModal({
@@ -25,6 +26,7 @@ export default function SavePromptModal({
     onChangeTitle,
     onCancel,
     onConfirm,
+    selectedFolder,
 }: SavePromptModalProps) {
     const colors = useColors();
     const styles = getStyles(colors);
