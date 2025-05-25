@@ -1,7 +1,7 @@
 // styles/shared.js
 import { StyleSheet } from 'react-native';
 
-const styles = StyleSheet.create({
+const sharedStyles = StyleSheet.create({
   input: {
     minHeight: 120,
     borderWidth: 1,
@@ -29,17 +29,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
   },
-  compactInput: {
-  backgroundColor: '#f9f9f9',
-  paddingVertical: 8,  // ↓ less height
-  paddingHorizontal: 12,
-  borderRadius: 8,
-  borderWidth: 1,
-  borderColor: '#ddd',
-  fontSize: 14,
-  marginBottom: 10,
-},
+
+  placeholderText: {
+    fontStyle: 'italic',
+    color: '#888',
+    fontSize: 15,
+    padding: 12,
+  },
+  section: {
+    backgroundColor: '#f2f2f7',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#8e8e93',
+    marginTop: 24,
+    marginBottom: 12,
+  }
+
 
 });
 
-export const { input, label, saveButton, saveButtonText, compactInput } = styles;
+export const { input, label, saveButton, saveButtonText, placeholderText, section, sectionTitle } = sharedStyles;

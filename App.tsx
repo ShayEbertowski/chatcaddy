@@ -15,7 +15,6 @@ import * as IoniconGlyphs from '@expo/vector-icons/build/vendor/react-native-vec
 
 import PromptLibraryScreen from './src/PromptLibraryScreen';
 import PromptSandboxScreen from './src/PromptSandboxScreen';
-import PromptEditorScreen from './src/PromptEditorScreen';
 import SettingsScreen from './src/SettingsScreen';
 
 const ChatCaddyTheme = {
@@ -78,13 +77,6 @@ export default function App() {
           name="Main"
           component={MainTabs}
           options={{ headerShown: false }}
-        />
-
-        {/* Standalone stack screens */}
-        <RootStack.Screen
-          name="Edit Prompt"
-          component={PromptEditorScreen}
-          options={{ title: 'Edit Prompt' }}
         />
       </RootStack.Navigator>
     </NavigationContainer>

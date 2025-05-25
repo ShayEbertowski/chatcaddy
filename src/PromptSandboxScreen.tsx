@@ -2,121 +2,67 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  Button,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  FlatList,
   Alert,
   ActivityIndicator,
 } from 'react-native';
 import {
-  useNavigation,
   useRoute,
   RouteProp,
 } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import * as SecureStore from 'expo-secure-store';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MainTabParamList } from '../src/types/navigation';
-import { useVariables } from '../src/hooks/useVariables';
-import { label } from '../src/styles/shared';
-import { RootStackParamList } from '../src/types/navigation';
+import { placeholderText } from '../src/styles/shared';
 import { v4 as uuidv4 } from 'uuid';
 import { MaterialIcons } from '@expo/vector-icons';
 import RichPromptEditor from './components/RichPromptEditor';
+import CollapsibleSection from './components/CollapsibleSection';
+import { generateSmartTitle } from './utils/generateSmartTitle';
+import { savePrompt } from './utils/savePrompt';
+import SavePromptModal from './components/modals/SavePromptModal';
 import { useVariableStore } from './stores/useVariableStore';
-
-
-
-type Navigation = NativeStackNavigationProp<RootStackParamList>;
+import { runPrompt } from './utils/runPrompt';
 
 export default function PromptSandboxScreen() {
   const [inputText, setInputText] = useState('');
   const [response, setResponse] = useState('');
   const [hasRun, setHasRun] = useState(false);
-  const [selection, setSelection] = useState({ start: 0, end: 0 });
-
   const route = useRoute<RouteProp<MainTabParamList, 'Sandbox'>>();
-  const navigation = useNavigation<Navigation>();
-
-  const [showVariableModal, setShowVariableModal] = useState(false);
-  const [tempVariableName, setTempVariableName] = useState('');
-  const [showVariables, setShowVariables] = useState(true);
-  const { variables, filledValues, setFilledValues } = useVariables(inputText);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [showConfirmSaveModal, setShowConfirmSaveModal] = useState(false);
+  const [promptTitle, setPromptTitle] = useState('');
+  const [autoSuggestTitle, setAutoSuggestTitle] = useState(true);
+  const [showResponse, setShowResponse] = useState(true); // placeholder if you want response later
   const saveButtonDisabled = inputText.trim() === '';
-  const saveButtonBorderColor = saveButtonDisabled ? '#ccc' : '#1A73E8';
   const saveButtonTextColor = saveButtonDisabled ? '#999' : '#007aff';
   const saveButtonIconColor = saveButtonDisabled ? '#999' : '#007aff';
 
   const handleRun = async () => {
     setHasRun(true);
-    setIsLoading(true);       // ← show spinner
-    setResponse('');          // ← clear old response
+    setShowResponse(true);
+    setIsLoading(true);
+    setResponse('');
 
-    try {
-      const apiKey = await SecureStore.getItemAsync('openai_api_key');
-      if (!apiKey) {
-        setResponse('No API key found. Please enter one in settings.');
-        setIsLoading(false);
-        return;
-      }
+    const filledValues = useVariableStore.getState().values;
+    const result = await runPrompt(inputText, filledValues);
 
-      const filledValues = useVariableStore.getState().values;
-      let finalPrompt = inputText;
-
-      const usedVars = [...inputText.matchAll(/{{\s*(.*?)\s*}}/g)].map(match => match[1]);
-
-      for (const varName of usedVars) {
-        const value = filledValues[varName];
-        if (!value?.trim()) {
-          Alert.alert('Missing Variable', `Please fill in "${varName}"`);
-          setIsLoading(false);
-          return;
-        }
-
-        const pattern = new RegExp(`{{\\s*${varName}\\s*}}`, 'g');
-        finalPrompt = finalPrompt.replace(pattern, value);
-      }
-
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [{ role: 'user', content: finalPrompt }],
-        }),
-      });
-
-      const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content || 'No response';
-      setResponse(reply);
-    } catch (error: any) {
-      setResponse('Error: ' + error.message);
-    } finally {
-      setIsLoading(false); // ← hide spinner
+    if ('error' in result) {
+      Alert.alert('Error', result.error);
+    } else {
+      setResponse(result.response);
     }
+
+    setIsLoading(false);
   };
 
 
-
-  const handleSavePrompt = () => {
-    const suggestedTitle = inputText.trim().split(/\s+/).slice(0, 5).join(' ');
-    navigation.navigate('Edit Prompt', {
-      prompt: {
-        id: uuidv4(),
-        title: suggestedTitle,
-        content: inputText,
-      },
-    });
+  const handleSavePrompt = async () => {
+    const suggested = await generateSmartTitle(inputText);
+    setPromptTitle(suggested);
+    setShowConfirmSaveModal(true);
   };
-
 
   useEffect(() => {
     if (route.params?.prefill) {
@@ -127,68 +73,100 @@ export default function PromptSandboxScreen() {
     }
   }, [route.params]);
 
+  useEffect(() => {
+    if (autoSuggestTitle) {
+      const suggested = inputText.trim().split(/\s+/).slice(0, 5).join(' ');
+
+      setPromptTitle((prev) => {
+        // Only update if it's still empty or previously auto-suggested
+        const wasAutoSuggested = prev === '' || prev === prev.trim().split(/\s+/).slice(0, 5).join(' ');
+        return wasAutoSuggested ? suggested : prev;
+      });
+    }
+  }, [inputText, autoSuggestTitle]);
+
+
   return (
     <>
-
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardDismissMode="on-drag">
-
           <RichPromptEditor
             text={inputText}
             onChangeText={setInputText}
-            onEditVariable={(name: any) => {
-              console.log('Tapped variable:', name);
-              // This is where you'd show a modal or editing UI
-            }}
           />
 
-          <View style={styles.responseHeader}>
-            <Text style={styles.sectionTitle}>Response:</Text>
-            {response !== '' && (
-              <TouchableOpacity onPress={() => setResponse('')}>
-                <Text style={styles.clearButton}>Clear</Text>
-              </TouchableOpacity>
-            )}
-          </View>
 
-          <View style={styles.section}>
-            {isLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color="#007aff" />
-                <Text style={styles.loadingText}>Running...</Text>
-              </View>
-            ) : response === '' ? (
-              <Text style={styles.placeholderText}>
-                Response will appear here after you run the prompt.
-              </Text>
-            ) : (
-              <Text style={styles.response}>{response}</Text>
-            )}
-          </View>
+          <CollapsibleSection
+            title="response"
+            isOpen={showResponse}
+            onToggle={() => setShowResponse(!showResponse)}
+          >
+            <View style={styles.section}>
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#007aff" />
+                  <Text style={styles.loadingText}>Running...</Text>
+                </View>
+              ) : response === '' ? (
+                <Text style={placeholderText}>
+                  Response will appear here after you run the prompt.
+                </Text>
+              ) : (
+                <>
+                  <Text style={styles.response}>{response}</Text>
+                  <View style={{ alignItems: 'flex-end', marginTop: 10 }}>
+                    <TouchableOpacity onPress={() => setResponse('')}>
+                      <Text style={styles.clearButton}>Clear</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </View>
+          </CollapsibleSection>
+
         </ScrollView>
 
-        <View style={styles.bottomActions}>
+        <View style={styles.buttonRow}>
           <TouchableOpacity
-            style={[
-              styles.saveButton, { borderColor: saveButtonBorderColor }
-            ]}
+            style={[styles.button, styles.saveButton]}
             onPress={handleSavePrompt}
             disabled={inputText.trim() === ''}
-            activeOpacity={0.7}
           >
-            <View style={styles.iconButtonContent}>
-              <MaterialIcons name="save-alt" size={18} color={saveButtonIconColor} />
-              <Text style={[styles.saveButtonText, { color: saveButtonTextColor }]} > Save Prompt</Text>
-            </View>
+            <MaterialIcons name="save-alt" size={18} color={saveButtonIconColor} />
+            <Text style={[styles.buttonText, { color: saveButtonTextColor }]}>Save</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.runButton} onPress={handleRun} activeOpacity={0.7}>
-            <View style={styles.iconButtonContent}>
-              <MaterialIcons name="play-arrow" size={18} color="#fff" style={styles.runIcon} />
-              <Text style={styles.runButtonText}>Run Prompt</Text>
-            </View>
+          <TouchableOpacity
+            style={[styles.button, styles.runButton]}
+            onPress={handleRun}
+          >
+            <MaterialIcons name="play-arrow" size={18} color="#fff" />
+            <Text style={[styles.buttonText, { color: '#fff' }]}>Run</Text>
           </TouchableOpacity>
-        </View >
+        </View>
+
+        <SavePromptModal
+          visible={showConfirmSaveModal}
+          title={promptTitle}
+          prompt={inputText}
+          onChangeTitle={setPromptTitle}
+          onCancel={() => setShowConfirmSaveModal(false)}
+          onConfirm={async () => {
+            const newPrompt = {
+              id: uuidv4(),
+              title: promptTitle.trim() || 'Untitled',
+              content: inputText,
+            };
+
+            try {
+              await savePrompt(newPrompt);
+              console.log('✅ Prompt saved');
+              setShowConfirmSaveModal(false);
+            } catch {
+              Alert.alert('Error', 'Failed to save prompt.');
+            }
+          }}
+        />
       </SafeAreaView >
     </>
   );
@@ -238,50 +216,61 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  bottomActions: {
-    paddingTop: 12,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12, // ← adjust spacing between buttons
+    marginHorizontal: 12
+  },
+
+  button: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 10,
+    gap: 6,
   },
 
   saveButton: {
     backgroundColor: '#f4f4f4',
-    padding: 14,
-    borderRadius: 10,
-    alignItems: 'center',
     borderWidth: 1,
-    marginBottom: 12,
-    borderColor: '#1A73E8',
+    borderColor: '#ccc',
+  },
+
+  runButton: {
+    backgroundColor: '#007aff',
+  },
+
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 
   iconButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6, // or marginLeft on the Text if you're on React Native < 0.71
+    gap: 6,
   },
+
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  runButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+
+
 
   runIcon: {
     marginRight: 6,
   },
 
-  saveButtonText: {
-    color: '#007aff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-
-  runButton: {
-    backgroundColor: '#007aff',
-    padding: 18,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-
-  runButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
   emptyVariableContainer: {
     alignItems: 'center',
     marginVertical: 20,
@@ -298,12 +287,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 20,
   },
-  placeholderText: {
-    fontStyle: 'italic',
-    color: '#888',
-    fontSize: 15,
-    padding: 12,
-  },
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -315,6 +298,4 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#555',
   },
-
-
 });

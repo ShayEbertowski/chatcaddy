@@ -7,13 +7,14 @@ import {
   SafeAreaView,
   Animated,
   Easing,
-  View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../src/types/navigation';
+import PromptCard from './components/PromptCard';
+import EmptyState from './components/EmptyState';
 
 const PROMPT_STORAGE_KEY = '@prompt_library';
 
@@ -21,10 +22,7 @@ export default function PromptLibraryScreen() {
   const [prompts, setPrompts] = useState([]);
   const [tapBehavior, setTapBehavior] = useState('preview');
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const opacity = useRef(new Animated.Value(0)).current;
   const bounceValue = useRef(new Animated.Value(1)).current;
-  const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
-
 
   useEffect(() => {
     const loadPrompts = async () => {
@@ -48,15 +46,6 @@ export default function PromptLibraryScreen() {
       setTapBehavior(behavior || 'preview');
     };
     loadTapBehavior();
-  }, []);
-
-
-  useEffect(() => {
-    Animated.timing(opacity, {
-      toValue: 1,
-      duration: 600,
-      useNativeDriver: true,
-    }).start();
   }, []);
 
   useEffect(() => {
@@ -86,7 +75,6 @@ export default function PromptLibraryScreen() {
   const handlePromptTap = async (promptText: string) => {
     try {
       const behavior = await AsyncStorage.getItem('@prompt_tap_behavior');
-
       navigation.navigate('Main', {
         screen: 'Sandbox',
         params: {
@@ -100,35 +88,21 @@ export default function PromptLibraryScreen() {
   };
 
   const renderPromptItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.card}
+    <PromptCard
+      title={item.title}
+      content={item.content}
       onPress={() => handlePromptTap(item.content)}
-    >
-      <Text style={styles.cardTitle}>{item.title}</Text>
-      <Text style={styles.cardPreview} numberOfLines={2}>
-        {item.content}
-      </Text>
-    </TouchableOpacity>
+    />
   );
 
   const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <MaterialIcons name="library-books" size={64} color="#ccc" />
-      <Text style={styles.emptyTitle}>Your Prompt Library is Empty</Text>
-      <Text style={styles.emptySubtitle}>
-        Save prompts from the Sandbox to see them here.
-      </Text>
-      <AnimatedTouchable
-        style={[styles.emptyButton, { transform: [{ scale: bounceValue }] }]}
-        onPress={() =>
-          navigation.navigate('Main', { screen: 'Sandbox', params: {} })
-        }
-      >
-        <Text style={styles.emptyButtonText}>Create Your First Prompt</Text>
-      </AnimatedTouchable>
-    </View>
+    <EmptyState
+      bounceValue={bounceValue}
+      onCreatePress={() =>
+        navigation.navigate('Main', { screen: 'Sandbox', params: {} })
+      }
+    />
   );
-
 
   return (
     <SafeAreaView style={styles.container}>

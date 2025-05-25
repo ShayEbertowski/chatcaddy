@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 import VariableModal from './modals/VariableModal'; // adjust path as needed
 import { useVariableStore } from '../stores/useVariableStore';
-import { MaterialIcons } from '@expo/vector-icons';
+import CollapsibleSection from './CollapsibleSection';
+import { placeholderText } from '../styles/shared';
+import { getVariableIcon } from '../utils/getVariableIcon';
 
 type PromptPart =
     | { type: 'text'; value: string }
@@ -19,13 +21,11 @@ type PromptPart =
 type Props = {
     text: string;
     onChangeText: (newText: string) => void;
-    onEditVariable?: (name: string) => void;
 };
 
 export default function RichPromptEditor({
     text,
-    onChangeText,
-    onEditVariable,
+    onChangeText
 }: Props) {
     const [selection, setSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
 
@@ -36,6 +36,10 @@ export default function RichPromptEditor({
     const [isEditingVariable, setIsEditingVariable] = useState(false);
     const [originalVariableName, setOriginalVariableName] = useState('');
     const [showVariables, setShowVariables] = useState(false);
+    const [showPreview, setShowPreview] = useState(true);
+
+
+
     const filledValues = useVariableStore((state) => state.values);
     const setVariable = useVariableStore((state) => state.setVariable);
 
@@ -160,10 +164,8 @@ export default function RichPromptEditor({
         return undefined; // ← no icon if no match
     };
 
-
-
-
     return (
+
         <View style={styles.container}>
             {/* Row with +Variable aligned right */}
             <View style={styles.headerRow}>
@@ -189,85 +191,73 @@ export default function RichPromptEditor({
             <TextInput
                 value={text}
                 onChangeText={onChangeText}
-                onSelectionChange={(e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) =>
-                    setSelection(e.nativeEvent.selection)
-                }
+                onSelectionChange={(e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => setSelection(e.nativeEvent.selection)}
                 selection={selection}
                 multiline
                 style={styles.input}
-                placeholder="Try anything here..."
-            />
+                placeholder="Try anything here..." />
 
-            {/* Toggle row above the section */}
-            <TouchableOpacity
-                onPress={() => setShowVariables(!showVariables)}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 }}
+            <CollapsibleSection
+                title="variables"
+                isOpen={showVariables}
+                onToggle={() => setShowVariables(!showVariables)}
             >
-                <Text style={styles.sectionTitle}>
-                    {showVariables ? 'Hide' : 'Show'} variables
-                </Text>
-                <MaterialIcons
-                    name={showVariables ? 'expand-less' : 'expand-more'}
-                    size={20}
-                    color="#8e8e93"
-                />
-            </TouchableOpacity>
-
-            {/* Collapsible section with variables inside */}
-            {showVariables && (
                 <View style={styles.chipContainer}>
                     {usedVars.length === 0 ? (
                         <Text style={{ color: '#999', fontStyle: 'italic', paddingVertical: 6 }}>
                             No variables yet. Add one above.
                         </Text>
                     ) : (
-                        usedVars.map((varName, i) =>
-                            renderPart({ type: 'variable', value: varName }, i)
-                        )
+                        usedVars.map((varName, i) => renderPart({ type: 'variable', value: varName }, i))
                     )}
                 </View>
-            )}
-
+            </CollapsibleSection>
 
             <View style={styles.divider} />
 
+            <CollapsibleSection
+                title="preview"
+                isOpen={showPreview}
+                onToggle={() => setShowPreview(!showPreview)}
+            >
+                <View style={styles.section}>
+                    {text.trim() === '' ? (
+                        <Text style={placeholderText}>
+                            Preview will appear here as you type your prompt.
+                        </Text>
+                    ) : (
+                        <View style={styles.previewContainer}>
+                            <Text style={styles.previewText}>
+                                {parsePreviewChunks(text).map((chunk, i) => {
+                                    if (chunk.type === 'variable') {
+                                        const rawValue = useVariableStore.getState().getVariable(chunk.value);
+                                        const isMissing = !rawValue?.trim();
+                                        const display = isMissing ? '⚠️' : rawValue;
+                                        const icon = isMissing ? getVariableIcon(chunk.value) : undefined;
 
-            <Text style={styles.sectionTitle}>Preview:</Text>
-            <View style={styles.section}>
-                <View style={styles.previewContainer}>
+                                        return (
+                                            <Text
+                                                key={i}
+                                                style={[
+                                                    styles.previewVariable,
+                                                ]}
+                                            >
+                                                {icon ? `${icon} ` : ''}
+                                                {display}
+                                            </Text>
+                                        );
+                                    }
 
-                    <Text style={styles.previewText}>
-                        {parsePreviewChunks(text).map((chunk, i) => {
-                            if (chunk.type === 'variable') {
-                                const rawValue = useVariableStore.getState().getVariable(chunk.value);
-                                const isMissing = !rawValue?.trim();
-                                const display = isMissing ? '⚠️' : rawValue;
-                                const icon = isMissing ? getVariableIcon(chunk.value) : undefined;
-
-                                return (
-                                    <Text
-                                        key={i}
-                                        style={[
-                                            styles.previewVariable,
-                                            isMissing && styles.previewVariableMissing,
-                                        ]}
-                                    >
-                                        {icon ? `${icon} ` : ''}{display}
-                                    </Text>
-                                );
-                            }
-
-                            return <Text key={i}>{chunk.value}</Text>;
-                        })}
-
-                    </Text>
+                                    return <Text key={i}>{chunk.value}</Text>;
+                                })}
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
-            </View>
-
+            </CollapsibleSection>
 
             <View style={styles.divider} />
-
 
             <VariableModal
                 visible={showVariableModal}
@@ -276,8 +266,7 @@ export default function RichPromptEditor({
                 onChangeName={setTempVariableName}
                 onChangeValue={setTempVariableValue}
                 onClose={() => setShowVariableModal(false)}
-                onInsert={insertNamedVariable}
-            />
+                onInsert={insertNamedVariable} />
         </View>
     );
 
@@ -376,7 +365,7 @@ const styles = StyleSheet.create({
         color: '#222',
         flexWrap: 'wrap',
         lineHeight: 22,
-        paddingBottom: 8
+        paddingBottom: 12
     },
     previewVariable: {
         backgroundColor: '#eee',
@@ -385,16 +374,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         paddingHorizontal: 4,
         borderRadius: 4,
-    },
-
-    previewVariableMissing: {
-        // keep this here in casez
-    },
-    previewVariableNumber: {
-        // color: '#0057D9',
-    },
-    previewVariableLocation: {
-        // color: '#007a5e',
     },
 
 });
