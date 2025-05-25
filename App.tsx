@@ -12,10 +12,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import * as IoniconGlyphs from '@expo/vector-icons/build/vendor/react-native-vector-icons/glyphmaps/Ionicons.json';
-
-import PromptLibraryScreen from './src/PromptLibraryScreen';
-import PromptSandboxScreen from './src/PromptSandboxScreen';
-import SettingsScreen from './src/SettingsScreen';
+import PromptLibraryScreen from './src/screens/PromptLibraryScreen';
+import PromptSandboxScreen from './src/screens/PromptSandboxScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 
 const ChatCaddyTheme = {
   ...DefaultTheme,

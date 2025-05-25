@@ -12,9 +12,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../src/types/navigation';
-import PromptCard from './components/PromptCard';
-import EmptyState from './components/EmptyState';
+import { RootStackParamList } from '../types/navigation';
+import EmptyState from '../components/EmptyState';
+import PromptCard from '../components/PromptCard';
 
 const PROMPT_STORAGE_KEY = '@prompt_library';
 

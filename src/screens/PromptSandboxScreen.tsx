@@ -13,17 +13,18 @@ import {
   RouteProp,
 } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MainTabParamList } from '../src/types/navigation';
-import { placeholderText } from '../src/styles/shared';
 import { v4 as uuidv4 } from 'uuid';
 import { MaterialIcons } from '@expo/vector-icons';
-import RichPromptEditor from './components/RichPromptEditor';
-import CollapsibleSection from './components/CollapsibleSection';
-import { generateSmartTitle } from './utils/generateSmartTitle';
-import { savePrompt } from './utils/savePrompt';
-import SavePromptModal from './components/modals/SavePromptModal';
-import { useVariableStore } from './stores/useVariableStore';
-import { runPrompt } from './utils/runPrompt';
+import CollapsibleSection from '../components/CollapsibleSection';
+import SavePromptModal from '../components/modals/SavePromptModal';
+import RichPromptEditor from '../components/RichPromptEditor';
+import { useVariableStore } from '../stores/useVariableStore';
+import { placeholderText } from '../styles/shared';
+import { MainTabParamList } from '../types/navigation';
+import { generateSmartTitle } from '../utils/generateSmartTitle';
+import { savePrompt } from '../utils/savePrompt';
+import { runPrompt } from '../utils/runPrompt';
+
 
 export default function PromptSandboxScreen() {
   const [inputText, setInputText] = useState('');
@@ -128,13 +129,21 @@ export default function PromptSandboxScreen() {
 
         <View style={styles.buttonRow}>
           <TouchableOpacity
-            style={[styles.button, styles.saveButton]}
+            style={[
+              styles.button,
+              {
+                backgroundColor: '#f4f4f4',
+                borderWidth: 1,
+                borderColor: saveButtonDisabled ? '#ccc' : '#007aff',
+              }
+            ]}
             onPress={handleSavePrompt}
-            disabled={inputText.trim() === ''}
+            disabled={saveButtonDisabled}
           >
             <MaterialIcons name="save-alt" size={18} color={saveButtonIconColor} />
             <Text style={[styles.buttonText, { color: saveButtonTextColor }]}>Save</Text>
           </TouchableOpacity>
+
 
           <TouchableOpacity
             style={[styles.button, styles.runButton]}
@@ -232,13 +241,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 6,
   },
-
-  saveButton: {
-    backgroundColor: '#f4f4f4',
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-
   runButton: {
     backgroundColor: '#007aff',
   },

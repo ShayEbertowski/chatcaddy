@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { colors } from '..//theme/colors';
-import { spacing } from '..//theme/spacing';
+import { useColorScheme } from 'react-native';
+import { light, dark } from '../theme/colors';
+import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 
 type EmptyStateProps = {
@@ -11,14 +12,20 @@ type EmptyStateProps = {
 };
 
 export default function EmptyState({ bounceValue, onCreatePress }: EmptyStateProps) {
+    const isDark = useColorScheme() === 'dark';
+    const colors = isDark ? dark : light;
+
     return (
         <Animated.View style={[styles.container, { transform: [{ scale: bounceValue }] }]}>
             <MaterialIcons name="library-books" size={64} color="#ccc" />
-            <Text style={styles.title}>Your Prompt Library is Empty</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, { color: colors.text }]}>Your Prompt Library is Empty</Text>
+            <Text style={[styles.subtitle, { color: colors.mutedText }]}>
                 Save prompts from the Sandbox to see them here.
             </Text>
-            <TouchableOpacity style={styles.button} onPress={onCreatePress}>
+            <TouchableOpacity
+                style={[styles.button, { backgroundColor: colors.primary }]}
+                onPress={onCreatePress}
+            >
                 <Text style={styles.buttonText}>Create Your First Prompt</Text>
             </TouchableOpacity>
         </Animated.View>
@@ -36,11 +43,9 @@ const styles = StyleSheet.create({
         marginTop: spacing.md,
         marginBottom: spacing.xs,
         textAlign: 'center',
-        color: colors.text,
     },
     subtitle: {
         ...typography.body,
-        color: colors.mutedText,
         textAlign: 'center',
         marginBottom: spacing.lg,
     },
@@ -48,7 +53,6 @@ const styles = StyleSheet.create({
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
         borderRadius: 8,
-        backgroundColor: colors.primary,
     },
     buttonText: {
         color: '#fff',
@@ -56,4 +60,3 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
 });
-
