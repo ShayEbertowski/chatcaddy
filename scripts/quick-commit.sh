@@ -1,18 +1,12 @@
 #!/bin/bash
 
-# Exit if anything fails
-set -e
+msg="$1"
 
-# Add all changes
-git add .
-
-# Use first argument as commit message, or prompt if missing
-if [ -z "$1" ]; then
-  read -p "Commit message: " msg
-else
-  msg="$1"
+if [ -z "$msg" ]; then
+  echo "Enter a commit message:"
+  read msg
 fi
 
-# Commit and push
+git add .
 git commit -m "$msg"
 git push
