@@ -19,6 +19,7 @@ import { useSettingsStore } from '../stores/useSettingsStore';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import { filterByFolder } from '../utils/libraryFilter';
 import { useTabNavigation } from '../hooks/useTabNavigation';
+import BaseModal from '../components/BaseModal';
 
 
 const PROMPT_STORAGE_KEY = '@prompt_library';
@@ -43,6 +44,7 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
   const hydrated = useSettingsStore.persist?.hasHydrated() ?? false;
 
   const filteredPrompts = filterByFolder(prompts, selectedFolder);
+  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
 
 
   useEffect(() => {
@@ -65,7 +67,7 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
     });
 
     return unsubscribe;
-  }, [navigation]); 
+  }, [navigation]);
 
 
   useEffect(() => {
@@ -76,55 +78,44 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
     loadTapBehavior();
   }, []);
 
-  const handlePromptTap = async (promptText: string) => {
-    try {
-      const behavior = await AsyncStorage.getItem('@prompt_tap_behavior');
-      navigation.navigate('Main', {
-        screen: 'Sandbox',
-        params: {
-          prefill: promptText,
-          autoRun: behavior === 'run',
-        },
-      });
-    } catch (error) {
-      console.error('Failed to handle prompt tap:', error);
-    }
+  const handlePromptTap = (prompt: Prompt) => {
+    setSelectedPrompt(prompt); // ← triggers modal open
   };
 
-  const renderPromptItem = ({ item }: { item: any }) => (
+
+  const renderPromptItem = ({ item }: { item: Prompt }) => (
     <PromptCard
       title={item.title}
       content={item.content}
-      onPress={() => handlePromptTap(item.content)}
+      onPress={() => handlePromptTap(item)} // ✅ opens modal now
       onEdit={() =>
-        navigation.navigate('Main', {
-          screen: 'Sandbox',
-          params: {
-            editId: item.id,
-            prefill: item.content,
-            autoRun: false, 
-          },
+        tabNavigation.navigate('Sandbox', {
+          editId: item.id,
+          prompt: item,
+          autoRun: false,
         })
       }
       onDelete={() => handleDeletePrompt(item.id)}
-      onRun={() => handlePromptTap(item.content)}
+      onRun={() => handlePromptTap(item)} // optional: could also run directly
     />
   );
+
+
 
   const handleDeletePrompt = (id: string) => {
     if (!hydrated) return; // wait until AsyncStorage loads
 
     if (confirmPromptDelete) {
-      setPendingDeleteId(id);     
-      setShowConfirmModal(true);    
+      setPendingDeleteId(id);
+      setShowConfirmModal(true);
     } else {
-      deletePrompt(id);           
+      deletePrompt(id);
     }
   };
 
   const deletePrompt = async (id: string) => {
     const updated = prompts.filter((p) => p.id !== id);
-    setPrompts(updated); 
+    setPrompts(updated);
     await AsyncStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(updated));
   };
 
@@ -183,6 +174,24 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
             ))}
           </View>
         </View>
+      )}
+
+      {selectedPrompt && (
+        <BaseModal
+          visible={true}
+          onRequestClose={() => setSelectedPrompt(null)}
+          blur
+        >
+          <Text style={styles.modalTitle}>{selectedPrompt.title}</Text>
+          <Text style={styles.modalContent}>{selectedPrompt.content}</Text>
+
+          <TouchableOpacity
+            style={styles.modalCloseButton}
+            onPress={() => setSelectedPrompt(null)}
+          >
+            <Text style={styles.modalCloseText}>Close</Text>
+          </TouchableOpacity>
+        </BaseModal>
       )}
 
       <ConfirmModal
@@ -328,6 +337,31 @@ const styles = StyleSheet.create({
   modalItemText: {
     fontSize: 16,
     color: '#333',
+    textAlign: 'center',
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 10,
+    color: '#111',
+  },
+  modalContent: {
+    fontSize: 15,
+    color: '#333',
+  },
+  modalCloseButton: {
+    marginTop: 16,
+    backgroundColor: '#007AFF',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignSelf: 'center',
+  },
+  modalCloseText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
     textAlign: 'center',
   },
 

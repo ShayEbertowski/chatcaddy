@@ -60,7 +60,9 @@ export default function PromptSandboxScreen() {
   const [confirmDiscardVisible, setConfirmDiscardVisible] = useState(false);
   const [onDiscardConfirmed, setOnDiscardConfirmed] = useState<() => void>(() => { });
   const [showResultModal, setShowResultModal] = useState(false);
+  const [promptVariables, setPromptVariables] = useState<Record<string, string>>({});
 
+  const { prompt: editingPrompt, editId, autoRun } = route.params;
 
   const handleRun = async () => {
     setHasRun(true);
@@ -89,8 +91,6 @@ export default function PromptSandboxScreen() {
       return;
     }
 
-    // const cleanedPrompt = text.replace(/{{(.*?)=(.*?)}}/g, (_, key) => `{{${key.trim()}}}`);
-
     const normalize = (str: string) => str.trim().toLowerCase();
 
     const duplicate = prompts.find(
@@ -107,19 +107,13 @@ export default function PromptSandboxScreen() {
     const suggested = await generateSmartTitle(inputText);
     const cleanTitle = suggested.trim().replace(/^["']+|["']+$/g, '');
     setPromptTitle(cleanTitle);
+
+    // ✅ NEW: save current variables
+    const currentVariables = useVariableStore.getState().values;
+    setPromptVariables(currentVariables); // 👈 use this later when confirming save
+
     setShowConfirmSaveModal(true);
   };
-
-
-  useEffect(() => {
-    const { prefill, autoRun, editId } = route.params || {};
-
-    // Only populate if this is an edit
-    if (editId && prefill) {
-      setInputText(prefill);
-      if (autoRun) handleRun();
-    }
-  }, [route.params]);
 
   useEffect(() => {
     if (autoSuggestTitle) {
@@ -208,7 +202,32 @@ export default function PromptSandboxScreen() {
   }, [isFocused, isEditing]);
 
 
+  useEffect(() => {
+    if (editingPrompt?.variables) {
+      // Optional: clear old variables first
+      useVariableStore.getState().clearAll?.();
 
+      Object.entries(editingPrompt.variables).forEach(([key, value]) => {
+        useVariableStore.getState().setVariable(key, value);
+      });
+    }
+  }, [editingPrompt]);
+
+
+  useEffect(() => {
+    if (editingPrompt?.variables) {
+      Object.entries(editingPrompt.variables).forEach(([key, value]) => {
+        useVariableStore.getState().setVariable(key, value);
+      });
+    }
+  }, [editingPrompt]);
+
+  useEffect(() => {
+    if (editingPrompt?.content) {
+      setInputText(editingPrompt.content);
+      if (autoRun) handleRun();
+    }
+  }, [editingPrompt, autoRun]);
 
   return (
     <>
@@ -292,6 +311,7 @@ export default function PromptSandboxScreen() {
               title: promptTitle.trim() || 'Untitled',
               content: inputText,
               folder: selectedFolder, // 👈 include the folder!
+              variables: promptVariables,
             };
 
             try {

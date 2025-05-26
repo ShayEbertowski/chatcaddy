@@ -111,6 +111,8 @@ export default function RichPromptEditor({
     });
 
 
+
+
     const parsePreviewChunks = (str: string): { type: 'text' | 'variable', value: string }[] => {
         const parts = str.split(/({{.*?}})/g);
         return parts.map(part => {

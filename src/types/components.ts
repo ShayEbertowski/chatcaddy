@@ -23,6 +23,7 @@ export type Prompt = {
     title: string;
     content: string;
     folder: string
+    variables?: Record<string, string>;
 };
 
 export type LibraryProps = {

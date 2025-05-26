@@ -1,10 +1,11 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
+import { Prompt } from './components';
 
 export type MainTabParamList = {
   Library: undefined;
   Sandbox: {
-    prefill?: string;
     autoRun?: boolean;
+    prompt?: Prompt;
     editId?: string;
   };
   Settings: undefined;

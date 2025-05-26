@@ -1,9 +1,5 @@
-import React, { useState } from 'react';
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { ThemedSafeArea } from './ThemedSafeArea';
-import BaseModal from './BaseModal';
-import { runPrompt } from '../utils/runPrompt'; // adjust path if needed
 import { useVariableStore } from '../stores/useVariableStore';
 import { getSharedStyles } from '../styles/shared';
 import { useColors } from '../hooks/useColors';
@@ -29,31 +25,6 @@ export default function PromptCard({
     const colors = useColors();
     const sharedStyles = getSharedStyles(colors);
 
-    const [showDetails, setShowDetails] = useState(false);
-    const onCancel = () => setShowDetails(false);
-
-    const [showResultModal, setShowResultModal] = useState(false);
-    const [resultText, setResultText] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [response, setResponse] = useState('');
-
-    const handleRunPrompt = async () => {
-        setResponse('');
-        setIsLoading(true);
-        setShowResultModal(true);
-
-        const filledValues = useVariableStore.getState().values;
-        const result = await runPrompt(content, filledValues); // or pass full prompt object if needed
-
-        if ('error' in result) {
-            setResponse(`⚠️ ${result.error}`);
-        } else {
-            setResponse(result.response);
-        }
-
-        setIsLoading(false);
-    };
-
     const renderPreview = (raw: string): string => {
         return raw.replace(/{{(.*?)}}/g, (_, rawContent) => {
             const [key] = rawContent.split('=');
@@ -65,59 +36,30 @@ export default function PromptCard({
     };
 
     return (
-        <ThemedSafeArea>
-            <View style={styles.card}>
-                <TouchableOpacity
-                    onPress={() => setShowDetails(true)}
-                    activeOpacity={0.8}
-                >
-                    <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
-                        {title}
-                    </Text>
-                    <Text style={sharedStyles.previewVariable} numberOfLines={1} ellipsizeMode="tail">
-                        {renderPreview(content)}
-                    </Text>
+        <View style={styles.card}>
+            <TouchableOpacity
+                onPress={onPress}
+                activeOpacity={0.8}
+            >
+                <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+                    {title}
+                </Text>
+                <Text style={sharedStyles.previewVariable} numberOfLines={1} ellipsizeMode="tail">
+                    {renderPreview(content)}
+                </Text>
+            </TouchableOpacity>
+
+            <View style={styles.actions}>
+                <TouchableOpacity onPress={onEdit} style={styles.iconButton}>
+                    <MaterialIcons name="edit" size={20} color="#007AFF" />
                 </TouchableOpacity>
-
-                <View style={styles.actions}>
-                    <TouchableOpacity onPress={onEdit} style={styles.iconButton}>
-                        <MaterialIcons name="edit" size={20} color="#007AFF" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={onDelete} style={styles.iconButton}>
-                        <MaterialIcons name="delete" size={20} color="#FF3B30" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handleRunPrompt} style={styles.iconButton}>
-                        <MaterialIcons name="play-arrow" size={20} color="#34C759" />
-                    </TouchableOpacity>
-                </View>
-
-                <BaseModal visible={showDetails} onRequestClose={onCancel} blur>
-                    <Text style={styles.modalTitle}>{title}</Text>
-                    <Text style={sharedStyles.previewVariable}>{renderPreview(content)}</Text>
-                    <TouchableOpacity onPress={() => setShowDetails(false)}>
-                        <Text style={{ color: '#007AFF', textAlign: 'center', marginTop: 16 }}>
-                            Close
-                        </Text>
-                    </TouchableOpacity>
-                </BaseModal>
-
-                <BaseModal visible={showResultModal} onRequestClose={() => setShowResultModal(false)} blur>
-                    <Text style={styles.modalTitle}>Prompt Output</Text>
-                    {isLoading ? (
-                        <Text style={styles.modalContent}>Loading...</Text>
-                    ) : (
-                        <Text style={styles.modalContent}>{resultText}</Text>
-                    )}
-                    <TouchableOpacity onPress={() => setShowResultModal(false)}>
-                        <Text style={{ color: '#007AFF', textAlign: 'center', marginTop: 16 }}>Close</Text>
-                    </TouchableOpacity>
-                </BaseModal>
-
-
+                <TouchableOpacity onPress={onDelete} style={styles.iconButton}>
+                    <MaterialIcons name="delete" size={20} color="#FF3B30" />
+                </TouchableOpacity>
             </View>
 
-        </ThemedSafeArea>
-    );
+        </View>
+    )
 }
 
 const styles = StyleSheet.create({
@@ -153,15 +95,6 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         borderRadius: 6,
     },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 10,
-        color: '#111',
-    },
-    modalContent: {
-        fontSize: 15,
-        color: '#333',
-    },
+
 
 });
