@@ -1,8 +1,8 @@
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useVariableStore } from '../stores/useVariableStore';
-import { getSharedStyles } from '../styles/shared';
-import { useColors } from '../hooks/useColors';
+import { useVariableStore } from '../../stores/useVariableStore';
+import { getSharedStyles } from '../../styles/shared';
+import { useColors } from '../../hooks/useColors';
 
 
 type PromptCardProps = {

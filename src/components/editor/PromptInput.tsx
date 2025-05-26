@@ -3,8 +3,8 @@ import {
   Text,
   TextInput,
 } from 'react-native';
+import { PromptInputProps } from '../../types/prompt';
 
-import { PromptInputProps } from '../types/components';
 
 export default function PromptInput({ label, ...props }: PromptInputProps) {
   return (

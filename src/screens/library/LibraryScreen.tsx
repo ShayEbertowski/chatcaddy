@@ -7,9 +7,10 @@ import {
     StyleSheet,
 } from 'react-native';
 
-import FunctionLibraryScreen from './FunctionLibraryScreen';
-import PromptLibraryScreen from './PromptLibraryScreen';
+
 import { MaterialIcons } from '@expo/vector-icons';
+import PromptLibraryScreen from './PromptLibraryScreen';
+import FunctionLibraryScreen from './FunctionLibraryScreen';
 
 type LibraryType = 'prompts' | 'functions';
 

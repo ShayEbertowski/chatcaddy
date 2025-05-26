@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useColors } from '../hooks/useColors';
+import { useColors } from '../../hooks/useColors';
 
 export default function DemosScreen() {
     const colors = useColors();

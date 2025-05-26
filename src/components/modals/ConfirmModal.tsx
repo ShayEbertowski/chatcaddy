@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
 import { useColors } from '../../hooks/useColors';
-import BaseModal from '../BaseModal';
+import BaseModal from './BaseModal';
 
 type Props = {
     visible: boolean;

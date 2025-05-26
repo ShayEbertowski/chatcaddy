@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import BaseModal from '../BaseModal';
+import BaseModal from './BaseModal';
 import { useColors } from '../../hooks/useColors';
 
 export interface VariableModalProps {

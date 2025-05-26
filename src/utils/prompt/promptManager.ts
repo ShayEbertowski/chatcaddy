@@ -1,7 +1,10 @@
-// utils/promptStorage.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NewPrompt } from '../types/components';
+import { NewPrompt } from '../../types/prompt';
 import { v4 as uuidv4 } from 'uuid';
+import { generateSmartTitle } from './generateSmartTitle';
+import { cleanPromptVariables } from './cleanPrompt';
+import { useVariableStore } from '../../stores/useVariableStore';
+
 
 const STORAGE_KEY = '@prompt_library';
 
@@ -56,4 +59,50 @@ export async function sortPromptsByTitle(): Promise<Prompt[]> {
 export function filterPromptsByFolder(prompts: Prompt[], folderId: string): Prompt[] {
     if (folderId === 'All') return prompts;
     return prompts.filter(p => p.folder === folderId);
+}
+
+
+// Normalize strings for comparison
+function normalize(str: string) {
+    return str.trim().toLowerCase();
+}
+
+// Check for duplicates
+export async function isDuplicatePrompt(inputText: string, folder: string): Promise<boolean> {
+    const prompts = await loadPrompts();
+    return prompts.some(
+        (p) => normalize(p.content) === normalize(inputText) && p.folder === folder
+    );
+}
+
+// Generate title from content
+export async function getSmartTitle(inputText: string): Promise<string> {
+    const raw = await generateSmartTitle(inputText);
+    return raw.trim().replace(/^["']+|["']+$/g, '');
+}
+
+// Prepare prompt to save (clean, sync variables, etc.)
+export function preparePromptToSave({
+    id,
+    inputText,
+    title,
+    folder,
+    isEdit,
+}: {
+    id?: string;
+    inputText: string;
+    title: string;
+    folder: string;
+    isEdit: boolean;
+}): Prompt {
+    const cleaned = cleanPromptVariables(inputText);
+    const currentVariables = useVariableStore.getState().values;
+
+    return {
+        id: isEdit && id ? id : uuidv4(),
+        title: title.trim() || 'Untitled',
+        content: cleaned,
+        folder,
+        variables: currentVariables,
+    };
 }

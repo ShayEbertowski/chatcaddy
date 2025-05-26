@@ -1,12 +1,12 @@
 // stores/useFolderStore.ts
 import { create } from 'zustand';
-import { Folder, LibraryType } from '../types/Folder';
 import { v4 as uuidv4 } from 'uuid';
+import { folder, libraryType } from '../types/folder';
 
 type FolderStore = {
-    folders: Folder[];
-    getFoldersByType: (type: LibraryType) => Folder[];
-    addFolder: (name: string, type: LibraryType) => void;
+    folders: folder[];
+    getFoldersByType: (type: libraryType) => folder[];
+    addFolder: (name: string, type: libraryType) => void;
     renameFolder: (id: string, name: string) => void;
     deleteFolder: (id: string) => void;
 };

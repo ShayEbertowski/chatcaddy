@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { useColors } from '../hooks/useColors';
-import { ThemedSafeArea } from '../components/ThemedSafeArea';
-import { getSharedStyles } from '../styles/shared';
+import { useColors } from '../../hooks/useColors';
+import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
+import { getSharedStyles } from '../../styles/shared';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ToolboxStackParamList } from '../types/navigation';
+import { ToolboxStackParamList } from '../../types/navigation';
 import { useNavigation } from '@react-navigation/native';
 
 

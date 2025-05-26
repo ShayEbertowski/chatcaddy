@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Text,
   StyleSheet,
@@ -7,22 +7,23 @@ import {
   SafeAreaView,
   View,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types/navigation';
-import EmptyState from '../components/EmptyState';
-import PromptCard from '../components/PromptCard';
-import { LibraryProps, Prompt } from '../types/components';
-import { useFolderStore } from '../stores/useFolderStore';
-import { useSettingsStore } from '../stores/useSettingsStore';
-import ConfirmModal from '../components/modals/ConfirmModal';
-import { filterByFolder } from '../utils/libraryFilter';
-import { useTabNavigation } from '../hooks/useTabNavigation';
-import BaseModal from '../components/BaseModal';
-
-
-const PROMPT_STORAGE_KEY = '@prompt_library';
+import { RootStackParamList } from '../../types/navigation';
+import EmptyState from '../../components/shared/EmptyState';
+import PromptCard from '../../components/prompt/PromptCard';
+import { LibraryProps, Prompt } from '../../types/prompt';
+import { useFolderStore } from '../../stores/useFolderStore';
+import { useSettingsStore } from '../../stores/useSettingsStore';
+import ConfirmModal from '../../components/modals/ConfirmModal';
+import { filterByFolder } from '../../utils/storage/libraryFilter';
+import { useTabNavigation } from '../../hooks/useTabNavigation';
+import BaseModal from '../../components/modals/BaseModal';
+import {
+  loadPrompts,
+  deletePrompt as deletePromptFromStorage,
+} from '../../utils/prompt/promptManager';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function PromptLibraryScreen({ category }: LibraryProps) {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
@@ -30,45 +31,33 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const tabNavigation = useTabNavigation();
 
-  const [isPickerVisible, setPickerVisible] = useState(false);
-
   const [selectedFolder, setSelectedFolder] = useState('All');
   const folders = useFolderStore().folders.filter(f => f.type === 'prompts');
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [isPickerVisible, setPickerVisible] = useState(false);
+  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
 
-  const confirmPromptDelete = useSettingsStore((s) => s.confirmPromptDelete); // ✅ THIS is the boolean
-  const setConfirmPromptDelete = useSettingsStore((s) => s.setConfirmPromptDelete); // ✅ THIS is the setter
-
+  const confirmPromptDelete = useSettingsStore((s) => s.confirmPromptDelete);
+  const setConfirmPromptDelete = useSettingsStore((s) => s.setConfirmPromptDelete);
   const hydrated = useSettingsStore.persist?.hasHydrated() ?? false;
 
   const filteredPrompts = filterByFolder(prompts, selectedFolder);
-  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
 
+  const refreshPrompts = async () => {
+    const stored = await loadPrompts();
+    setPrompts(stored);
+  };
 
   useEffect(() => {
-    const loadPrompts = async () => {
-      const stored = await AsyncStorage.getItem(PROMPT_STORAGE_KEY);
-      if (stored) {
-        setPrompts(JSON.parse(stored));
-      }
-    };
-
-    loadPrompts(); // run once on mount
+    refreshPrompts();
   }, []);
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', async () => {
-      const stored = await AsyncStorage.getItem(PROMPT_STORAGE_KEY);
-      if (stored) {
-        setPrompts(JSON.parse(stored));
-      }
-    });
-
+    const unsubscribe = navigation.addListener('focus', refreshPrompts);
     return unsubscribe;
   }, [navigation]);
-
 
   useEffect(() => {
     const loadTapBehavior = async () => {
@@ -79,31 +68,11 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
   }, []);
 
   const handlePromptTap = (prompt: Prompt) => {
-    setSelectedPrompt(prompt); // ← triggers modal open
+    setSelectedPrompt(prompt);
   };
 
-
-  const renderPromptItem = ({ item }: { item: Prompt }) => (
-    <PromptCard
-      title={item.title}
-      content={item.content}
-      onPress={() => handlePromptTap(item)} // ✅ opens modal now
-      onEdit={() =>
-        tabNavigation.navigate('Sandbox', {
-          editId: item.id,
-          prompt: item,
-          autoRun: false,
-        })
-      }
-      onDelete={() => handleDeletePrompt(item.id)}
-      onRun={() => handlePromptTap(item)} // optional: could also run directly
-    />
-  );
-
-
-
   const handleDeletePrompt = (id: string) => {
-    if (!hydrated) return; // wait until AsyncStorage loads
+    if (!hydrated) return;
 
     if (confirmPromptDelete) {
       setPendingDeleteId(id);
@@ -116,22 +85,32 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
   const deletePrompt = async (id: string) => {
     const updated = prompts.filter((p) => p.id !== id);
     setPrompts(updated);
-    await AsyncStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(updated));
+    await deletePromptFromStorage(id);
   };
+
+  const renderPromptItem = ({ item }: { item: Prompt }) => (
+    <PromptCard
+      title={item.title}
+      content={item.content}
+      onPress={() => handlePromptTap(item)}
+      onEdit={() =>
+        tabNavigation.navigate('Sandbox', {
+          editId: item.id,
+          prompt: item,
+          autoRun: false,
+        })
+      }
+      onDelete={() => handleDeletePrompt(item.id)}
+      onRun={() => handlePromptTap(item)}
+    />
+  );
 
   const renderEmptyState = () => (
     <EmptyState
       category={category}
-      onCreatePress={() => {
-        tabNavigation.navigate('Sandbox', {});
-      }}
+      onCreatePress={() => tabNavigation.navigate('Sandbox', {})}
     />
   );
-
-
-  const toggleFolderPicker = () => {
-    setPickerVisible((prev) => !prev);
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -145,16 +124,6 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
           paddingBottom: 80,
           justifyContent: filteredPrompts.length === 0 ? 'center' : undefined,
         }}
-
-      // TODO: This was the folders thing. Need to find a new way to categorize since I used top level folders for tools
-      // ListHeaderComponent={
-      //   <><View style={styles.dropdownWrapper}>
-      //     <TouchableOpacity onPress={toggleFolderPicker} style={styles.dropdown}>
-      //       <Text style={styles.dropdownText}>{selectedFolder}</Text>
-      //       <MaterialIcons name="arrow-drop-down" size={24} color="#888" />
-      //     </TouchableOpacity>
-      //   </View><View style={{ height: 24 }} /></>
-      // }
       />
 
       {isPickerVisible && (
@@ -207,7 +176,7 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
         }}
         onConfirm={(dontShowAgain) => {
           if (dontShowAgain) {
-            setConfirmPromptDelete(false); // ✅ the setter is used here
+            setConfirmPromptDelete(false);
           }
           if (pendingDeleteId) {
             deletePrompt(pendingDeleteId);
@@ -216,8 +185,6 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
           setPendingDeleteId(null);
         }}
       />
-
-
     </SafeAreaView>
   );
 }
@@ -226,83 +193,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  cardPreview: {
-    color: '#555',
-    fontSize: 14,
-  },
-
-  // New empty state styles:
-  emptyContainer: {
-    flex: 1, // takes full height
-    justifyContent: 'center', // centers vertically
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 16,
-    marginBottom: 4,
-    textAlign: 'center',
-    color: '#333',
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  emptyButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    backgroundColor: '#007aff',
-  },
-  emptyButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  dropdownWrapper: {
-    paddingTop: 16,
-    paddingBottom: 12,
-    paddingHorizontal: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-
-  dropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#f2f2f7',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-  },
-
-  dropdownText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
   },
   modalOverlay: {
     position: 'absolute',
@@ -315,7 +205,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
-
   modal: {
     backgroundColor: '#fff',
     borderRadius: 10,
@@ -329,17 +218,14 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
-
   modalItem: {
     paddingVertical: 12,
   },
-
   modalItemText: {
     fontSize: 16,
     color: '#333',
     textAlign: 'center',
   },
-
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -364,7 +250,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
   },
-
-
 });
-

@@ -3,22 +3,21 @@ import 'react-native-get-random-values';
 import { registerRootComponent } from 'expo';
 
 import React from 'react';
-import { DefaultTheme, DrawerActions, NavigationContainer } from '@react-navigation/native';
+import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import * as IoniconGlyphs from '@expo/vector-icons/build/vendor/react-native-vector-icons/glyphmaps/Ionicons.json';
 
-import PromptLibraryScreen from './src/screens/PromptLibraryScreen';
-import PromptSandboxScreen from './src/screens/PromptSandboxScreen';
-import ToolboxScreen from './src/screens/ToolboxScreen';
-import DemosScreen from './src/screens/DemosScreen';
-import SettingsScreen from './src/screens/SettingsScreen';
+import PromptSandboxScreen from './src/screens/sandbox/PromptSandboxScreen';
+import ToolboxScreen from './src/screens/toolbox/ToolboxScreen';
+import DemosScreen from './src/screens/demos/DemosScreen';
+import SettingsScreen from './src/screens/settings/SettingsScreen';
 import { ThemeProvider, useThemeMode } from './src/theme/ThemeProvider';
-import AvatarDrawerButton from './src/components/AvatarDrawerButton';
-import PromptFunctionsScreen from './src/screens/PromptFunctionsScreen';
-import LibraryScreen from './src/screens/LibraryScreen';
+import AvatarDrawerButton from './src/components/ui/AvatarDrawerButton';
+import PromptFunctionsScreen from './src/screens/toolbox/PromptFunctionsScreen';
+import LibraryScreen from './src/screens/library/LibraryScreen';
 
 
 const Tab = createBottomTabNavigator();

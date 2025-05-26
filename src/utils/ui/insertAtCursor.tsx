@@ -1,5 +1,4 @@
-// utils/insertAtCursor.js
-export function insertAtCursor(input, selection, value) {
+export function insertAtCursor(input: string | any[], selection: { start: any; }, value: string | any[]) {
   const { start } = selection;
   const before = input.slice(0, start);
   const after = input.slice(start);

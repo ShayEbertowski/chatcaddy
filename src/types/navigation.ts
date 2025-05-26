@@ -1,5 +1,5 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
-import { Prompt } from './components';
+import { Prompt } from './prompt';
 
 export type MainTabParamList = {
   Library: undefined;

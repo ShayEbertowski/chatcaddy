@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { useColors } from '../hooks/useColors';
+import { useColors } from '../../hooks/useColors';
 
 type BaseModalProps = {
     visible: boolean;

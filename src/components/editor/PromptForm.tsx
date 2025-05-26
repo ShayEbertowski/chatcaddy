@@ -2,8 +2,8 @@
 import React from 'react';
 import { ScrollView } from 'react-native';
 import PromptInput from './PromptInput';
-import VariableToolbarButton from './VariableToolbarButton';
-import { PromptFormProps } from '../types/components';
+import { PromptFormProps } from '../../types/prompt';
+import VariableToolbarButton from '../toolbar/VariableToolbarButton';
 
 export default function PromptForm({
   selection,
@@ -33,9 +33,13 @@ export default function PromptForm({
         value={content}
         onChangeText={setContent}
         selection={selection}
-        onSelectionChange={({ nativeEvent: { selection } }) =>
-          setSelection(selection)
-        }
+        onSelectionChange={({
+          nativeEvent: { selection },
+        }: {
+          nativeEvent: { selection: { start: number; end: number } };
+        }) => {
+          setSelection(selection);
+        }}
         multiline
       />
     </ScrollView>

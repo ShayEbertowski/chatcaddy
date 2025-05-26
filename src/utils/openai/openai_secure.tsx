@@ -2,7 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 
 const API_KEY_STORAGE_KEY = 'openai_api_key';
 
-export async function runPrompt(promptText) {
+export async function runPrompt(promptText: any) {
   try {
     const apiKey = await SecureStore.getItemAsync(API_KEY_STORAGE_KEY);
 

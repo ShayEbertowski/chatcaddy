@@ -1,6 +1,7 @@
-import { useVariableStore } from '../stores/useVariableStore';
-import { useSnippetStore } from '../stores/useSnippetStore';
-import { useFunctionStore } from '../stores/useFunctionStore';
+import { useFunctionStore } from "../../stores/useFunctionStore";
+import { useSnippetStore } from "../../stores/useSnippetStore";
+import { useVariableStore } from "../../stores/useVariableStore";
+
 
 export type EntityType = 'Variable' | 'Snippet' | 'Function';
 

@@ -11,7 +11,7 @@ export default function AvatarDrawerButton() {
             style={{ paddingLeft: 16 }}
         >
             <Image
-                source={require('../../assets/avatar.png')}
+                source={require('../../../assets/avatar.png')}
                 style={{ width: 32, height: 32, borderRadius: 16 }}
             />
         </TouchableOpacity>

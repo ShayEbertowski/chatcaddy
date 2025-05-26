@@ -1,8 +1,8 @@
 // types/Folder.ts
-export type LibraryType = 'prompts' | 'functions' | 'snippets';
+export type libraryType = 'prompts' | 'functions' | 'snippets';
 
-export type Folder = {
+export type folder = {
     id: string;
     name: string;
-    type: LibraryType; // e.g., "prompts", "functions"
+    type: libraryType; // e.g., "prompts", "functions"
 };

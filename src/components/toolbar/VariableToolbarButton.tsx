@@ -1,6 +1,5 @@
 import { TouchableOpacity, View, Text } from 'react-native';
-import { Props } from '../types/components';
-
+import { Props } from '../../types/prompt';
 
 
 export default function VariableToolbarButton({ onPress }: Props) {

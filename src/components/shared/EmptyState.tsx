@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useColors } from '../hooks/useColors';
-import { spacing } from '../theme/spacing';
-import { typography } from '../theme/typography';
-import { capitalize, removeLastChar } from '../utils/stringHelper';
+import { useColors } from '../../hooks/useColors';
+import { spacing } from '../../theme/spacing';
+import { typography } from '../../theme/typography';
+import { capitalize, removeLastChar } from '../../utils/string/stringHelper';
 
 type EmptyStateProps = {
     category: string;

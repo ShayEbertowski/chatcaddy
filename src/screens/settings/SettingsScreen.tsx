@@ -12,10 +12,10 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { ThemedSafeArea } from '../components/ThemedSafeArea';
-import { useColors } from '../hooks/useColors';
-import { useThemeMode } from '../theme/ThemeProvider';
-import { useSettingsStore } from '../stores/useSettingsStore';
+import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
+import { useColors } from '../../hooks/useColors';
+import { useThemeMode } from '../../theme/ThemeProvider';
+import { useSettingsStore } from '../../stores/useSettingsStore';
 
 
 const API_KEY_STORAGE_KEY = 'openai_api_key';

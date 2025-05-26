@@ -10,13 +10,13 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types/navigation';
-import EmptyState from '../components/EmptyState';
-import PromptCard from '../components/PromptCard';
-import { LibraryProps, Prompt } from '../types/components';
-import { useFolderStore } from '../stores/useFolderStore';
-import { filterByFolder } from '../utils/libraryFilter';
-import { useTabNavigation } from '../hooks/useTabNavigation';
+import { RootStackParamList } from '../../types/navigation';
+import EmptyState from '../../components/shared/EmptyState';
+import PromptCard from '../../components/prompt/PromptCard';
+import { LibraryProps, Prompt } from '../../types/prompt';
+import { useFolderStore } from '../../stores/useFolderStore';
+import { filterByFolder } from '../../utils/storage/libraryFilter';
+import { useTabNavigation } from '../../hooks/useTabNavigation';
 
 const FUNCTION_STORAGE_KEY = '@function_library';
 
@@ -54,13 +54,13 @@ export default function FunctionLibraryScreen({ category }: LibraryProps) {
         loadBehavior();
     }, []);
 
-    const handleFunctionTap = async (content: string) => {
+    const handleFunctionTap = async (prompt: Prompt) => {
         try {
             const behavior = await AsyncStorage.getItem('@prompt_tap_behavior');
             navigation.navigate('Main', {
                 screen: 'Sandbox',
                 params: {
-                    prefill: content,
+                    prompt,
                     autoRun: behavior === 'run',
                 },
             });
@@ -84,25 +84,27 @@ export default function FunctionLibraryScreen({ category }: LibraryProps) {
         />
     );
 
+
     const renderFunctionItem = ({ item }: { item: Prompt }) => (
         <PromptCard
             title={item.title}
             content={item.content}
-            onPress={() => handleFunctionTap(item.content)}
+            onPress={() => handleFunctionTap(item)}
             onEdit={() =>
                 navigation.navigate('Main', {
                     screen: 'Sandbox',
                     params: {
                         editId: item.id,
-                        prefill: item.content,
+                        prompt: item,
                         autoRun: false,
                     },
                 })
             }
             onDelete={() => handleDeleteFunction(item.id)}
-            onRun={() => handleFunctionTap(item.content)}
+            onRun={() => handleFunctionTap(item)}
         />
     );
+
 
     const toggleFolderPicker = () => {
         setPickerVisible((prev) => !prev);

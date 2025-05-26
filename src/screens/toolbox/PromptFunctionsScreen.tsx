@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { ThemedSafeArea } from '../components/ThemedSafeArea';
-import { useColors } from '../hooks/useColors';
+import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
+import { useColors } from '../../hooks/useColors';
 
 export default function PromptFunctionsScreen() {
     const colors = useColors();
