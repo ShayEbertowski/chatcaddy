@@ -9,6 +9,7 @@ import {
 
 import FunctionLibraryScreen from './FunctionLibraryScreen';
 import PromptLibraryScreen from './PromptLibraryScreen';
+import { MaterialIcons } from '@expo/vector-icons';
 
 type LibraryType = 'prompts' | 'functions';
 
@@ -39,13 +40,15 @@ export default function LibraryScreen() {
 
     return (
         <View style={{ flex: 1 }}>
-            <View style={styles.header}>
+            <View style={styles.dropdownWrapper}>
                 <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.dropdown}>
                     <Text style={styles.dropdownText}>
                         {options.find((o) => o.value === category)?.label}
                     </Text>
+                    <MaterialIcons name="arrow-drop-down" size={24} color="#888" />
                 </TouchableOpacity>
             </View>
+            <View style={{ height: 24 }} />
 
             <ScreenComponent />
 
@@ -76,15 +79,6 @@ const styles = StyleSheet.create({
         padding: 16,
         backgroundColor: '#fff',
     },
-    dropdown: {
-        padding: 12,
-        backgroundColor: '#f0f0f0',
-        borderRadius: 10,
-    },
-    dropdownText: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.3)',
@@ -104,4 +98,27 @@ const styles = StyleSheet.create({
         fontSize: 16,
         textAlign: 'center',
     },
+    dropdownWrapper: {
+        paddingTop: 16,
+        paddingBottom: 12,
+        paddingHorizontal: 20,
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    dropdown: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#f2f2f7',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 10,
+    },
+    dropdownText: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: '#333',
+    },
+
 });

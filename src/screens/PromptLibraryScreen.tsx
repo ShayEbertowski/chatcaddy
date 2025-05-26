@@ -133,14 +133,15 @@ export default function PromptLibraryScreen() {
         data={filteredPrompts}
         keyExtractor={(item) => item.id}
         renderItem={renderPromptItem}
-        ListHeaderComponent={
-          <><View style={styles.dropdownWrapper}>
-            <TouchableOpacity onPress={toggleFolderPicker} style={styles.dropdown}>
-              <Text style={styles.dropdownText}>{selectedFolder}</Text>
-              <MaterialIcons name="arrow-drop-down" size={24} color="#888" />
-            </TouchableOpacity>
-          </View><View style={{ height: 24 }} /></>
-        }
+        // TODO: This was the folders thing. Need to find a new way to categorize since I used top level folders for tools
+        // ListHeaderComponent={
+        //   <><View style={styles.dropdownWrapper}>
+        //     <TouchableOpacity onPress={toggleFolderPicker} style={styles.dropdown}>
+        //       <Text style={styles.dropdownText}>{selectedFolder}</Text>
+        //       <MaterialIcons name="arrow-drop-down" size={24} color="#888" />
+        //     </TouchableOpacity>
+        //   </View><View style={{ height: 24 }} /></>
+        // }
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}
       />
 
