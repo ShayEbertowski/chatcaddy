@@ -31,8 +31,6 @@ import { useColors } from '../hooks/useColors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MainTabParamList } from '../types/navigation';
 
-
-
 export default function PromptSandboxScreen() {
   const [inputText, setInputText] = useState('');
   const [response, setResponse] = useState('');
@@ -60,6 +58,7 @@ export default function PromptSandboxScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [confirmDiscardVisible, setConfirmDiscardVisible] = useState(false);
   const [onDiscardConfirmed, setOnDiscardConfirmed] = useState<() => void>(() => { });
+  const [showResultModal, setShowResultModal] = useState(false);
 
 
   const handleRun = async () => {
@@ -101,7 +100,8 @@ export default function PromptSandboxScreen() {
     }
 
     const suggested = await generateSmartTitle(inputText);
-    setPromptTitle(suggested);
+    const cleanTitle = suggested.trim().replace(/^["']+|["']+$/g, '');
+    setPromptTitle(cleanTitle);
     setShowConfirmSaveModal(true);
   };
 

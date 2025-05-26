@@ -28,7 +28,7 @@ export default function SavePromptModal({
     onConfirm,
     selectedFolder,
 }: SavePromptModalProps) {
-    const colors = useColors();
+    const colors = useColors(); 
     const styles = getStyles(colors);
 
     return (

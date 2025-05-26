@@ -14,6 +14,10 @@ import CollapsibleSection from './CollapsibleSection';
 import { getVariableIcon } from '../utils/getVariableIcon';
 import { useColors } from '../hooks/useColors';
 import { getSharedStyles, placeholderText } from '../styles/shared';
+import InsertModal from './modals/InsertModal';
+import { useFunctionStore } from '../stores/useFunctionStore';
+import { useSnippetStore } from '../stores/useSnippetStore';
+import { getEntityForEdit } from '../utils/generateEntityForEdit';
 
 type PromptPart =
     | { type: 'text'; value: string }
@@ -42,6 +46,12 @@ export default function RichPromptEditor({
 
     const filledValues = useVariableStore((state) => state.values);
     const setVariable = useVariableStore((state) => state.setVariable);
+
+    const [showInsertModal, setShowInsertModal] = useState(false);
+    const [showFunctionPicker, setShowFunctionPicker] = useState(false);
+
+    const [editMode, setEditMode] = useState<'Variable' | 'Function' | 'Snippet'>('Variable');
+
 
     const styles = getStyles(colors);
 
@@ -127,20 +137,29 @@ export default function RichPromptEditor({
 
 
     const renderPart = (part: PromptPart, i: number) => {
-        if (part.type === 'text') {
-            return null; // Don't render plain text chunks in chip preview
-        }
+        if (part.type === 'text') return null;
+
+        const name = part.value;
+        const { type, value } = getEntityForEdit(name);
 
         return (
             <TouchableOpacity
                 key={i}
-                onPress={() => handleEditVariable(part.value)}
+                onPress={() => {
+                    setTempVariableName(name);
+                    setTempVariableValue(value);
+                    setEditMode(type);
+                    setIsEditingVariable(true);
+                    setShowInsertModal(true);
+                }}
                 style={styles.chip}
             >
-                <Text style={styles.chipText}>{part.value}</Text>
+                <Text style={styles.chipText}>{name}</Text>
             </TouchableOpacity>
         );
     };
+
+
 
 
     const getVariableIcon = (name: string): string | undefined => {
@@ -172,21 +191,12 @@ export default function RichPromptEditor({
             <View style={styles.headerRow}>
                 <View style={{ flex: 1 }} />
                 <TouchableOpacity
-                    onPress={() => {
-                        setIsEditingVariable(false);
-                        setOriginalVariableName('');
-                        setTempVariableName('');
-                        setTempVariableValue('');
-                        setShowVariableModal(true);
-                    }}
+                    onPress={() => setShowInsertModal(true)}
                     style={styles.addButton}
                 >
-                    <Text style={styles.addButtonText}>+ Variable</Text>
+                    <Text style={styles.addButtonText}>+ Insert</Text>
                 </TouchableOpacity>
-
             </View>
-
-
 
 
             <TextInput
@@ -258,14 +268,71 @@ export default function RichPromptEditor({
 
             <View style={sharedStyles.divider} />
 
-            <VariableModal
+            {/* <VariableModal
                 visible={showVariableModal}
                 variableName={tempVariableName}
                 variableValue={tempVariableValue}
                 onChangeName={setTempVariableName}
                 onChangeValue={setTempVariableValue}
                 onClose={() => setShowVariableModal(false)}
-                onInsert={insertNamedVariable} />
+                onInsert={insertNamedVariable} /> */}
+
+            <InsertModal
+                visible={showInsertModal}
+                mode={editMode}
+                isEdit={isEditingVariable}
+                initialName={tempVariableName}
+                initialValue={tempVariableValue}
+                onClose={() => {
+                    setShowInsertModal(false);
+                    setIsEditingVariable(false);
+                    setTempVariableName('');
+                    setTempVariableValue('');
+                }}
+                onInsert={(mode, name, value) => {
+                    if (mode === 'Function') {
+                        const store = useFunctionStore.getState();
+                        if (isEditingVariable) {
+                            // Replace by removing the old one (if needed) and re-adding
+                            store.removeFunction(name); // optional if you're storing by name
+                        }
+                        store.setFunction(name, value);
+                    } else if (mode === 'Snippet') {
+                        const store = useSnippetStore.getState();
+                        if (isEditingVariable) {
+                            store.removeSnippet(name);
+                        }
+                        store.setSnippet(name, value);
+                    } else {
+                        const store = useVariableStore.getState();
+                        if (isEditingVariable) {
+                            store.removeVariable(name);
+                        }
+                        store.setVariable(name, value);
+                    }
+
+                    // Insert `{{name}}` if it's a new insert (not an edit)
+                    if (!isEditingVariable) {
+                        const before = text.slice(0, selection.start);
+                        const after = text.slice(selection.end);
+                        const insert = `{{${name}}}`;
+                        const newText = before + insert + after;
+                        onChangeText(newText);
+                        setSelection({ start: before.length + insert.length, end: before.length + insert.length });
+                    }
+
+                    // Clear state
+                    setIsEditingVariable(false);
+                    setTempVariableName('');
+                    setTempVariableValue('');
+                    setShowInsertModal(false);
+                }}
+            />
+
+
+
+
+
         </View>
     );
 

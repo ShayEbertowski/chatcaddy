@@ -4,12 +4,17 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useColors } from '../hooks/useColors';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { capitalize, removeLastChar } from '../utils/stringHelper';
 
 type EmptyStateProps = {
+    category: string;
     onCreatePress: () => void;
 };
 
-export default function EmptyState({ onCreatePress }: EmptyStateProps) {
+export default function EmptyState({
+    category,
+    onCreatePress,
+}: EmptyStateProps) {
     const colors = useColors();
     const bounceValue = useRef(new Animated.Value(1)).current;
 
@@ -37,16 +42,21 @@ export default function EmptyState({ onCreatePress }: EmptyStateProps) {
     return (
         <Animated.View style={[styles.container, { transform: [{ scale: bounceValue }] }]}>
             <MaterialIcons name="library-books" size={64} color={colors.secondaryText} />
-            <Text style={[styles.title, { color: colors.text }]}>Your Prompt Library is Empty</Text>
+            <Text style={[styles.title, { color: colors.text }]}>
+                Your {capitalize(removeLastChar(category))} Library is Empty
+            </Text>
             <Text style={[styles.subtitle, { color: colors.secondaryText }]}>
-                Save prompts from the Sandbox to see them here.
+                Start by creating your first {removeLastChar(category)}
             </Text>
             <TouchableOpacity
                 style={[styles.button, { backgroundColor: colors.primary }]}
-                onPress={onCreatePress}
+                onPress={() => {
+                    // console.log('❌ Button pressed');
+                    onCreatePress?.();
+                }}
             >
                 <Text style={[styles.buttonText, { color: colors.onPrimary }]}>
-                    Create Your First Prompt
+                    Create Your First {capitalize(removeLastChar(category))}
                 </Text>
             </TouchableOpacity>
         </Animated.View>

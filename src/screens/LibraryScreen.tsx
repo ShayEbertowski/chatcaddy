@@ -26,16 +26,17 @@ export default function LibraryScreen() {
     const [category, setCategory] = useState<LibraryType>('prompts');
     const [modalVisible, setModalVisible] = useState(false);
 
-    const ScreenComponent: React.ComponentType = useMemo(() => {
+    const ScreenComponent = useMemo(() => {
         switch (category) {
             case 'prompts':
-                return PromptLibraryScreen;
+                return () => <PromptLibraryScreen category={category} />;
             case 'functions':
-                return FunctionLibraryScreen;
+                return () => <FunctionLibraryScreen category={category} />;
             default:
-                return UnknownCategory as React.ComponentType;
+                return UnknownCategory;
         }
     }, [category]);
+
 
 
     return (

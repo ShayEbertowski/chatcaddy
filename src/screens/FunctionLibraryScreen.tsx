@@ -9,30 +9,29 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import { MaterialIcons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import EmptyState from '../components/EmptyState';
 import PromptCard from '../components/PromptCard';
-import { Prompt } from '../types/components';
+import { LibraryProps, Prompt } from '../types/components';
 import { useFolderStore } from '../stores/useFolderStore';
-import { shallow } from 'zustand/shallow';
+import { filterByFolder } from '../utils/libraryFilter';
+import { useTabNavigation } from '../hooks/useTabNavigation';
 
 const FUNCTION_STORAGE_KEY = '@function_library';
 
-export default function FunctionLibraryScreen() {
+export default function FunctionLibraryScreen({ category }: LibraryProps) {
     const [functions, setFunctions] = useState<Prompt[]>([]);
     const [tapBehavior, setTapBehavior] = useState('preview');
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const tabNavigation = useTabNavigation();
+
     const [isPickerVisible, setPickerVisible] = useState(false);
     const [selectedFolder, setSelectedFolder] = useState('All');
 
     const folders = useFolderStore().folders.filter(f => f.type === 'prompts');
+    const filteredFunctions = filterByFolder(functions, selectedFolder);
 
-
-    const filteredFunctions = functions.filter(
-        (f) => selectedFolder === 'All' || f.folder === selectedFolder
-    );
 
     useEffect(() => {
         const load = async () => {
@@ -75,6 +74,16 @@ export default function FunctionLibraryScreen() {
         setFunctions(updated);
         await AsyncStorage.setItem(FUNCTION_STORAGE_KEY, JSON.stringify(updated));
     };
+
+    const renderEmptyState = () => (
+        <EmptyState
+            category={category}
+            onCreatePress={() => {
+                console.log('✅ Switching directly to Sandbox tab');
+                tabNavigation.navigate('Sandbox', {});
+            }}
+        />
+    );
 
     const renderFunctionItem = ({ item }: { item: Prompt }) => (
         <PromptCard
@@ -140,14 +149,13 @@ export default function FunctionLibraryScreen() {
                 data={filteredFunctions}
                 keyExtractor={(item) => item.id}
                 renderItem={renderFunctionItem}
-                contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}
-                ListEmptyComponent={
-                    <EmptyState
-                        onCreatePress={() =>
-                            navigation.navigate('Main', { screen: 'Sandbox', params: {} })
-                        }
-                    />
-                }
+                ListEmptyComponent={renderEmptyState}
+                contentContainerStyle={{
+                    flexGrow: 1,
+                    paddingBottom: 80,
+                    justifyContent: filteredFunctions.length === 0 ? 'center' : undefined,
+                }}
+
             />
 
             {isPickerVisible && (

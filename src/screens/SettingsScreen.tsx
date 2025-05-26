@@ -8,12 +8,14 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Switch,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { ThemedSafeArea } from '../components/ThemedSafeArea';
 import { useColors } from '../hooks/useColors';
 import { useThemeMode } from '../theme/ThemeProvider';
+import { useSettingsStore } from '../stores/useSettingsStore';
 
 
 const API_KEY_STORAGE_KEY = 'openai_api_key';
@@ -29,6 +31,9 @@ export default function SettingsScreen() {
   const colors = useColors();
   const styles = getStyles(colors);
   const { mode, setMode } = useThemeMode(); // mode = 'light' | 'dark' | 'system'
+
+  const confirmPromptDelete = useSettingsStore((s) => s.confirmPromptDelete);
+  const setConfirmPromptDelete = useSettingsStore((s) => s.setConfirmPromptDelete);
 
 
   useEffect(() => {
@@ -258,6 +263,17 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Prompt Behavior</Text>
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Confirm before deleting prompts</Text>
+            <Switch
+              value={confirmPromptDelete}
+              onValueChange={setConfirmPromptDelete}
+            />
+          </View>
+        </View>
+
 
       </ScrollView>
     </ThemedSafeArea>
@@ -350,5 +366,26 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
       color: colors.onPrimary,
       fontWeight: '700',
     },
+    settingRow: {
+      backgroundColor: colors.card,
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 24,
+      borderRadius: 10,
+    },
+
+    settingLabel: {
+      fontSize: 15,
+      color: colors.text,
+      flexShrink: 1,
+      paddingRight: 12,
+    },
+
   });
 

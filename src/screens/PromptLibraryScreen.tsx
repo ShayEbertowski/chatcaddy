@@ -5,38 +5,45 @@ import {
   TouchableOpacity,
   FlatList,
   SafeAreaView,
-  Animated,
-  Easing,
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import { MaterialIcons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import EmptyState from '../components/EmptyState';
 import PromptCard from '../components/PromptCard';
-import { Prompt } from '../types/components';
+import { LibraryProps, Prompt } from '../types/components';
 import { useFolderStore } from '../stores/useFolderStore';
-import { shallow } from 'zustand/shallow';
+import { useSettingsStore } from '../stores/useSettingsStore';
+import ConfirmModal from '../components/modals/ConfirmModal';
+import { filterByFolder } from '../utils/libraryFilter';
+import { useTabNavigation } from '../hooks/useTabNavigation';
 
 
 const PROMPT_STORAGE_KEY = '@prompt_library';
 
-export default function PromptLibraryScreen() {
+export default function PromptLibraryScreen({ category }: LibraryProps) {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [tapBehavior, setTapBehavior] = useState('preview');
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const tabNavigation = useTabNavigation();
 
   const [isPickerVisible, setPickerVisible] = useState(false);
 
   const [selectedFolder, setSelectedFolder] = useState('All');
   const folders = useFolderStore().folders.filter(f => f.type === 'prompts');
 
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
-  const filteredPrompts = prompts.filter(p =>
-    selectedFolder === 'All' || p.folder === selectedFolder
-  );
+  const confirmPromptDelete = useSettingsStore((s) => s.confirmPromptDelete); // ✅ THIS is the boolean
+  const setConfirmPromptDelete = useSettingsStore((s) => s.setConfirmPromptDelete); // ✅ THIS is the setter
+
+  const hydrated = useSettingsStore.persist?.hasHydrated() ?? false;
+
+  const filteredPrompts = filterByFolder(prompts, selectedFolder);
+
 
   useEffect(() => {
     const loadPrompts = async () => {
@@ -60,7 +67,6 @@ export default function PromptLibraryScreen() {
 
     return unsubscribe;
   }, [navigation]); // ✅ add navigation as dep safely
-
 
 
   useEffect(() => {
@@ -106,22 +112,33 @@ export default function PromptLibraryScreen() {
     />
   );
 
-  const handleDeletePrompt = async (id: string) => {
-    const updated = prompts.filter((p) => p.id !== id);
-    // setPrompts(updated);
-    setPrompts(updated); // ✅ update local state
-    await AsyncStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(updated));
+  const handleDeletePrompt = (id: string) => {
+    if (!hydrated) return; // 🚫 wait until AsyncStorage loads
 
+    if (confirmPromptDelete) {
+      setPendingDeleteId(id);       // 🔐 hold onto this ID
+      setShowConfirmModal(true);    // 👀 show modal
+    } else {
+      deletePrompt(id);             // 🚮 delete immediately
+    }
   };
 
+  const deletePrompt = async (id: string) => {
+    const updated = prompts.filter((p) => p.id !== id);
+    setPrompts(updated); // ✅ update local state
+    await AsyncStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(updated));
+  };
 
   const renderEmptyState = () => (
     <EmptyState
-      onCreatePress={() =>
-        navigation.navigate('Main', { screen: 'Sandbox', params: {} })
-      }
+      category={category}
+      onCreatePress={() => {
+        console.log('✅ Switching directly to Sandbox tab');
+        tabNavigation.navigate('Sandbox', {});
+      }}
     />
   );
+
 
   const toggleFolderPicker = () => {
     setPickerVisible((prev) => !prev);
@@ -133,16 +150,22 @@ export default function PromptLibraryScreen() {
         data={filteredPrompts}
         keyExtractor={(item) => item.id}
         renderItem={renderPromptItem}
-        // TODO: This was the folders thing. Need to find a new way to categorize since I used top level folders for tools
-        // ListHeaderComponent={
-        //   <><View style={styles.dropdownWrapper}>
-        //     <TouchableOpacity onPress={toggleFolderPicker} style={styles.dropdown}>
-        //       <Text style={styles.dropdownText}>{selectedFolder}</Text>
-        //       <MaterialIcons name="arrow-drop-down" size={24} color="#888" />
-        //     </TouchableOpacity>
-        //   </View><View style={{ height: 24 }} /></>
-        // }
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}
+        ListEmptyComponent={renderEmptyState}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingBottom: 80,
+          justifyContent: filteredPrompts.length === 0 ? 'center' : undefined,
+        }}
+
+      // TODO: This was the folders thing. Need to find a new way to categorize since I used top level folders for tools
+      // ListHeaderComponent={
+      //   <><View style={styles.dropdownWrapper}>
+      //     <TouchableOpacity onPress={toggleFolderPicker} style={styles.dropdown}>
+      //       <Text style={styles.dropdownText}>{selectedFolder}</Text>
+      //       <MaterialIcons name="arrow-drop-down" size={24} color="#888" />
+      //     </TouchableOpacity>
+      //   </View><View style={{ height: 24 }} /></>
+      // }
       />
 
       {isPickerVisible && (
@@ -163,6 +186,29 @@ export default function PromptLibraryScreen() {
           </View>
         </View>
       )}
+
+      <ConfirmModal
+        visible={showConfirmModal}
+        title="Delete Prompt?"
+        message="Are you sure you want to delete this prompt?"
+        confirmText="Delete"
+        cancelText="Cancel"
+        showCheckbox
+        onCancel={() => {
+          setShowConfirmModal(false);
+          setPendingDeleteId(null);
+        }}
+        onConfirm={(dontShowAgain) => {
+          if (dontShowAgain) {
+            setConfirmPromptDelete(false); // ✅ the setter is used here
+          }
+          if (pendingDeleteId) {
+            deletePrompt(pendingDeleteId);
+          }
+          setShowConfirmModal(false);
+          setPendingDeleteId(null);
+        }}
+      />
 
 
     </SafeAreaView>
@@ -289,3 +335,4 @@ const styles = StyleSheet.create({
 
 
 });
+

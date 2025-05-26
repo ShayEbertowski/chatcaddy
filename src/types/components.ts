@@ -25,3 +25,6 @@ export type Prompt = {
     folder: string
 };
 
+export type LibraryProps = {
+    category: 'prompts' | 'functions';
+};
