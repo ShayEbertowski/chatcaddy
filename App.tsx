@@ -18,6 +18,8 @@ import { ThemeProvider, useThemeMode } from './src/theme/ThemeProvider';
 import AvatarDrawerButton from './src/components/ui/AvatarDrawerButton';
 import PromptFunctionsScreen from './src/screens/toolbox/PromptFunctionsScreen';
 import LibraryScreen from './src/screens/library/LibraryScreen';
+import { light, dark } from './src/theme/colors';
+import { StatusBar } from 'expo-status-bar';
 
 
 const Tab = createBottomTabNavigator();
@@ -98,27 +100,38 @@ function AppWithTheme() {
   const { theme } = useThemeMode();
   const isDark = theme === 'dark';
 
+  const themeColors = isDark ? dark : light;
+
   const ChatCaddyTheme = {
     ...DefaultTheme,
     dark: isDark,
     colors: {
       ...DefaultTheme.colors,
-      background: isDark ? '#000' : '#fff',
+      background: themeColors.background,
+      card: themeColors.card,
+      text: themeColors.text,
+      border: themeColors.border,
+      primary: themeColors.primary,
+      notification: themeColors.primary,
     },
   };
 
   return (
-    <NavigationContainer theme={ChatCaddyTheme}>
-      <RootStack.Navigator>
-        <RootStack.Screen
-          name="Main"
-          component={DrawerWrapper}
-          options={{ headerShown: false }}
-        />
-      </RootStack.Navigator>
-    </NavigationContainer>
+    <>
+      <StatusBar style={isDark ? 'light' : 'dark'} /> {/* 👈 this fixes the icon color */}
+      <NavigationContainer theme={ChatCaddyTheme}>
+        <RootStack.Navigator>
+          <RootStack.Screen
+            name="Main"
+            component={DrawerWrapper}
+            options={{ headerShown: false }}
+          />
+        </RootStack.Navigator>
+      </NavigationContainer>
+    </>
   );
 }
+
 
 function AppRoot() {
   return (

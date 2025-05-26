@@ -7,8 +7,8 @@ import {
     StyleSheet,
 } from 'react-native';
 
-
 import { MaterialIcons } from '@expo/vector-icons';
+import { useColors } from '../../hooks/useColors';
 import PromptLibraryScreen from './PromptLibraryScreen';
 import FunctionLibraryScreen from './FunctionLibraryScreen';
 
@@ -24,6 +24,7 @@ const UnknownCategory: React.FC = () => (
 );
 
 export default function LibraryScreen() {
+    const colors = useColors();
     const [category, setCategory] = useState<LibraryType>('prompts');
     const [modalVisible, setModalVisible] = useState(false);
 
@@ -38,16 +39,16 @@ export default function LibraryScreen() {
         }
     }, [category]);
 
-
+    const styles = getStyles(colors);
 
     return (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
             <View style={styles.dropdownWrapper}>
                 <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.dropdown}>
                     <Text style={styles.dropdownText}>
                         {options.find((o) => o.value === category)?.label}
                     </Text>
-                    <MaterialIcons name="arrow-drop-down" size={24} color="#888" />
+                    <MaterialIcons name="arrow-drop-down" size={24} color={colors.secondaryText} />
                 </TouchableOpacity>
             </View>
             <View style={{ height: 24 }} />
@@ -76,51 +77,48 @@ export default function LibraryScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    header: {
-        padding: 16,
-        backgroundColor: '#fff',
-    },
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modal: {
-        backgroundColor: '#fff',
-        borderRadius: 10,
-        width: 250,
-        paddingVertical: 8,
-    },
-    modalItem: {
-        padding: 16,
-    },
-    modalText: {
-        fontSize: 16,
-        textAlign: 'center',
-    },
-    dropdownWrapper: {
-        paddingTop: 16,
-        paddingBottom: 12,
-        paddingHorizontal: 20,
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-    },
-    dropdown: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: '#f2f2f7',
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderRadius: 10,
-    },
-    dropdownText: {
-        fontSize: 16,
-        fontWeight: '500',
-        color: '#333',
-    },
-
-});
+const getStyles = (colors: ReturnType<typeof useColors>) =>
+    StyleSheet.create({
+        overlay: {
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        modal: {
+            backgroundColor: colors.card,
+            borderRadius: 10,
+            width: 250,
+            paddingVertical: 8,
+        },
+        modalItem: {
+            padding: 16,
+        },
+        modalText: {
+            fontSize: 16,
+            textAlign: 'center',
+            color: colors.text,
+        },
+        dropdownWrapper: {
+            paddingTop: 16,
+            paddingBottom: 12,
+            paddingHorizontal: 20,
+            backgroundColor: colors.background,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+        },
+        dropdown: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: colors.inputBackground,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            borderRadius: 10,
+        },
+        dropdownText: {
+            fontSize: 16,
+            fontWeight: '500',
+            color: colors.text,
+        },
+    });

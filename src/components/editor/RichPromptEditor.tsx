@@ -107,9 +107,9 @@ export default function RichPromptEditor({ text, onChangeText }: Props) {
                     setIsEditingVariable(true);
                     setShowInsertModal(true);
                 }}
-                style={styles.chip}
+                style={sharedStyles.chip}
             >
-                <Text style={styles.chipText}>{name}</Text>
+                <Text style={sharedStyles.chipText}>{name}</Text>
             </TouchableOpacity>
         );
     };
@@ -311,19 +311,7 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             gap: 8,
             marginTop: 10,
         },
-        chip: {
-            backgroundColor: colors.inputBackground,
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            borderRadius: 20,
-            marginRight: 6,
-            marginBottom: 6,
-        },
-        chipText: {
-            fontSize: 16,
-            fontWeight: '500',
-            color: colors.text,
-        },
+
         previewContainer: {
             marginTop: 16,
         },

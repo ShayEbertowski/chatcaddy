@@ -1,5 +1,6 @@
 // styles/shared.js
 import { StyleSheet } from 'react-native';
+import { Theme } from '../theme/types';
 
 const sharedStyles = StyleSheet.create({
   input: {
@@ -56,7 +57,7 @@ const sharedStyles = StyleSheet.create({
 export const { input, label, saveButton, saveButtonText, placeholderText, section, sectionTitle } = sharedStyles;
 
 
-export const getSharedStyles = (colors: Record<string, string>) =>
+export const getSharedStyles = ({ isDark, ...colors }: Theme) =>
   StyleSheet.create({
     divider: {
       height: 1.5,
@@ -72,5 +73,19 @@ export const getSharedStyles = (colors: Record<string, string>) =>
       paddingHorizontal: 4,
       borderRadius: 4,
     },
+    chip: {
+      backgroundColor: isDark ? '#1e2a38' : '#E6F0FF',
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 20,
+      marginRight: 6,
+      marginBottom: 6,
+    },
+    chipText: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: isDark ? '#66B2FF' : '#007AFF',
+    },
   });
+
 

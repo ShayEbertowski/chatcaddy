@@ -60,7 +60,7 @@ export default function PromptSandboxScreen() {
   const isEditing = !!route.params?.editId;
   const isFocused = useIsFocused();
   const [promptVariables, setPromptVariables] = useState<Record<string, string>>({});
-  const { prompt: editingPrompt, editId, autoRun } = route.params;
+  const { prompt: editingPrompt, editId, autoRun } = route.params ?? {};
 
   type RootStackParamList = {
     Main: NavigatorScreenParams<MainTabParamList>;
