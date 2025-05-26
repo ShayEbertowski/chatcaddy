@@ -5,6 +5,8 @@ import { ThemedSafeArea } from './ThemedSafeArea';
 import BaseModal from './BaseModal';
 import { runPrompt } from '../utils/runPrompt'; // adjust path if needed
 import { useVariableStore } from '../stores/useVariableStore';
+import { getSharedStyles } from '../styles/shared';
+import { useColors } from '../hooks/useColors';
 
 
 type PromptCardProps = {
@@ -24,6 +26,8 @@ export default function PromptCard({
     onDelete,
     onRun,
 }: PromptCardProps) {
+    const colors = useColors();
+    const sharedStyles = getSharedStyles(colors);
 
     const [showDetails, setShowDetails] = useState(false);
     const onCancel = () => setShowDetails(false);
@@ -50,6 +54,15 @@ export default function PromptCard({
         setIsLoading(false);
     };
 
+    const renderPreview = (raw: string): string => {
+        return raw.replace(/{{(.*?)}}/g, (_, rawContent) => {
+            const [key] = rawContent.split('=');
+            const variableName = key.trim();
+
+            const value = useVariableStore.getState().getVariable(variableName);
+            return value?.trim() || '?';
+        });
+    };
 
     return (
         <ThemedSafeArea>
@@ -61,8 +74,8 @@ export default function PromptCard({
                     <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
                         {title}
                     </Text>
-                    <Text style={styles.content} numberOfLines={1} ellipsizeMode="tail">
-                        {content}
+                    <Text style={sharedStyles.previewVariable} numberOfLines={1} ellipsizeMode="tail">
+                        {renderPreview(content)}
                     </Text>
                 </TouchableOpacity>
 
@@ -80,7 +93,7 @@ export default function PromptCard({
 
                 <BaseModal visible={showDetails} onRequestClose={onCancel} blur>
                     <Text style={styles.modalTitle}>{title}</Text>
-                    <Text style={styles.modalContent}>{content}</Text>
+                    <Text style={sharedStyles.previewVariable}>{renderPreview(content)}</Text>
                     <TouchableOpacity onPress={() => setShowDetails(false)}>
                         <Text style={{ color: '#007AFF', textAlign: 'center', marginTop: 16 }}>
                             Close

@@ -54,9 +54,8 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
     };
 
     loadPrompts(); // run once on mount
-  }, []); // ✅ load initially only
+  }, []);
 
-  // ✅ separately track refocuses
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', async () => {
       const stored = await AsyncStorage.getItem(PROMPT_STORAGE_KEY);
@@ -66,7 +65,7 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
     });
 
     return unsubscribe;
-  }, [navigation]); // ✅ add navigation as dep safely
+  }, [navigation]); 
 
 
   useEffect(() => {
@@ -103,7 +102,7 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
           params: {
             editId: item.id,
             prefill: item.content,
-            autoRun: false, // or true if you want it to auto-run when editing
+            autoRun: false, 
           },
         })
       }
@@ -113,19 +112,19 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
   );
 
   const handleDeletePrompt = (id: string) => {
-    if (!hydrated) return; // 🚫 wait until AsyncStorage loads
+    if (!hydrated) return; // wait until AsyncStorage loads
 
     if (confirmPromptDelete) {
-      setPendingDeleteId(id);       // 🔐 hold onto this ID
-      setShowConfirmModal(true);    // 👀 show modal
+      setPendingDeleteId(id);     
+      setShowConfirmModal(true);    
     } else {
-      deletePrompt(id);             // 🚮 delete immediately
+      deletePrompt(id);           
     }
   };
 
   const deletePrompt = async (id: string) => {
     const updated = prompts.filter((p) => p.id !== id);
-    setPrompts(updated); // ✅ update local state
+    setPrompts(updated); 
     await AsyncStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(updated));
   };
 
@@ -133,7 +132,6 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
     <EmptyState
       category={category}
       onCreatePress={() => {
-        console.log('✅ Switching directly to Sandbox tab');
         tabNavigation.navigate('Sandbox', {});
       }}
     />

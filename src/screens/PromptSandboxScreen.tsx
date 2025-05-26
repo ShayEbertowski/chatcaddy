@@ -30,6 +30,7 @@ import { runPrompt } from '../utils/runPrompt';
 import { useColors } from '../hooks/useColors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MainTabParamList } from '../types/navigation';
+import { cleanPromptVariables } from '../utils/cleanPrompt';
 
 export default function PromptSandboxScreen() {
   const [inputText, setInputText] = useState('');
@@ -68,7 +69,8 @@ export default function PromptSandboxScreen() {
     setResponse('');
 
     const filledValues = useVariableStore.getState().values;
-    const result = await runPrompt(inputText, filledValues);
+    const cleanedPrompt = cleanPromptVariables(inputText); // 🧼 strip defaults
+    const result = await runPrompt(cleanedPrompt, filledValues);
 
     if ('error' in result) {
       Alert.alert('Error', result.error);
@@ -80,11 +82,14 @@ export default function PromptSandboxScreen() {
   };
 
 
+
   const handleSavePrompt = async () => {
     if (!promptsLoaded) {
       Alert.alert('Please wait', 'Still loading existing prompts.');
       return;
     }
+
+    // const cleanedPrompt = text.replace(/{{(.*?)=(.*?)}}/g, (_, key) => `{{${key.trim()}}}`);
 
     const normalize = (str: string) => str.trim().toLowerCase();
 

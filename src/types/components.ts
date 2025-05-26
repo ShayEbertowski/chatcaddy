@@ -28,3 +28,7 @@ export type Prompt = {
 export type LibraryProps = {
     category: 'prompts' | 'functions';
 };
+
+export type PromptPart =
+    | { type: 'text'; value: string }
+    | { type: 'variable'; value: string; defaultValue?: string };

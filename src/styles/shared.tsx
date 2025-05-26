@@ -64,5 +64,13 @@ export const getSharedStyles = (colors: Record<string, string>) =>
       marginVertical: 16,
       opacity: 0.6,
     },
+    previewVariable: {
+      backgroundColor: colors.inputBackground,
+      color: colors.text,
+      fontStyle: 'italic',
+      fontWeight: 'bold',
+      paddingHorizontal: 4,
+      borderRadius: 4,
+    },
   });
 

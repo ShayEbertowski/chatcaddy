@@ -79,7 +79,6 @@ export default function FunctionLibraryScreen({ category }: LibraryProps) {
         <EmptyState
             category={category}
             onCreatePress={() => {
-                console.log('✅ Switching directly to Sandbox tab');
                 tabNavigation.navigate('Sandbox', {});
             }}
         />

@@ -18,10 +18,9 @@ import InsertModal from './modals/InsertModal';
 import { useFunctionStore } from '../stores/useFunctionStore';
 import { useSnippetStore } from '../stores/useSnippetStore';
 import { getEntityForEdit } from '../utils/generateEntityForEdit';
+import { PromptPart } from '../types/components';
 
-type PromptPart =
-    | { type: 'text'; value: string }
-    | { type: 'variable'; value: string };
+
 
 type Props = {
     text: string;
@@ -63,35 +62,63 @@ export default function RichPromptEditor({
         setShowVariableModal(true);
     };
 
-
     const parsePrompt = (input: string): PromptPart[] => {
         const parts = input.split(/({{.*?}})/g);
         return parts.map(part => {
-            const match = part.match(/^{{(.*?)}}$/);
-            if (match) return { type: 'variable', value: match[1] };
+            const match = part.match(/^{{\s*(.*?)\s*}}$/);
+            if (match) {
+                const raw = match[1].trim(); // " color = red "
+                const [key, ...rest] = raw.split('=');
+                const defaultValue = rest.join('=').trim(); // handles = in the default too
+
+                return {
+                    type: 'variable',
+                    value: key.trim(),
+                    defaultValue: defaultValue || undefined,
+                };
+            }
             return { type: 'text', value: part };
         });
     };
+
+
 
     const usedVars = Array.from(
         new Set(
             parsePrompt(text)
                 .filter((part) => part.type === 'variable')
-                .map((part) => part.value)
+                .map((part) => part.type === 'variable' ? part.value.split('=')[0].trim() : '')
         )
     );
 
-    const preview = text.replace(/{{(.*?)}}/g, (_, name) => {
-        const value = useVariableStore.getState().getVariable(name);
+    useEffect(() => {
+        const parts = parsePrompt(text);
+        parts.forEach((part) => {
+            if (part.type === 'variable' && part.defaultValue !== undefined) {
+                const key = part.value.split('=')[0].trim();
+                const existing = useVariableStore.getState().getVariable(key);
+                if (!existing) {
+                    setVariable(key, part.defaultValue);
+                }
+            }
+        });
+    }, [text]);
+
+    const preview = text.replace(/{{(.*?)}}/g, (_, raw) => {
+        const [name] = raw.split('=');
+        const value = useVariableStore.getState().getVariable(name.trim());
         return value?.trim() ? value : '?';
     });
+
 
     const parsePreviewChunks = (str: string): { type: 'text' | 'variable', value: string }[] => {
         const parts = str.split(/({{.*?}})/g);
         return parts.map(part => {
             const match = part.match(/^{{(.*?)}}$/);
             if (match) {
-                return { type: 'variable', value: match[1] };
+                const raw = match[1];
+                const [key] = raw.split('=');
+                return { type: 'variable', value: key.trim() };
             }
             return { type: 'text', value: part };
         });
@@ -133,21 +160,20 @@ export default function RichPromptEditor({
         setShowVariableModal(false);
     };
 
-
-
-
     const renderPart = (part: PromptPart, i: number) => {
         if (part.type === 'text') return null;
 
-        const name = part.value;
+        const raw = part.value;
+        const [name, defaultValue] = raw.split('=');
         const { type, value } = getEntityForEdit(name);
+        const displayValue = value || defaultValue || '';
 
         return (
             <TouchableOpacity
                 key={i}
                 onPress={() => {
                     setTempVariableName(name);
-                    setTempVariableValue(value);
+                    setTempVariableValue(displayValue);
                     setEditMode(type);
                     setIsEditingVariable(true);
                     setShowInsertModal(true);
@@ -158,9 +184,6 @@ export default function RichPromptEditor({
             </TouchableOpacity>
         );
     };
-
-
-
 
     const getVariableIcon = (name: string): string | undefined => {
         const lower = name.toLowerCase();
@@ -185,7 +208,6 @@ export default function RichPromptEditor({
     };
 
     return (
-
         <View style={styles.container}>
             {/* Row with +Variable aligned right */}
             <View style={styles.headerRow}>
@@ -240,26 +262,17 @@ export default function RichPromptEditor({
                         </Text>
                     ) : (
                         <View style={styles.previewContainer}>
-                            <Text style={styles.previewText}>
+                            <Text style={sharedStyles.previewVariable}>
                                 {parsePreviewChunks(text).map((chunk, i) => {
-                                    if (chunk.type === 'variable') {
-                                        const rawValue = useVariableStore.getState().getVariable(chunk.value);
-                                        const isMissing = !rawValue?.trim();
-                                        const display = isMissing ? '⚠️' : rawValue;
-                                        const icon = isMissing ? undefined : getVariableIcon(chunk.value);
+                                    const isVariable = chunk.type === 'variable';
+                                    const value = isVariable
+                                        ? useVariableStore.getState().getVariable(chunk.value)?.trim() || '?'
+                                        : chunk.value;
 
-                                        return (
-                                            <Text key={i} style={styles.previewVariable}>
-                                                {icon ? `${icon} ` : ''}
-                                                {display}
-                                            </Text>
-                                        );
-                                    }
-
-                                    return <Text key={i}>{chunk.value}</Text>;
-                                })}
-
+                                    return value;
+                                }).join('')}
                             </Text>
+
                         </View>
                     )}
                 </View>
@@ -267,15 +280,6 @@ export default function RichPromptEditor({
             </CollapsibleSection>
 
             <View style={sharedStyles.divider} />
-
-            {/* <VariableModal
-                visible={showVariableModal}
-                variableName={tempVariableName}
-                variableValue={tempVariableValue}
-                onChangeName={setTempVariableName}
-                onChangeValue={setTempVariableValue}
-                onClose={() => setShowVariableModal(false)}
-                onInsert={insertNamedVariable} /> */}
 
             <InsertModal
                 visible={showInsertModal}
@@ -409,12 +413,5 @@ const getStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
         lineHeight: 22,
         paddingBottom: 12,
     },
-    previewVariable: {
-        backgroundColor: colors.inputBackground,
-        color: colors.text,
-        fontStyle: 'italic',
-        fontWeight: 'bold',
-        paddingHorizontal: 4,
-        borderRadius: 4,
-    },
+
 });
