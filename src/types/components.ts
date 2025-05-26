@@ -26,6 +26,9 @@ export type Prompt = {
     variables?: Record<string, string>;
 };
 
+export type NewPrompt = Omit<Prompt, 'id'>;
+
+
 export type LibraryProps = {
     category: 'prompts' | 'functions';
 };

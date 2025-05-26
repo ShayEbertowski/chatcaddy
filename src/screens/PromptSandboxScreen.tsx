@@ -25,7 +25,7 @@ import RichPromptEditor from '../components/RichPromptEditor';
 import { useVariableStore } from '../stores/useVariableStore';
 import { placeholderText } from '../styles/shared';
 import { generateSmartTitle } from '../utils/generateSmartTitle';
-import { Prompt, savePrompt } from '../utils/savePrompt';
+import { Prompt, saveOrUpdatePrompt } from '../utils/savePrompt';
 import { runPrompt } from '../utils/runPrompt';
 import { useColors } from '../hooks/useColors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -61,6 +61,7 @@ export default function PromptSandboxScreen() {
   const [onDiscardConfirmed, setOnDiscardConfirmed] = useState<() => void>(() => { });
   const [showResultModal, setShowResultModal] = useState(false);
   const [promptVariables, setPromptVariables] = useState<Record<string, string>>({});
+  const [hasSaved, setHasSaved] = useState(false);
 
   const { prompt: editingPrompt, editId, autoRun } = route.params;
 
@@ -81,6 +82,28 @@ export default function PromptSandboxScreen() {
     }
 
     setIsLoading(false);
+  };
+
+  const handleConfirmSave = async () => {
+    const updatedPrompt = {
+      ...(isEditing ? { id: editId! } : { id: uuidv4() }),
+      title: promptTitle.trim() || 'Untitled',
+      content: inputText,
+      folder: selectedFolder,
+      variables: promptVariables,
+    };
+
+    try {
+      await saveOrUpdatePrompt(updatedPrompt, isEditing);
+      setHasSaved(true);
+      setShowConfirmSaveModal(false);
+      setInputText('');
+      setResponse('');
+      useVariableStore.getState().clearAll();
+      console.log(`✅ Prompt ${isEditing ? 'updated' : 'saved'}`);
+    } catch {
+      Alert.alert('Error', `Failed to ${isEditing ? 'update' : 'save'} prompt.`);
+    }
   };
 
 
@@ -140,7 +163,7 @@ export default function PromptSandboxScreen() {
 
   useEffect(() => {
     const handler = (e: any) => {
-      if (!isEditing) return;
+      if (!isEditing || hasSaved) return;
 
       e.preventDefault();
 
@@ -168,7 +191,7 @@ export default function PromptSandboxScreen() {
   }, [navigation, isEditing]);
 
   useEffect(() => {
-    if (!isFocused && isEditing && !pendingReset) {
+    if (!isFocused && isEditing && !pendingReset && !hasSaved) {
       Alert.alert(
         'Discard changes?',
         'You are editing a prompt. Discard your changes?',
@@ -305,26 +328,7 @@ export default function PromptSandboxScreen() {
           prompt={inputText}
           onChangeTitle={setPromptTitle}
           onCancel={() => setShowConfirmSaveModal(false)}
-          onConfirm={async () => {
-            const newPrompt = {
-              id: uuidv4(),
-              title: promptTitle.trim() || 'Untitled',
-              content: inputText,
-              folder: selectedFolder, // 👈 include the folder!
-              variables: promptVariables,
-            };
-
-            try {
-              await savePrompt(newPrompt);
-              console.log('✅ Prompt saved');
-              setShowConfirmSaveModal(false);
-              setInputText('');
-              setResponse('');
-              useVariableStore.getState().clearAll();
-            } catch {
-              Alert.alert('Error', 'Failed to save prompt.');
-            }
-          }}
+          onConfirm={handleConfirmSave}
           selectedFolder={selectedFolder}
         />
 
