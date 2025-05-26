@@ -11,9 +11,9 @@ import {
 import VariableModal from './modals/VariableModal'; // adjust path as needed
 import { useVariableStore } from '../stores/useVariableStore';
 import CollapsibleSection from './CollapsibleSection';
-import { placeholderText } from '../styles/shared';
 import { getVariableIcon } from '../utils/getVariableIcon';
 import { useColors } from '../hooks/useColors';
+import { getSharedStyles, placeholderText } from '../styles/shared';
 
 type PromptPart =
     | { type: 'text'; value: string }
@@ -29,7 +29,8 @@ export default function RichPromptEditor({
     onChangeText
 }: Props) {
     const [selection, setSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
-
+    const colors = useColors();
+    const sharedStyles = getSharedStyles(colors);
     // Modal state
     const [showVariableModal, setShowVariableModal] = useState(false);
     const [tempVariableName, setTempVariableName] = useState('');
@@ -42,7 +43,6 @@ export default function RichPromptEditor({
     const filledValues = useVariableStore((state) => state.values);
     const setVariable = useVariableStore((state) => state.setVariable);
 
-    const colors = useColors();
     const styles = getStyles(colors);
 
     const handleEditVariable = (name: string) => {
@@ -216,7 +216,7 @@ export default function RichPromptEditor({
                 </View>
             </CollapsibleSection>
 
-            <View style={styles.divider} />
+            <View style={sharedStyles.divider} />
 
             <CollapsibleSection
                 title="preview"
@@ -256,7 +256,7 @@ export default function RichPromptEditor({
 
             </CollapsibleSection>
 
-            <View style={styles.divider} />
+            <View style={sharedStyles.divider} />
 
             <VariableModal
                 visible={showVariableModal}
@@ -279,13 +279,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
         paddingHorizontal: 16,
         marginBottom: 12,
     },
-    divider: {
-        height: 1.5, // a bit thicker
-        backgroundColor: colors.border, // theme-aware
-        marginVertical: 16, // more spacing to breathe
-        opacity: 0.6, // softens it a bit for elegance
-    },
-
     container: {
         padding: 4,
     },

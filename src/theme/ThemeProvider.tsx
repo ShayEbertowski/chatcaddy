@@ -1,6 +1,12 @@
 // ✅ src/theme/ThemeProvider.tsx
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+    createContext,
+    useContext,
+    useEffect,
+    useState,
+    useMemo,
+} from 'react';
 import { Appearance, ColorSchemeName } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -34,14 +40,17 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         const listener = Appearance.addChangeListener(({ colorScheme }) => {
             if (mode === 'system') {
-                setTheme(colorScheme);
+                setTheme((prev) =>
+                    prev !== colorScheme ? colorScheme : prev
+                );
             }
         });
         return () => listener.remove();
     }, [mode]);
 
     useEffect(() => {
-        setTheme(mode === 'system' ? Appearance.getColorScheme() : mode);
+        const next = mode === 'system' ? Appearance.getColorScheme() : mode;
+        setTheme((prev) => (prev !== next ? next : prev));
     }, [mode]);
 
     const updateMode = async (newMode: ThemeMode) => {
@@ -49,8 +58,14 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         await AsyncStorage.setItem(STORAGE_KEY, newMode);
     };
 
+    // ✅ Prevent re-renders by memoizing the context value
+    const value = useMemo(
+        () => ({ theme, mode, setMode: updateMode }),
+        [theme, mode]
+    );
+
     return (
-        <ThemeContext.Provider value={{ theme, mode, setMode: updateMode }}>
+        <ThemeContext.Provider value={value}>
             {children}
         </ThemeContext.Provider>
     );

@@ -49,9 +49,20 @@ const sharedStyles = StyleSheet.create({
     color: '#8e8e93',
     marginTop: 24,
     marginBottom: 12,
-  }
-
+  },
 
 });
 
 export const { input, label, saveButton, saveButtonText, placeholderText, section, sectionTitle } = sharedStyles;
+
+
+export const getSharedStyles = (colors: Record<string, string>) =>
+  StyleSheet.create({
+    divider: {
+      height: 1.5,
+      backgroundColor: colors.border,
+      marginVertical: 16,
+      opacity: 0.6,
+    },
+  });
+

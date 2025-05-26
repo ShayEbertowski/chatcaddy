@@ -1,17 +1,38 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useColors } from '../hooks/useColors'; // Adjust if needed
+import { useColors } from '../hooks/useColors';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 
 type EmptyStateProps = {
-    bounceValue: Animated.Value;
     onCreatePress: () => void;
 };
 
-export default function EmptyState({ bounceValue, onCreatePress }: EmptyStateProps) {
+export default function EmptyState({ onCreatePress }: EmptyStateProps) {
     const colors = useColors();
+    const bounceValue = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        const loop = Animated.loop(
+            Animated.sequence([
+                Animated.timing(bounceValue, {
+                    toValue: 1.05,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(bounceValue, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: true,
+                }),
+                Animated.delay(3000),
+            ])
+        );
+
+        loop.start();
+        return () => loop.stop();
+    }, []);
 
     return (
         <Animated.View style={[styles.container, { transform: [{ scale: bounceValue }] }]}>

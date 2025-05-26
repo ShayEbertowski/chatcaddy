@@ -47,14 +47,14 @@ export default function PromptCard({
 const styles = StyleSheet.create({
     card: {
         backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 16,
+        borderRadius: 16,
+        padding: 18,
+        marginBottom: 20,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.12,
+        shadowRadius: 10,
+        elevation: 7, // was 2
     },
     title: {
         fontSize: 16,

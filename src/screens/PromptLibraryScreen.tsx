@@ -17,6 +17,9 @@ import { RootStackParamList } from '../types/navigation';
 import EmptyState from '../components/EmptyState';
 import PromptCard from '../components/PromptCard';
 import { Prompt } from '../types/components';
+import { useFolderStore } from '../stores/useFolderStore';
+import { shallow } from 'zustand/shallow';
+
 
 const PROMPT_STORAGE_KEY = '@prompt_library';
 
@@ -24,10 +27,12 @@ export default function PromptLibraryScreen() {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [tapBehavior, setTapBehavior] = useState('preview');
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const bounceValue = useRef(new Animated.Value(1)).current;
+
+  const [isPickerVisible, setPickerVisible] = useState(false);
 
   const [selectedFolder, setSelectedFolder] = useState('All');
-  const [isPickerVisible, setPickerVisible] = useState(false);
+  const folders = useFolderStore().folders.filter(f => f.type === 'prompts');
+
 
   const filteredPrompts = prompts.filter(p =>
     selectedFolder === 'All' || p.folder === selectedFolder
@@ -35,21 +40,27 @@ export default function PromptLibraryScreen() {
 
   useEffect(() => {
     const loadPrompts = async () => {
-      try {
-        const stored = await AsyncStorage.getItem(PROMPT_STORAGE_KEY);
-        if (stored) {
-          setPrompts(JSON.parse(stored));
-        }
-      } catch (err) {
-        console.error('Failed to load prompts:', err);
+      const stored = await AsyncStorage.getItem(PROMPT_STORAGE_KEY);
+      if (stored) {
+        setPrompts(JSON.parse(stored));
       }
     };
 
-    loadPrompts(); // 👈 load immediately on mount
+    loadPrompts(); // run once on mount
+  }, []); // ✅ load initially only
 
-    const unsubscribe = navigation.addListener('focus', loadPrompts);
+  // ✅ separately track refocuses
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', async () => {
+      const stored = await AsyncStorage.getItem(PROMPT_STORAGE_KEY);
+      if (stored) {
+        setPrompts(JSON.parse(stored));
+      }
+    });
+
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation]); // ✅ add navigation as dep safely
+
 
 
   useEffect(() => {
@@ -58,30 +69,6 @@ export default function PromptLibraryScreen() {
       setTapBehavior(behavior || 'preview');
     };
     loadTapBehavior();
-  }, []);
-
-  useEffect(() => {
-    const bounceLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bounceValue, {
-          toValue: 1.05,
-          duration: 300,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(bounceValue, {
-          toValue: 1,
-          duration: 300,
-          easing: Easing.in(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.delay(3000), // wait 3 seconds before next bounce
-      ])
-    );
-
-    bounceLoop.start();
-
-    return () => bounceLoop.stop(); // cleanup if screen unmounts
   }, []);
 
   const handlePromptTap = async (promptText: string) => {
@@ -121,14 +108,15 @@ export default function PromptLibraryScreen() {
 
   const handleDeletePrompt = async (id: string) => {
     const updated = prompts.filter((p) => p.id !== id);
-    setPrompts(updated);
+    // setPrompts(updated);
+    setPrompts(updated); // ✅ update local state
     await AsyncStorage.setItem(PROMPT_STORAGE_KEY, JSON.stringify(updated));
+
   };
 
 
   const renderEmptyState = () => (
     <EmptyState
-      bounceValue={bounceValue}
       onCreatePress={() =>
         navigation.navigate('Main', { screen: 'Sandbox', params: {} })
       }
@@ -138,8 +126,6 @@ export default function PromptLibraryScreen() {
   const toggleFolderPicker = () => {
     setPickerVisible((prev) => !prev);
   };
-
-  const folders = ['All', 'Inspiration', 'Dev', 'Marketing'];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -153,7 +139,7 @@ export default function PromptLibraryScreen() {
               <Text style={styles.dropdownText}>{selectedFolder}</Text>
               <MaterialIcons name="arrow-drop-down" size={24} color="#888" />
             </TouchableOpacity>
-          </View><View style={{ height: 8 }} /></>
+          </View><View style={{ height: 24 }} /></>
         }
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}
       />
@@ -163,14 +149,14 @@ export default function PromptLibraryScreen() {
           <View style={styles.modal}>
             {folders.map((folder) => (
               <TouchableOpacity
-                key={folder}
+                key={folder.id}
                 onPress={() => {
-                  setSelectedFolder(folder);
+                  setSelectedFolder(folder.id);
                   setPickerVisible(false);
                 }}
                 style={styles.modalItem}
               >
-                <Text style={styles.modalItemText}>{folder}</Text>
+                <Text style={styles.modalItemText}>{folder.id}</Text>
               </TouchableOpacity>
             ))}
           </View>

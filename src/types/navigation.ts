@@ -20,3 +20,9 @@ export type RootStackParamList = {
     };
   };
 };
+
+export type ToolboxStackParamList = {
+  ToolboxHome: undefined;
+  PromptFunctions: undefined;
+  // Add more Toolbox-related screens as needed
+};
