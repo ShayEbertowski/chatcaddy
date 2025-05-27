@@ -20,6 +20,7 @@ import PromptFunctionsScreen from './src/screens/toolbox/PromptFunctionsScreen';
 import LibraryScreen from './src/screens/library/LibraryScreen';
 import { light, dark } from './src/theme/colors';
 import { StatusBar } from 'expo-status-bar';
+import RunPromptScreen from './src/screens/RunPromptScreen';
 
 
 const Tab = createBottomTabNavigator();
@@ -39,6 +40,7 @@ function ToolboxNavigator() {
     </ToolboxStack.Navigator>
   );
 }
+
 
 function MainTabs() {
   const { theme } = useThemeMode();
@@ -126,7 +128,13 @@ function AppWithTheme() {
             component={DrawerWrapper}
             options={{ headerShown: false }}
           />
+          <RootStack.Screen
+            name="RunPrompt"
+            component={RunPromptScreen}
+            options={{ title: 'Run Prompt' }}
+          />
         </RootStack.Navigator>
+
       </NavigationContainer>
     </>
   );

@@ -5,6 +5,7 @@ type PromptFunction = {
     id: string;
     name: string;
     value: string;
+    folder?: string;
 };
 
 type FunctionState = {

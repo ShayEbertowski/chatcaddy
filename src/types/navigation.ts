@@ -9,6 +9,9 @@ export type MainTabParamList = {
     editId?: string;
   };
   Settings: undefined;
+  RunPrompt: {
+    prompt: Prompt;
+  }
 };
 
 export type RootStackParamList = {

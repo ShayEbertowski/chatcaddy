@@ -50,6 +50,9 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
     setPrompts(stored);
   };
 
+  const [showRunModal, setShowRunModal] = useState(false);
+
+
   useEffect(() => {
     refreshPrompts();
   }, []);
@@ -68,8 +71,13 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
   }, []);
 
   const handlePromptTap = (prompt: Prompt) => {
-    setSelectedPrompt(prompt);
+    // navigation.navigate('Main', {
+    //   screen: 'RunPrompt', // 👈 your new screen name
+    //   params: { prompt },  // pass prompt as-is
+    // });
+    tabNavigation.navigate('RunPrompt', { prompt });
   };
+
 
   const handleDeletePrompt = (id: string) => {
     if (!hydrated) return;
@@ -101,7 +109,6 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
         })
       }
       onDelete={() => handleDeletePrompt(item.id)}
-      onRun={() => handlePromptTap(item)}
     />
   );
 
@@ -143,24 +150,6 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
             ))}
           </View>
         </View>
-      )}
-
-      {selectedPrompt && (
-        <BaseModal
-          visible={true}
-          onRequestClose={() => setSelectedPrompt(null)}
-          blur
-        >
-          <Text style={styles.modalTitle}>{selectedPrompt.title}</Text>
-          <Text style={styles.modalContent}>{selectedPrompt.content}</Text>
-
-          <TouchableOpacity
-            style={styles.modalCloseButton}
-            onPress={() => setSelectedPrompt(null)}
-          >
-            <Text style={styles.modalCloseText}>Close</Text>
-          </TouchableOpacity>
-        </BaseModal>
       )}
 
       <ConfirmModal

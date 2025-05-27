@@ -24,7 +24,7 @@ import SavePromptModal from '../../components/modals/SavePromptModal';
 import RichPromptEditor from '../../components/editor/RichPromptEditor';
 
 import { useVariableStore } from '../../stores/useVariableStore';
-import { placeholderText } from '../../styles/shared';
+import { getSharedStyles, placeholderText } from '../../styles/shared';
 import { runPrompt } from '../../utils/prompt/runPrompt';
 import { useColors } from '../../hooks/useColors';
 import { MainTabParamList } from '../../types/navigation';
@@ -53,6 +53,7 @@ export default function PromptSandboxScreen() {
 
   const colors = useColors();
   const styles = getStyles(colors);
+  const sharedStyles = getSharedStyles(colors);
   const saveButtonDisabled = inputText.trim() === '';
   const saveButtonIconColor = saveButtonDisabled ? colors.secondaryText : colors.primary;
   const saveButtonTextColor = saveButtonDisabled ? colors.secondaryText : colors.primary;
@@ -228,20 +229,20 @@ export default function PromptSandboxScreen() {
           isOpen={showResponse}
           onToggle={() => setShowResponse(!showResponse)}
         >
-          <View style={styles.section}>
+          <View style={sharedStyles.section}>
             {isLoading ? (
-              <View style={styles.loadingContainer}>
+              <View style={sharedStyles.loadingContainer}>
                 <ActivityIndicator size="small" color="#007aff" />
-                <Text style={styles.loadingText}>Running...</Text>
+                <Text style={sharedStyles.loadingText}>Running...</Text>
               </View>
             ) : response === '' ? (
               <Text style={placeholderText}>Response will appear here after you run the prompt.</Text>
             ) : (
               <>
-                <Text style={styles.response}>{response}</Text>
+                <Text style={sharedStyles.response}>{response}</Text>
                 <View style={{ alignItems: 'flex-end', marginTop: 10 }}>
                   <TouchableOpacity onPress={() => setResponse('')}>
-                    <Text style={styles.clearButton}>Clear</Text>
+                    <Text style={sharedStyles.clearButton}>Clear</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -291,27 +292,7 @@ export default function PromptSandboxScreen() {
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
   StyleSheet.create({
-    section: {
-      backgroundColor: colors.card,
-      borderRadius: 12,
-      paddingVertical: 10,
-      paddingHorizontal: 16,
-      marginBottom: 12,
-    },
-    response: {
-      padding: 12,
-      color: colors.text,
-    },
-    clearButton: {
-      color: colors.error,
-      fontWeight: '400',
-      fontSize: 15,
-      paddingTop: 16,
-    },
-    loadingText: {
-      fontSize: 15,
-      color: colors.secondaryText,
-    },
+
     runButton: {
       backgroundColor: colors.primary,
     },
@@ -341,10 +322,5 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
       padding: 20,
       paddingBottom: 100,
     },
-    loadingContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      padding: 12,
-    },
+   
   });

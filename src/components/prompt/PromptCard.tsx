@@ -10,7 +10,6 @@ type PromptCardProps = {
     onPress: () => void;
     onEdit: () => void;
     onDelete: () => void;
-    onRun: () => void;
 };
 
 export default function PromptCard({

@@ -86,6 +86,33 @@ export const getSharedStyles = ({ isDark, ...colors }: Theme) =>
       fontWeight: '500',
       color: isDark ? '#66B2FF' : '#007AFF',
     },
+    section: {
+      backgroundColor: colors.card,
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      marginBottom: 12,
+    },
+    response: {
+      padding: 12,
+      color: colors.text,
+    },
+    clearButton: {
+      color: colors.error,
+      fontWeight: '400',
+      fontSize: 15,
+      paddingTop: 16,
+    },
+    loadingText: {
+      fontSize: 15,
+      color: colors.secondaryText,
+    },
+    loadingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      padding: 12,
+    },
   });
 
 

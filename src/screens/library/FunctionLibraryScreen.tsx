@@ -30,8 +30,9 @@ export default function FunctionLibraryScreen({ category }: LibraryProps) {
     const [selectedFolder, setSelectedFolder] = useState('All');
 
     const folders = useFolderStore().folders.filter(f => f.type === 'prompts');
-    const filteredFunctions = filterByFolder(functions, selectedFolder);
-
+    const filteredFunctions = selectedFolder === 'All'
+        ? functions
+        : functions.filter((f: any) => f.folder === selectedFolder);
 
     useEffect(() => {
         const load = async () => {
@@ -101,7 +102,6 @@ export default function FunctionLibraryScreen({ category }: LibraryProps) {
                 })
             }
             onDelete={() => handleDeleteFunction(item.id)}
-            onRun={() => handleFunctionTap(item)}
         />
     );
 
@@ -109,39 +109,6 @@ export default function FunctionLibraryScreen({ category }: LibraryProps) {
     const toggleFolderPicker = () => {
         setPickerVisible((prev) => !prev);
     };
-
-    useEffect(() => {
-        const seedFunctions = async () => {
-            const existing = await AsyncStorage.getItem(FUNCTION_STORAGE_KEY);
-            if (existing) return; // Don't overwrite if already seeded
-
-            const seed = [
-                {
-                    id: 'fn-1',
-                    title: 'Summarize Text',
-                    content: `Summarize the following text in 3 bullet points: "{{input}}"`,
-                    folder: 'all-functions',
-                },
-                {
-                    id: 'fn-2',
-                    title: 'Generate Music Prompt',
-                    content: `Compose a melody prompt in the style of {{artist}}, using the theme "{{theme}}"`,
-                    folder: 'dev-tools',
-                },
-                {
-                    id: 'fn-3',
-                    title: 'Regex Extractor',
-                    content: `Extract all matches using this regex: "{{pattern}}" from this text: "{{text}}"`,
-                    folder: 'dev-tools',
-                },
-            ];
-
-            await AsyncStorage.setItem(FUNCTION_STORAGE_KEY, JSON.stringify(seed));
-            setFunctions(seed); // Show immediately
-        };
-
-        seedFunctions();
-    }, []);
 
 
     return (
