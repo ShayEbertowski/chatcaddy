@@ -24,9 +24,11 @@ import { PromptPart } from '../../types/prompt';
 type Props = {
     text: string;
     onChangeText: (newText: string) => void;
+    entityType: 'Prompt' | 'Function' | 'Snippet';
+    onChangeEntityType: (newType: 'Prompt' | 'Function' | 'Snippet') => void;
 };
 
-export default function RichPromptEditor({ text, onChangeText }: Props) {
+export default function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType }: Props) {
     const [selection, setSelection] = useState({ start: 0, end: 0 });
     const [showInsertModal, setShowInsertModal] = useState(false);
     const [isEditingVariable, setIsEditingVariable] = useState(false);
@@ -42,6 +44,9 @@ export default function RichPromptEditor({ text, onChangeText }: Props) {
     const colors = useColors();
     const sharedStyles = getSharedStyles(colors);
     const styles = getStyles(colors);
+
+    // const [entityType, setEntityType] = useState<'Prompt' | 'Function' | 'Snippet'>('Prompt');
+
 
     const parsedPrompt = useMemo(() => {
         const parts = text.split(/({{.*?}})/g);
@@ -163,6 +168,31 @@ export default function RichPromptEditor({ text, onChangeText }: Props) {
                     <Text style={styles.addButtonText}>+ Insert</Text>
                 </TouchableOpacity>
             </View>
+
+            <View style={styles.typeSelector}>
+                {['Prompt', 'Function', 'Snippet'].map((type) => (
+                    <TouchableOpacity
+                        key={type}
+                        onPress={() => onChangeEntityType(type as typeof entityType)}
+                        style={[
+                            styles.typeButton,
+                            entityType === type && styles.typeButtonActive,
+                        ]}
+                    >
+                        <Text
+                            style={[
+                                styles.typeButtonText,
+                                entityType === type && styles.typeButtonTextActive,
+                            ]}
+                        >
+                            {type}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
+
+
 
             <TextInput
                 value={text}
@@ -315,4 +345,33 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
         previewContainer: {
             marginTop: 16,
         },
+        typeSelector: {
+            flexDirection: 'row',
+            marginBottom: 12,
+            gap: 8,
+        },
+
+        typeButton: {
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: 6,
+            paddingHorizontal: 10,
+            paddingVertical: 4,
+            backgroundColor: colors.card,
+        },
+
+        typeButtonActive: {
+            backgroundColor: colors.primary,
+        },
+
+        typeButtonText: {
+            fontSize: 14,
+            color: colors.text,
+        },
+
+        typeButtonTextActive: {
+            color: colors.onPrimary,
+            fontWeight: '600',
+        },
+
     });

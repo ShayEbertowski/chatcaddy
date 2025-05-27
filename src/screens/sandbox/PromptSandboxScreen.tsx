@@ -35,6 +35,8 @@ import {
   saveOrUpdatePrompt,
   loadPrompts,
 } from '../../utils/prompt/promptManager';
+import { v4 as uuidv4 } from 'uuid';
+
 
 export default function PromptSandboxScreen() {
   const [inputText, setInputText] = useState('');
@@ -63,6 +65,9 @@ export default function PromptSandboxScreen() {
   const [promptVariables, setPromptVariables] = useState<Record<string, string>>({});
   const { prompt: editingPrompt, editId, autoRun } = route.params ?? {};
 
+  const [entityType, setEntityType] = useState<'Prompt' | 'Function' | 'Snippet'>('Prompt');
+
+
   type RootStackParamList = {
     Main: NavigatorScreenParams<MainTabParamList>;
   };
@@ -86,14 +91,45 @@ export default function PromptSandboxScreen() {
     setIsLoading(false);
   };
 
+  function preparePromptToSave({
+    id,
+    inputText,
+    title,
+    folder,
+    isEdit,
+    type,
+  }: {
+    id?: string;
+    inputText: string;
+    title: string;
+    folder: string;
+    isEdit: boolean;
+    type: 'Prompt' | 'Function' | 'Snippet';
+  }) {
+    return {
+      id: id ?? uuidv4(),
+      content: inputText,
+      title,
+      folder,
+      type,
+      variables: useVariableStore.getState().values,
+    };
+  }
+
+
   const handleConfirmSave = async () => {
+    console.log("🥶");
+
     const updatedPrompt = preparePromptToSave({
       id: editId,
       inputText,
       title: promptTitle,
       folder: selectedFolder,
       isEdit: isEditing,
+      type: entityType,
     });
+
+    console.log("🌯");
 
     try {
       await saveOrUpdatePrompt(updatedPrompt, isEditing);
@@ -222,7 +258,7 @@ export default function PromptSandboxScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardDismissMode="on-drag">
-        <RichPromptEditor text={inputText} onChangeText={setInputText} />
+        <RichPromptEditor text={inputText} onChangeText={setInputText} entityType={entityType} onChangeEntityType={setEntityType} />
 
         <CollapsibleSection
           title="response"
@@ -322,5 +358,5 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
       padding: 20,
       paddingBottom: 100,
     },
-   
+
   });

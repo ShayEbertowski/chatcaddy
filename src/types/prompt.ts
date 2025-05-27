@@ -24,6 +24,7 @@ export type Prompt = {
     content: string;
     folder: string
     variables?: Record<string, string>;
+    type?: 'Prompt' | 'Function' | 'Snippet';
 };
 
 export type NewPrompt = Omit<Prompt, 'id'>;
