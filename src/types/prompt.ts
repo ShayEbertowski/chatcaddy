@@ -18,13 +18,17 @@ export type Props = {
     onPress: (event: GestureResponderEvent) => void;
 };
 
+export type VariableValue =
+    | { type: 'string'; value: string }
+    | { type: 'prompt'; promptId: string; promptTitle?: string };
+
 export type Prompt = {
     id: string;
     title: string;
     content: string;
-    folder: string
-    variables?: Record<string, string>;
+    folder: string;
     type?: 'Prompt' | 'Function' | 'Snippet';
+    variables?: Record<string, VariableValue>;
 };
 
 export type NewPrompt = Omit<Prompt, 'id'>;

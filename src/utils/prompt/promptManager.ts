@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NewPrompt } from '../../types/prompt';
+import { NewPrompt, Prompt, VariableValue } from '../../types/prompt';
 import { v4 as uuidv4 } from 'uuid';
 import { generateSmartTitle } from './generateSmartTitle';
 import { cleanPromptVariables } from './cleanPrompt';
@@ -8,19 +8,32 @@ import { useVariableStore } from '../../stores/useVariableStore';
 
 const STORAGE_KEY = '@prompt_library';
 
-export type Prompt = {
-    id: string;
-    title: string;
-    content: string;
-    folder: string;
-    variables?: Record<string, string>;
-};
-
 // Load all prompts
 export async function loadPrompts(): Promise<Prompt[]> {
     const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    const parsed = stored ? JSON.parse(stored) : [];
+
+    return parsed.map((p: any) => ({
+        ...p,
+        variables: normalizeVariables(p.variables),
+    }));
 }
+
+function normalizeVariables(input: any): Record<string, VariableValue> {
+    if (!input || typeof input !== 'object') return {};
+
+    const result: Record<string, VariableValue> = {};
+    for (const [key, value] of Object.entries(input)) {
+        if (value !== null && typeof value === 'object' && 'type' in value) {
+            result[key] = value as VariableValue;
+        } else {
+            result[key] = { type: 'string', value: String(value) };
+        }
+    }
+    return result;
+}
+
+
 
 // Save or update a prompt (based on `isEdit`)
 export async function saveOrUpdatePrompt(prompt: Prompt | NewPrompt, isEdit: boolean): Promise<void> {
@@ -103,6 +116,11 @@ export function preparePromptToSave({
         title: title.trim() || 'Untitled',
         content: cleaned,
         folder,
-        variables: currentVariables,
+        variables: Object.fromEntries(
+            Object.entries(currentVariables).map(([key, value]) => [
+                key,
+                { type: 'string', value }
+            ])
+        ),
     };
 }

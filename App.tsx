@@ -21,16 +21,13 @@ import LibraryScreen from './src/screens/library/LibraryScreen';
 import { light, dark } from './src/theme/colors';
 import { StatusBar } from 'expo-status-bar';
 import RunPromptScreen from './src/screens/RunPromptScreen';
+import PromptComposerScreen from './src/screens/composer/PromptComposerScreen';
 
 
 const Tab = createBottomTabNavigator();
 const RootStack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 const ToolboxStack = createNativeStackNavigator();
-
-
-const isValidIconName = (name: string): name is keyof typeof IoniconGlyphs =>
-  name in IoniconGlyphs;
 
 function ToolboxNavigator() {
   return (
@@ -61,6 +58,8 @@ function MainTabs() {
         else if (route.name === 'Sandbox') iconName = 'chatbubble-outline';
         else if (route.name === 'Toolbox') iconName = 'construct-outline';
         else if (route.name === 'Demos') iconName = 'videocam-outline';
+        else if (route.name === 'Composer') iconName = 'code-slash-outline'; 
+
 
         return {
           tabBarIcon: ({ color, size }) => (
@@ -83,6 +82,7 @@ function MainTabs() {
 
       <Tab.Screen name="Library" component={LibraryScreen} />
       <Tab.Screen name="Sandbox" component={PromptSandboxScreen} />
+      <Tab.Screen name="Composer" component={PromptComposerScreen} />
       <Tab.Screen name="Toolbox" component={ToolboxNavigator} />
       <Tab.Screen name="Demos" component={DemosScreen} />
     </Tab.Navigator>
@@ -120,7 +120,7 @@ function AppWithTheme() {
 
   return (
     <>
-      <StatusBar style={isDark ? 'light' : 'dark'} /> {/* 👈 this fixes the icon color */}
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <NavigationContainer theme={ChatCaddyTheme}>
         <RootStack.Navigator>
           <RootStack.Screen
