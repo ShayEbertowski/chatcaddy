@@ -1,13 +1,13 @@
 import { create } from 'zustand';
+import { VariableValue } from '../types/prompt';
 
 type VariableState = {
-    values: Record<string, string>;
-    setVariable: (key: string, value: string) => void;
-    getVariable: (key: string) => string | undefined;
+    values: Record<string, VariableValue>;
+    setVariable: (key: string, value: VariableValue) => void;
+    getVariable: (key: string) => VariableValue | undefined;
     removeVariable: (key: string) => void;
-    clearAll: () => void; // 👈 add this line
+    clearAll: () => void;
 };
-
 
 export const useVariableStore = create<VariableState>((set, get) => ({
     values: {},
@@ -30,5 +30,4 @@ export const useVariableStore = create<VariableState>((set, get) => ({
         }),
 
     clearAll: () => set({ values: {} }),
-
 }));

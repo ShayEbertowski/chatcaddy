@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, TouchableOpacity } from 'react-native';
-import PromptComposer from '../../components/composer/PromptComposer';
-import PromptSearch from '../../components/prompt/PromptSearch';
-import { Prompt } from '../../types/prompt';
-import { loadPrompts } from '../../utils/prompt/promptManager';
-import RichPromptEditor from '../../components/editor/RichPromptEditor';
-import { useVariableStore } from '../../stores/useVariableStore';
-import { useColors } from '../../hooks/useColors';
 import { StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Prompt } from '../../src/types/prompt';
+import { useColors } from '../../src/hooks/useColors';
+import { loadPrompts } from '../../src/utils/prompt/promptManager';
+import PromptSearch from '../../src/components/prompt/PromptSearch';
+import RichPromptEditor from '../../src/components/editor/RichPromptEditor';
+import { useVariableStore } from '../../src/stores/useVariableStore';
+import PromptComposer from '../../src/components/composer/PromptComposer';
 
-export default function PromptComposerScreen() {
+export default function Composer() {
     const [promptMap, setPromptMap] = useState<Record<string, Prompt>>({});
     const [allPrompts, setAllPrompts] = useState<Prompt[]>([]);
     const [currentPrompt, setCurrentPrompt] = useState<Prompt | null>(null);
@@ -118,12 +118,8 @@ export default function PromptComposerScreen() {
                                     content: newText,
                                     folder: 'default',
                                     type: newType,
-                                    variables: Object.fromEntries(
-                                        Object.entries(useVariableStore.getState().values).map(([k, v]) => [
-                                            k,
-                                            { type: 'string', value: v },
-                                        ])
-                                    ),
+                                    variables: useVariableStore.getState().values,
+
                                 };
                                 setCurrentPrompt(prompt);
                                 setIsPicking(false);

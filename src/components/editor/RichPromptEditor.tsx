@@ -19,7 +19,8 @@ import { useSnippetStore } from '../../stores/useSnippetStore';
 import { getEntityForEdit } from '../../utils/prompt/generateEntityForEdit';
 import { getSharedStyles, placeholderText } from '../../styles/shared';
 import { useColors } from '../../hooks/useColors';
-import { PromptPart } from '../../types/prompt';
+import { PromptPart, VariableValue } from '../../types/prompt';
+import { createStringValue, isStringValue, resolveVariableDisplayValue } from '../../utils/variables/variables';
 
 type Props = {
     text: string;
@@ -81,7 +82,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
             if (part.type === 'variable' && part.defaultValue !== undefined) {
                 const key = part.value.split('=')[0].trim();
                 if (!getVariable(key)) {
-                    setVariable(key, part.defaultValue);
+                    setVariable(key, createStringValue(part.defaultValue));
                 }
             }
         });
@@ -91,9 +92,17 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
         setIsEditingVariable(true);
         setOriginalVariableName(name);
         setTempVariableName(name);
-        setTempVariableValue(getVariable(name) ?? '');
+
+        const val = getVariable(name);
+        if (isStringValue(val)) {
+            setTempVariableValue(val.value);
+        } else {
+            setTempVariableValue('');
+        }
+
         setShowInsertModal(true);
     };
+
 
     const renderPart = (part: PromptPart, i: number) => {
         if (part.type === 'text') return null;
@@ -137,7 +146,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
             setSelection({ start: cursor, end: cursor });
         }
 
-        setVariable(tempVariableName, tempVariableValue);
+        setVariable(tempVariableName, createStringValue(tempVariableValue));
         setShowInsertModal(false);
         setIsEditingVariable(false);
         setTempVariableName('');
@@ -242,8 +251,9 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                             <Text style={sharedStyles.previewVariable}>
                                 {previewChunks.map((chunk, i) => {
                                     return chunk.type === 'variable'
-                                        ? getVariable(chunk.value)?.trim() || '?'
+                                        ? resolveVariableDisplayValue(getVariable(chunk.value))
                                         : chunk.value;
+
                                 }).join('')}
                             </Text>
                         </View>
@@ -276,7 +286,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                         store.setSnippet(name, value);
                     } else {
                         if (isEditingVariable) removeVariable(name);
-                        setVariable(name, value);
+                        setVariable(name, createStringValue(value));
                     }
 
                     if (!isEditingVariable) {
@@ -375,3 +385,4 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
         },
 
     });
+
