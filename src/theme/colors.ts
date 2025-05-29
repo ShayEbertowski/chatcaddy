@@ -2,17 +2,20 @@
 
 export const light = {
     primary: '#007AFF',
-    onPrimary: '#ffffff',
+    onPrimary: '#f8f9fa',
     background: '#ffffff',
+    surface: '#ffffff',
+
+    active: "#007AFF",
 
     text: '#1c1c1e',
     mutedText: '#6e6e73',
     secondaryText: '#8e8e93', // subtle gray (used in iOS UI)
 
-    card: '#ffffff',
+    card: '#f8f9fa',
     cardShadow: '#000000',
 
-    border: '#ccc',
+    border: '#e0e0e0',
     inputBackground: '#f9f9f9',
     disabledBackground: '#eeeeee',
 
@@ -21,9 +24,12 @@ export const light = {
 };
 
 export const dark = {
-    primary: '#0A84FF',
+    primary: '#0a84ff',
     onPrimary: '#ffffff',
-    background: '#000000',
+    background: '#0e0e0e',
+    surface: '#1a1a1a',
+
+    active: "#007AFF",
 
     text: '#ffffff',
     mutedText: '#999999',

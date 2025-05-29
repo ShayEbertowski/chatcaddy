@@ -12,13 +12,14 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { ThemedSafeArea } from '../src/components/shared/ThemedSafeArea';
-import { useColors } from '../src/hooks/useColors';
-import { useSettingsStore } from '../src/stores/useSettingsStore';
-import { useThemeMode } from '../src/theme/ThemeProvider';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
-import { getSharedStyles } from '../src/styles/shared';
+import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
+import { useColors } from '../../../src/hooks/useColors';
+import { useSettingsStore } from '../../../src/stores/useSettingsStore';
+import { getSharedStyles } from '../../../src/styles/shared';
+import { useThemeMode } from '../../../src/theme/ThemeProvider';
+
 
 
 const API_KEY_STORAGE_KEY = 'openai_api_key';
@@ -146,19 +147,6 @@ export default function Settings() {
     return (
 
         <ThemedSafeArea>
-            <View style={sharedStyles.backButton}>
-                <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    style={{ padding: 12 }}
-                >
-                    <Ionicons name="arrow-back" size={24} />
-                </TouchableOpacity>
-
-                {/* TODO: Custom style this header */}
-                <View style={sharedStyles.pageTitle}>
-                    <Text>Settings</Text>
-                </View>
-            </View>
             <ScrollView contentContainerStyle={styles.scroll}>
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>OpenAI API Key</Text>

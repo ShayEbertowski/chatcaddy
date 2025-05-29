@@ -1,12 +1,15 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from 'react-native';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { useColors } from '../../../src/hooks/useColors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
-    const theme = useColorScheme();
     const navigation = useNavigation();
+    const colors = useColors();
+    const insets = useSafeAreaInsets();
+
 
     const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
         '1-library': 'library-outline',
@@ -35,10 +38,22 @@ export default function TabLayout() {
                         color={color}
                     />
                 ),
-                tabBarActiveTintColor: theme === 'dark' ? '#fff' : '#000',
+                tabBarActiveTintColor: colors.active,
                 tabBarStyle: {
-                    backgroundColor: theme === 'dark' ? '#111' : '#fff',
+                    backgroundColor: colors.background,
+                    borderTopColor: colors.border,
+                    color: colors.text
                 },
+             
+                headerTitleStyle: {
+                    color: colors.text,
+                },
+                headerStyle: {
+                    backgroundColor: colors.surface, // or colors.background if you prefer
+                    borderBottomColor: colors.border,
+                    borderBottomWidth: 1, // optional for a divider effect
+                },
+                headerTitleAlign: 'center', // ✅ center the title
                 headerLeft: () => (
                     <TouchableOpacity
                         onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
@@ -50,8 +65,11 @@ export default function TabLayout() {
                         />
                     </TouchableOpacity>
                 ),
-                headerTitle: labels[route.name] ?? route.name,
+                headerTitle: labels[route.name] ?? route.name, // ✅ just a string, not a View
             })}
         />
+
+
+
     );
 }
