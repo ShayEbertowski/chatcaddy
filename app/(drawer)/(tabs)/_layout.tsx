@@ -1,16 +1,44 @@
-import { Tabs, useRouter, useNavigation } from 'expo-router';
-import { DrawerActions } from '@react-navigation/native';
+import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Image, TouchableOpacity } from 'react-native';
+import { useColorScheme } from 'react-native';
+import { DrawerActions, useNavigation } from '@react-navigation/native';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 
-export default function TabsLayout() {
+export default function TabLayout() {
+    const theme = useColorScheme();
     const navigation = useNavigation();
-    const router = useRouter();
+
+    const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
+        '1-library': 'library-outline',
+        '2-sandbox': 'flask-outline',
+        '3-composer': 'code-slash-outline',
+        '4-toolbox': 'construct-outline',
+        '5-demos': 'videocam-outline',
+    };
+
+    const labels: Record<string, string> = {
+        '1-library': 'Library',
+        '2-sandbox': 'Sandbox',
+        '3-composer': 'Composer',
+        '4-toolbox': 'Toolbox',
+        '5-demos': 'Demos',
+    };
 
     return (
         <Tabs
-            screenOptions={{
-                headerTitle: '',
+            screenOptions={({ route }) => ({
+                tabBarLabel: labels[route.name] ?? route.name,
+                tabBarIcon: ({ color, size }) => (
+                    <Ionicons
+                        name={icons[route.name] ?? 'apps-outline'}
+                        size={size}
+                        color={color}
+                    />
+                ),
+                tabBarActiveTintColor: theme === 'dark' ? '#fff' : '#000',
+                tabBarStyle: {
+                    backgroundColor: theme === 'dark' ? '#111' : '#fff',
+                },
                 headerLeft: () => (
                     <TouchableOpacity
                         onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
@@ -22,68 +50,8 @@ export default function TabsLayout() {
                         />
                     </TouchableOpacity>
                 ),
-                headerRight: () => (
-                    <TouchableOpacity
-                        onPress={() => router.push('/admin')}
-                        style={{ marginRight: 16 }}
-                    >
-                        <Ionicons name="flask-outline" size={24} />
-                    </TouchableOpacity>
-                ),
-                tabBarActiveTintColor: 'dodgerblue',
-                tabBarInactiveTintColor: 'gray',
-            }}
-        >
-            <Tabs.Screen
-                name="library"
-                options={{
-                    title: 'Library',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="book-outline" size={size} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="demos"
-                options={{
-                    title: 'Demos',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="play-circle-outline" size={size} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="sandbox"
-                options={{
-                    title: 'Sandbox',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="flask-outline" size={size} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="toolbox"
-                options={{
-                    title: 'Toolbox',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="construct-outline" size={size} color={color} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="composer"
-                options={{
-                    title: 'Composer',
-                    tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="code-outline" size={size} color={color} />
-                    ),
-                }}
-            />
-        </Tabs>
+                headerTitle: labels[route.name] ?? route.name,
+            })}
+        />
     );
 }
-
-// ✅ Hide this layout from drawer (if nested)
-export const unstable_settings = {
-    drawerItemStyle: { display: 'none' },
-};

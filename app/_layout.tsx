@@ -1,15 +1,13 @@
-// app/_layout.tsx
 import { Stack } from 'expo-router';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function RootLayout() {
     return (
-        <ThemeProvider>
-            <Stack
-                screenOptions={{
-                    headerShown: false, // ✅ This removes the "(drawer)" top-level header
-                }}
-            />
-        </ThemeProvider>
+        <SafeAreaProvider>
+            <ThemeProvider>
+                <Stack screenOptions={{ headerShown: false }} />
+            </ThemeProvider>
+        </SafeAreaProvider>
     );
 }

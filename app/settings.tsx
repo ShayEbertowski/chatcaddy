@@ -18,6 +18,7 @@ import { useSettingsStore } from '../src/stores/useSettingsStore';
 import { useThemeMode } from '../src/theme/ThemeProvider';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
+import { getSharedStyles } from '../src/styles/shared';
 
 
 const API_KEY_STORAGE_KEY = 'openai_api_key';
@@ -32,6 +33,7 @@ export default function Settings() {
 
     const colors = useColors();
     const styles = getStyles(colors);
+    const sharedStyles = getSharedStyles(colors);
     const { mode, setMode } = useThemeMode(); // mode = 'light' | 'dark' | 'system'
 
     const confirmPromptDelete = useSettingsStore((s) => s.confirmPromptDelete);
@@ -144,7 +146,7 @@ export default function Settings() {
     return (
 
         <ThemedSafeArea>
-            <View style={{ flex: 1 }}>
+            <View style={sharedStyles.backButton}>
                 <TouchableOpacity
                     onPress={() => navigation.goBack()}
                     style={{ padding: 12 }}
@@ -153,7 +155,7 @@ export default function Settings() {
                 </TouchableOpacity>
 
                 {/* TODO: Custom style this header */}
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <View style={sharedStyles.pageTitle}>
                     <Text>Settings</Text>
                 </View>
             </View>
@@ -297,10 +299,6 @@ export default function Settings() {
     );
 }
 
-Settings.options = {
-    headerShown: false, // ✅ disable default drawer header with hamburger
-};
-
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
         scroll: {
@@ -409,3 +407,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
 
     });
 
+Settings.options = {
+    title: 'Settings',
+};

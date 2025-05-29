@@ -113,6 +113,16 @@ export const getSharedStyles = ({ isDark, ...colors }: Theme) =>
       gap: 8,
       padding: 12,
     },
+    pageTitle: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      color: colors.text,
+    },
+    backButton: {
+      flex: 1,
+      color: colors.text,
+    },
   });
 
 
