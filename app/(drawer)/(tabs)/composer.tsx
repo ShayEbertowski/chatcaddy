@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Button, TouchableOpacity } from 'react-native';
 import { StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Prompt } from '../../src/types/prompt';
-import { useColors } from '../../src/hooks/useColors';
-import { loadPrompts } from '../../src/utils/prompt/promptManager';
-import PromptSearch from '../../src/components/prompt/PromptSearch';
-import RichPromptEditor from '../../src/components/editor/RichPromptEditor';
-import { useVariableStore } from '../../src/stores/useVariableStore';
-import PromptComposer from '../../src/components/composer/PromptComposer';
+import { Prompt } from '../../../src/types/prompt';
+import { useColors } from '../../../src/hooks/useColors';
+import { loadPrompts } from '../../../src/utils/prompt/promptManager';
+import PromptSearch from '../../../src/components/prompt/PromptSearch';
+import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
+import { useVariableStore } from '../../../src/stores/useVariableStore';
+import PromptComposer from '../../../src/components/composer/PromptComposer';
 
 export default function Composer() {
     const [promptMap, setPromptMap] = useState<Record<string, Prompt>>({});

@@ -13,22 +13,22 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { v4 as uuidv4 } from 'uuid';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
-import RichPromptEditor from '../../src/components/editor/RichPromptEditor';
-import SavePromptModal from '../../src/components/modals/SavePromptModal';
-import CollapsibleSection from '../../src/components/shared/CollapsibleSection';
+import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
+import SavePromptModal from '../../../src/components/modals/SavePromptModal';
+import CollapsibleSection from '../../../src/components/shared/CollapsibleSection';
 
-import { useColors } from '../../src/hooks/useColors';
-import { useVariableStore } from '../../src/stores/useVariableStore';
-import { getSharedStyles, placeholderText } from '../../src/styles/shared';
-import { Prompt, VariableValue } from '../../src/types/prompt';
+import { useColors } from '../../../src/hooks/useColors';
+import { useVariableStore } from '../../../src/stores/useVariableStore';
+import { getSharedStyles, placeholderText } from '../../../src/styles/shared';
+import { Prompt, VariableValue } from '../../../src/types/prompt';
 import {
     loadPrompts,
     isDuplicatePrompt,
     getSmartTitle,
     saveOrUpdatePrompt,
-} from '../../src/utils/prompt/promptManager';
-import { runPrompt } from '../../src/utils/prompt/runPrompt';
-import { resolveVariableDisplayValue } from '../../src/utils/variables/variables';
+} from '../../../src/utils/prompt/promptManager';
+import { runPrompt } from '../../../src/utils/prompt/runPrompt';
+import { resolveVariableDisplayValue } from '../../../src/utils/variables/variables';
 
 export default function Sandbox() {
     const [inputText, setInputText] = useState('');

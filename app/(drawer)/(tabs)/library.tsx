@@ -8,10 +8,9 @@ import {
 } from 'react-native';
 
 import { MaterialIcons } from '@expo/vector-icons';
-import { useColors } from '../../src/hooks/useColors';
-import FunctionLibraryScreen from '../../src/screens/library/FunctionLibraryScreen';
-import PromptLibraryScreen from '../../src/screens/library/PromptLibraryScreen';
-
+import { useColors } from '../../../src/hooks/useColors';
+import FunctionLibraryScreen from '../../../src/screens/library/FunctionLibraryScreen';
+import PromptLibraryScreen from '../../../src/screens/library/PromptLibraryScreen';
 
 type LibraryType = 'prompts' | 'functions';
 
@@ -23,6 +22,8 @@ const options: { label: string; value: LibraryType }[] = [
 const UnknownCategory: React.FC = () => (
     <Text style={{ padding: 16 }}>Unknown category</Text>
 );
+
+
 
 export default function Library() {
     const colors = useColors();
@@ -77,6 +78,7 @@ export default function Library() {
         </View>
     );
 }
+
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
