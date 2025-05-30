@@ -1,14 +1,12 @@
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Prompt } from '../types/prompt';
 import { normalizeVariables } from '../utils/prompt/promptManager';
-
-const STORAGE_KEY = '@prompt_library';
+import { supabase } from '../lib/supabaseClient';
 
 type PromptStore = {
     prompts: Prompt[];
     loadPrompts: () => Promise<void>;
-    addOrUpdatePrompt: (prompt: Prompt, isEdit: boolean) => Promise<void>;
+    addOrUpdatePrompt: (prompt: Prompt) => Promise<void>;
     deletePrompt: (id: string) => Promise<void>;
 };
 
@@ -16,34 +14,34 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
     prompts: [],
 
     loadPrompts: async () => {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        const parsed: Prompt[] = raw ? JSON.parse(raw) : [];
-
+        const { data, error } = await supabase.from('prompts').select('*');
+        if (error) {
+            console.error('Error loading prompts:', error);
+            return;
+        }
         set({
-            prompts: parsed.map(p => ({
+            prompts: data.map((p: any) => ({
                 ...p,
                 variables: normalizeVariables(p.variables),
             }))
         });
     },
 
-    addOrUpdatePrompt: async (prompt, isEdit) => {
-        console.log('🤡');
-
-        const current = get().prompts;
-
-        const updated = isEdit
-            ? current.map(p => (p.id === prompt.id ? prompt : p))
-            : [...current, prompt];
-
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        console.log('🥶');
-        set({ prompts: updated });
+    addOrUpdatePrompt: async (prompt) => {
+        const { error } = await supabase.from('prompts').upsert(prompt);
+        if (error) {
+            console.error('Error saving prompt:', error);
+            return;
+        }
+        await get().loadPrompts();
     },
 
     deletePrompt: async (id) => {
-        const updated = get().prompts.filter(p => p.id !== id);
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        set({ prompts: updated });
+        const { error } = await supabase.from('prompts').delete().eq('id', id);
+        if (error) {
+            console.error('Error deleting prompt:', error);
+            return;
+        }
+        await get().loadPrompts();
     }
 }));
