@@ -24,6 +24,8 @@ import {
   deletePrompt as deletePromptFromStorage,
 } from '../../utils/prompt/promptManager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
+import { usePromptEditorStore } from '../../stores/usePromptEditorStore';
 
 export default function PromptLibraryScreen({ category }: LibraryProps) {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
@@ -51,7 +53,7 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
   };
 
   const [showRunModal, setShowRunModal] = useState(false);
-
+  const router = useRouter();
 
   useEffect(() => {
     refreshPrompts();
@@ -71,11 +73,14 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
   }, []);
 
   const handlePromptTap = (prompt: Prompt) => {
-    // navigation.navigate('Main', {
-    //   screen: 'RunPrompt', // 👈 your new screen name
-    //   params: { prompt },  // pass prompt as-is
-    // });
-    tabNavigation.navigate('RunPrompt', { prompt });
+    usePromptEditorStore.getState().setEditingPrompt(prompt, { autoRun: true });
+    // router.push('../../(stack)/run-prompt');
+    router.push('run-prompt');  // ✅ NO longer cross-group
+  };
+
+  const handleEditPrompt = (prompt: Prompt) => {
+    usePromptEditorStore.getState().setEditingPrompt(prompt, { autoRun: false });
+    router.push('/2-sandbox');
   };
 
 
@@ -101,13 +106,7 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
       title={item.title}
       content={item.content}
       onPress={() => handlePromptTap(item)}
-      onEdit={() =>
-        tabNavigation.navigate('Sandbox', {
-          editId: item.id,
-          prompt: item,
-          autoRun: false,
-        })
-      }
+      onEdit={() => handleEditPrompt(item)}
       onDelete={() => handleDeletePrompt(item.id)}
     />
   );

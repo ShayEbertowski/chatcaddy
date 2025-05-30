@@ -29,6 +29,7 @@ import {
 } from '../../../src/utils/prompt/promptManager';
 import { runPrompt } from '../../../src/utils/prompt/runPrompt';
 import { resolveVariableDisplayValue } from '../../../src/utils/variables/variables';
+import { usePromptEditorStore } from '../../../src/stores/usePromptEditorStore';
 
 export default function Sandbox() {
     const [inputText, setInputText] = useState('');
@@ -50,44 +51,27 @@ export default function Sandbox() {
     const sharedStyles = getSharedStyles(colors);
     const currentVariables = useVariableStore.getState().values;
 
-    const {
-        editId,
-        autoRun,
-        selectedPromptId,
-        selectedPromptTitle,
-        target,
-    } = useLocalSearchParams<{
-        editId?: string;
-        autoRun?: string;
-        selectedPromptId?: string;
-        selectedPromptTitle?: string;
-        target?: string;
-    }>();
-
-    const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
-    const isEditing = !!editId;
+    const editingPrompt = usePromptEditorStore((s) => s.editingPrompt);
+    const target = usePromptEditorStore((s) => s.variableInsertTarget);
+    const isEditing = !!editingPrompt?.id;
+    const editId = usePromptEditorStore((s) => s.editId);
+    const autoRun = usePromptEditorStore((s) => s.autoRun);
 
     const saveButtonDisabled = inputText.trim() === '';
     const saveButtonIconColor = saveButtonDisabled ? colors.secondaryText : colors.primary;
     const saveButtonTextColor = saveButtonDisabled ? colors.secondaryText : colors.primary;
 
     useEffect(() => {
-        if (selectedPromptId && target) {
+        if (target && editingPrompt) {
             useVariableStore.getState().setVariable(target, {
                 type: 'prompt',
-                promptId: selectedPromptId,
-                promptTitle: selectedPromptTitle,
+                promptId: editingPrompt.id,
+                promptTitle: editingPrompt.title,
             });
         }
-    }, [selectedPromptId, target]);
+    }, [target, editingPrompt]);
 
-    useEffect(() => {
-        loadPrompts().then((prompts) => {
-            const match = prompts.find((p) => p.id === editId);
-            if (match) setEditingPrompt(match);
-            setPromptsLoaded(true);
-        });
-    }, [editId]);
+
 
     useEffect(() => {
         if (editingPrompt?.variables) {
@@ -112,9 +96,12 @@ export default function Sandbox() {
     useEffect(() => {
         if (editingPrompt?.content) {
             setInputText(editingPrompt.content);
-            if (autoRun === 'true') handleRun();
+            if (autoRun) {
+                handleRun();
+            }
         }
     }, [editingPrompt, autoRun]);
+
 
     useEffect(() => {
         if (autoSuggestTitle) {
@@ -192,7 +179,7 @@ export default function Sandbox() {
 
     const handleConfirmSave = async () => {
         const updatedPrompt = preparePromptToSave({
-            id: editId,
+            id: editId ?? undefined,
             inputText,
             title: promptTitle,
             folder: selectedFolder,
