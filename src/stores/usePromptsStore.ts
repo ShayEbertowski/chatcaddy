@@ -1,7 +1,8 @@
 import { create } from 'zustand';
+import { supabaseData } from '../lib/supabaseClient';
+import { useAuthStore } from './useAuthStore';
 import { Prompt } from '../types/prompt';
 import { normalizeVariables } from '../utils/prompt/promptManager';
-import { supabase } from '../lib/supabaseClient';
 
 type PromptStore = {
     prompts: Prompt[];
@@ -14,11 +15,19 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
     prompts: [],
 
     loadPrompts: async () => {
-        const { data, error } = await supabase.from('prompts').select('*');
+        const user = useAuthStore.getState().user;
+        if (!user) return;
+
+        const { data, error } = await supabaseData
+            .from('prompts')
+            .select('*')
+            .eq('user_id', user.id); // ✅ per-user filtering
+
         if (error) {
             console.error('Error loading prompts:', error);
             return;
         }
+
         set({
             prompts: data.map((p: any) => ({
                 ...p,
@@ -28,20 +37,38 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
     },
 
     addOrUpdatePrompt: async (prompt) => {
-        const { error } = await supabase.from('prompts').upsert(prompt);
+        const user = useAuthStore.getState().user;
+        if (!user) return;
+
+        const upsertData = {
+            ...prompt,
+            user_id: user.id, // ✅ inject user_id automatically
+        };
+
+        const { error } = await supabaseData.from('prompts').upsert(upsertData);
         if (error) {
             console.error('Error saving prompt:', error);
             return;
         }
+
         await get().loadPrompts();
     },
 
     deletePrompt: async (id) => {
-        const { error } = await supabase.from('prompts').delete().eq('id', id);
+        const user = useAuthStore.getState().user;
+        if (!user) return;
+
+        const { error } = await supabaseData
+            .from('prompts')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id); // ✅ extra safety check: only delete your own
+
         if (error) {
             console.error('Error deleting prompt:', error);
             return;
         }
+
         await get().loadPrompts();
     }
 }));

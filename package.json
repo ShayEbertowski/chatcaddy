@@ -21,6 +21,7 @@
     "@supabase/gotrue-js": "^2.70.0",
     "@supabase/postgrest-js": "^1.19.4",
     "@supabase/storage-js": "^2.7.3",
+    "@supabase/supabase-js": "^2.49.8",
     "expo": "~53.0.9",
     "expo-blur": "~14.1.4",
     "expo-router": "~5.0.7",

@@ -2,6 +2,8 @@ import { Stack } from 'expo-router';
 import { ThemeProvider, useThemeMode } from '../src/theme/ThemeProvider';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { useAuthStore } from '../src/stores/useAuthStore';
+import { useEffect } from 'react';
 
 function ThemedStatusBar() {
     const { mode } = useThemeMode();
@@ -15,6 +17,12 @@ function ThemedStatusBar() {
 }
 
 export default function RootLayout() {
+    const loadSession = useAuthStore((s) => s.loadSession);
+
+    useEffect(() => {
+        loadSession();
+    }, []);
+
     return (
         <SafeAreaProvider>
             <ThemeProvider>
