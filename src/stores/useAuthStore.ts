@@ -1,39 +1,49 @@
 import { create } from 'zustand';
-import { supabaseAuth } from '../lib/supabaseClient';
-
-type User = {
-    id: string;
-    email: string;
-};
+import * as SecureStore from 'expo-secure-store';
+import { signIn, signUp } from '../lib/auth';
 
 type AuthState = {
-    user: User | null;
-    setUser: (user: User | null) => void;
-    loadSession: () => Promise<void>;
+    user: any | null;
+    accessToken: string | null;
+    loading: boolean;
+    signIn: (email: string, password: string) => Promise<void>;
+    signUp: (email: string, password: string) => Promise<void>;
     signOut: () => Promise<void>;
+    loadSession: () => Promise<void>;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
     user: null,
-
-    setUser: (user) => set({ user }),
+    accessToken: null,
+    loading: false,
 
     loadSession: async () => {
-        const { data, error } = await supabaseAuth.auth.getUser();
-        if (!error && data.user) {
-            set({
-                user: {
-                    id: data.user.id,
-                    email: data.user.email ?? '',
-                },
-            });
-        } else {
-            set({ user: null });
+        const token = await SecureStore.getItemAsync('accessToken');
+        if (token) {
+            set({ accessToken: token });
         }
     },
 
+    signUp: async (email, password) => {
+        set({ loading: true });
+        const res = await signUp(email, password);
+        console.log('Signed up', res);
+        set({ loading: false });
+    },
+
+    signIn: async (email, password) => {
+        set({ loading: true });
+        const res = await signIn(email, password);
+        await SecureStore.setItemAsync('accessToken', res.access_token);
+        set({
+            accessToken: res.access_token,
+            user: res.user,
+            loading: false,
+        });
+    },
+
     signOut: async () => {
-        await supabaseAuth.auth.signOut();
-        set({ user: null });
+        await SecureStore.deleteItemAsync('accessToken');
+        set({ user: null, accessToken: null });
     },
 }));
