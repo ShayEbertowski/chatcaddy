@@ -1,33 +1,37 @@
 import { create } from 'zustand';
-
-type Snippet = {
-    id: string;
-    name: string;
-    value: string;
-};
+import { v4 as uuidv4 } from 'uuid';
+import { Prompt } from '../types/prompt';
 
 type SnippetState = {
-    snippets: Snippet[];
-    setSnippet: (name: string, value: string) => void;
-    getSnippet: (name: string) => string | undefined;
-    removeSnippet: (name: string) => void;
+    snippets: Prompt[];
+    setSnippet: (title: string, content: string) => void;
+    getSnippet: (title: string) => Prompt | undefined;
+    removeSnippet: (title: string) => void;
     clearAll: () => void;
 };
 
 export const useSnippetStore = create<SnippetState>((set, get) => ({
     snippets: [],
 
-    setSnippet: (name, value) =>
+    setSnippet: (title, content) =>
         set((state) => ({
-            snippets: [...state.snippets, { id: name, name, value }],
+            snippets: [
+                ...state.snippets,
+                {
+                    id: uuidv4(),
+                    title,
+                    content,
+                    folder: 'Uncategorized',
+                    type: 'Snippet',
+                },
+            ],
         })),
 
-    getSnippet: (name) =>
-        get().snippets.find((s) => s.name === name)?.value,
+    getSnippet: (title) => get().snippets.find((s) => s.title === title),
 
-    removeSnippet: (name) =>
+    removeSnippet: (title) =>
         set((state) => ({
-            snippets: state.snippets.filter((s) => s.name !== name),
+            snippets: state.snippets.filter((s) => s.title !== title),
         })),
 
     clearAll: () => set({ snippets: [] }),

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -8,9 +8,8 @@ import {
     Alert,
     ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { v4 as uuidv4 } from 'uuid';
+import uuid from 'react-native-uuid';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
 import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
@@ -21,15 +20,12 @@ import { useColors } from '../../../src/hooks/useColors';
 import { useVariableStore } from '../../../src/stores/useVariableStore';
 import { getSharedStyles, placeholderText } from '../../../src/styles/shared';
 import { Prompt, VariableValue } from '../../../src/types/prompt';
-import {
-    loadPrompts,
-    isDuplicatePrompt,
-    getSmartTitle,
-    saveOrUpdatePrompt,
-} from '../../../src/utils/prompt/promptManager';
 import { runPrompt } from '../../../src/utils/prompt/runPrompt';
 import { resolveVariableDisplayValue } from '../../../src/utils/variables/variables';
 import { usePromptEditorStore } from '../../../src/stores/usePromptEditorStore';
+import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
+import { usePromptStore } from '../../../src/stores/usePromptsStore';
+import { getSmartTitle } from '../../../src/utils/prompt/promptManager';
 
 export default function Sandbox() {
     const [inputText, setInputText] = useState('');
@@ -43,7 +39,6 @@ export default function Sandbox() {
     const [promptsLoaded, setPromptsLoaded] = useState(false);
     const [hasSaved, setHasSaved] = useState(false);
     const [showConfirmSaveModal, setShowConfirmSaveModal] = useState(false);
-    const [entityType, setEntityType] = useState<'Prompt' | 'Function' | 'Snippet'>('Prompt');
 
     const router = useRouter();
     const colors = useColors();
@@ -60,6 +55,16 @@ export default function Sandbox() {
     const saveButtonDisabled = inputText.trim() === '';
     const saveButtonIconColor = saveButtonDisabled ? colors.secondaryText : colors.primary;
     const saveButtonTextColor = saveButtonDisabled ? colors.secondaryText : colors.primary;
+    const prompts = usePromptStore((state) => state.prompts);
+    const addOrUpdatePrompt = usePromptStore((state) => state.addOrUpdatePrompt);
+    const params = useLocalSearchParams();
+    const initialEntityType = (params.entityType as 'Prompt' | 'Function' | 'Snippet') ?? 'Prompt';
+    const entityType = usePromptEditorStore((s) => s.entityType);
+    const setEntityType = usePromptEditorStore((s) => s.setEntityType);
+
+    const isDup = prompts.some(
+        (p) => p.content.trim() === inputText.trim() && p.folder === selectedFolder
+    );
 
     useEffect(() => {
         if (target && editingPrompt) {
@@ -135,12 +140,6 @@ export default function Sandbox() {
     };
 
     const handleSavePrompt = async () => {
-        if (!promptsLoaded) {
-            Alert.alert('Please wait', 'Still loading existing prompts.');
-            return;
-        }
-
-        const isDup = await isDuplicatePrompt(inputText, selectedFolder);
         if (isDup) {
             Alert.alert('Duplicate', 'This prompt already exists.');
             return;
@@ -158,6 +157,7 @@ export default function Sandbox() {
         folder,
         isEdit,
         type,
+        variables,
     }: {
         id?: string;
         inputText: string;
@@ -165,19 +165,24 @@ export default function Sandbox() {
         folder: string;
         isEdit: boolean;
         type: 'Prompt' | 'Function' | 'Snippet';
+        variables: Record<string, VariableValue>;
     }): Prompt => {
         return {
-            id: id ?? uuidv4(),
+            id: id ?? (uuid.v4() as string),
             content: inputText,
             title,
             folder,
             type,
-            variables: { ...currentVariables },
-
+            variables,
         };
     };
 
-    const handleConfirmSave = async () => {
+    const handleConfirmSave = useCallback(async () => {
+        setShowConfirmSaveModal(false); // Close modal first
+
+        const currentVariables = useVariableStore.getState().values;  // 👈 move this inside
+        console.log('😳😳😳');
+
         const updatedPrompt = preparePromptToSave({
             id: editId ?? undefined,
             inputText,
@@ -185,23 +190,39 @@ export default function Sandbox() {
             folder: selectedFolder,
             isEdit: isEditing,
             type: entityType,
+            variables: currentVariables,  // 👈 pass it explicitly
         });
 
+        console.log('Updated Prompt:', updatedPrompt);
+        console.log('😳😳');
+
         try {
-            await saveOrUpdatePrompt(updatedPrompt, isEditing);
-            setHasSaved(true);
-            setShowConfirmSaveModal(false);
-            setInputText('');
-            setResponse('');
-            useVariableStore.getState().clearAll();
-            router.replace('/sandbox');
+            await addOrUpdatePrompt(updatedPrompt, isEditing);
+            resetEditor();
         } catch {
             Alert.alert('Error', `Failed to ${isEditing ? 'update' : 'save'} prompt.`);
         }
-    };
+    }, [editId, inputText, promptTitle, selectedFolder, isEditing, entityType]);
+
+
+    function resetEditor() {
+        setInputText('');
+        setPromptTitle('');
+        setResponse('');
+        setSelectedFolder('Uncategorized');
+        setHasSaved(true);
+        useVariableStore.getState().clearAll();
+    }
+
+    useEffect(() => {
+        if (!showConfirmSaveModal) {
+            resetEditor();
+        }
+    }, [showConfirmSaveModal]);
+
 
     return (
-        <SafeAreaView style={styles.container}>
+        <ThemedSafeArea>
             <ScrollView contentContainerStyle={styles.scroll} keyboardDismissMode="on-drag">
                 <RichPromptEditor
                     text={inputText}
@@ -268,13 +289,13 @@ export default function Sandbox() {
                 onConfirm={handleConfirmSave}
                 selectedFolder={selectedFolder}
             />
-        </SafeAreaView>
+        </ThemedSafeArea>
     );
 }
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
-        container: { flex: 1 },
+        container: { flex: 1, backgroundColor: colors.background },
         scroll: { padding: 20, paddingBottom: 100 },
         buttonRow: {
             flexDirection: 'row',

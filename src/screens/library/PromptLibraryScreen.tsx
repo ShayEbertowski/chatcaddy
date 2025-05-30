@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Text,
   StyleSheet,
@@ -17,65 +17,31 @@ import { useFolderStore } from '../../stores/useFolderStore';
 import { useSettingsStore } from '../../stores/useSettingsStore';
 import ConfirmModal from '../../components/modals/ConfirmModal';
 import { filterByFolder } from '../../utils/storage/libraryFilter';
-import { useTabNavigation } from '../../hooks/useTabNavigation';
-import BaseModal from '../../components/modals/BaseModal';
-import {
-  loadPrompts,
-  deletePrompt as deletePromptFromStorage,
-} from '../../utils/prompt/promptManager';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { usePromptEditorStore } from '../../stores/usePromptEditorStore';
+import { usePromptStore } from '../../stores/usePromptsStore';
+import { useNavigateToEditor } from '../../stores/useNavigateToEditor';
 
 export default function PromptLibraryScreen({ category }: LibraryProps) {
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [tapBehavior, setTapBehavior] = useState('preview');
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const tabNavigation = useTabNavigation();
 
-  const [selectedFolder, setSelectedFolder] = useState('All');
-  const folders = useFolderStore().folders.filter(f => f.type === 'prompts');
-
+  const [selectedFolder, setSelectedFolder] = useState('Uncategorized');
+  const foldersFromStore = useFolderStore().folders.filter(f => f.type === 'prompts');
+  const folders = [{ id: 'All', name: 'All' }, { id: 'Uncategorized', name: 'Uncategorized' }, ...foldersFromStore];
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [isPickerVisible, setPickerVisible] = useState(false);
-  const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
-
   const confirmPromptDelete = useSettingsStore((s) => s.confirmPromptDelete);
   const setConfirmPromptDelete = useSettingsStore((s) => s.setConfirmPromptDelete);
-  const hydrated = useSettingsStore.persist?.hasHydrated() ?? false;
-
-  const filteredPrompts = filterByFolder(prompts, selectedFolder);
-
-  const refreshPrompts = async () => {
-    const stored = await loadPrompts();
-    setPrompts(stored);
-  };
-
-  const [showRunModal, setShowRunModal] = useState(false);
   const router = useRouter();
+  const { prompts } = usePromptStore();
+  const filteredPrompts = filterByFolder(prompts, selectedFolder);
+  const { deletePrompt } = usePromptStore();
+  const navigateToEditor = useNavigateToEditor();
 
-  useEffect(() => {
-    refreshPrompts();
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', refreshPrompts);
-    return unsubscribe;
-  }, [navigation]);
-
-  useEffect(() => {
-    const loadTapBehavior = async () => {
-      const behavior = await AsyncStorage.getItem('@prompt_tap_behavior');
-      setTapBehavior(behavior || 'preview');
-    };
-    loadTapBehavior();
-  }, []);
 
   const handlePromptTap = (prompt: Prompt) => {
     usePromptEditorStore.getState().setEditingPrompt(prompt, { autoRun: true });
-    // router.push('../../(stack)/run-prompt');
-    router.push('run-prompt');  // ✅ NO longer cross-group
+    router.push('run-prompt'); 
   };
 
   const handleEditPrompt = (prompt: Prompt) => {
@@ -83,22 +49,13 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
     router.push('/2-sandbox');
   };
 
-
   const handleDeletePrompt = (id: string) => {
-    if (!hydrated) return;
-
     if (confirmPromptDelete) {
       setPendingDeleteId(id);
       setShowConfirmModal(true);
     } else {
       deletePrompt(id);
     }
-  };
-
-  const deletePrompt = async (id: string) => {
-    const updated = prompts.filter((p) => p.id !== id);
-    setPrompts(updated);
-    await deletePromptFromStorage(id);
   };
 
   const renderPromptItem = ({ item }: { item: Prompt }) => (
@@ -114,7 +71,9 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
   const renderEmptyState = () => (
     <EmptyState
       category={category}
-      onCreatePress={() => tabNavigation.navigate('Sandbox', {})}
+      onCreatePress={() => {
+        navigateToEditor('Prompt');
+      }}
     />
   );
 
@@ -167,7 +126,7 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
             setConfirmPromptDelete(false);
           }
           if (pendingDeleteId) {
-            deletePrompt(pendingDeleteId);
+            deletePrompt(pendingDeleteId);  // <-- direct call, not handleDeletePrompt()
           }
           setShowConfirmModal(false);
           setPendingDeleteId(null);

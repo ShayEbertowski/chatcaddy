@@ -17,35 +17,36 @@ import { LibraryProps, Prompt } from '../../types/prompt';
 import { useFolderStore } from '../../stores/useFolderStore';
 import { filterByFolder } from '../../utils/storage/libraryFilter';
 import { useTabNavigation } from '../../hooks/useTabNavigation';
-
-const FUNCTION_STORAGE_KEY = '@function_library';
+import { useRouter } from 'expo-router';
+import { useFunctionEditorStore } from '../../stores/useFunctionEditorStore';
+import { usePromptLibrary } from '../../stores/usePromptLibrary';
+import { useSettingsStore } from '../../stores/useSettingsStore';
+import { useFunctionStore } from '../../stores/useFunctionStore';
+import ConfirmModal from '../../components/modals/ConfirmModal';
+import { useNavigateToEditor } from '../../stores/useNavigateToEditor';
 
 export default function FunctionLibraryScreen({ category }: LibraryProps) {
-    const [functions, setFunctions] = useState<Prompt[]>([]);
     const [tapBehavior, setTapBehavior] = useState('preview');
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const tabNavigation = useTabNavigation();
 
     const [isPickerVisible, setPickerVisible] = useState(false);
-    const [selectedFolder, setSelectedFolder] = useState('All');
+    const [selectedFolder, setSelectedFolder] = useState('Uncategorized');
 
-    const folders = useFolderStore().folders.filter(f => f.type === 'prompts');
-    const filteredFunctions = selectedFolder === 'All'
-        ? functions
-        : functions.filter((f: any) => f.folder === selectedFolder);
+    const foldersFromStore = useFolderStore().folders.filter(f => f.type === 'prompts');
+    const folders = [{ id: 'All' }, { id: 'Uncategorized' }, ...foldersFromStore];
 
-    useEffect(() => {
-        const load = async () => {
-            const stored = await AsyncStorage.getItem(FUNCTION_STORAGE_KEY);
-            if (stored) {
-                setFunctions(JSON.parse(stored));
-            }
-        };
-        load();
+    const { functions } = useFunctionStore();
+    const filteredFunctions = filterByFolder(functions, selectedFolder);
 
-        const unsubscribe = navigation.addListener('focus', load);
-        return () => unsubscribe();
-    }, [navigation]);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+    const confirmFunctionDelete = useSettingsStore((s) => s.confirmPromptDelete);
+    const { deleteFunction } = useFunctionStore();
+    const setConfirmFunctionDelete = useSettingsStore((s) => s.setConfirmPromptDelete);
+    const router = useRouter();
+    const navigateToEditor = useNavigateToEditor();
+
 
     useEffect(() => {
         const loadBehavior = async () => {
@@ -56,32 +57,27 @@ export default function FunctionLibraryScreen({ category }: LibraryProps) {
     }, []);
 
     const handleFunctionTap = async (prompt: Prompt) => {
-        try {
-            const behavior = await AsyncStorage.getItem('@prompt_tap_behavior');
-            navigation.navigate('Main', {
-                screen: 'Sandbox',
-                params: {
-                    prompt,
-                    autoRun: behavior === 'run',
-                },
-            });
-        } catch (err) {
-            console.error('Failed to navigate to sandbox:', err);
-        }
+        // TODO ---
     };
 
-    const handleDeleteFunction = async (id: string) => {
-        const updated = functions.filter((f) => f.id !== id);
-        setFunctions(updated);
-        await AsyncStorage.setItem(FUNCTION_STORAGE_KEY, JSON.stringify(updated));
+    const handleDeleteFunction = (id: string) => {
+        if (confirmFunctionDelete) {
+            setPendingDeleteId(id);
+            setShowConfirmModal(true);
+        } else {
+            console.log('🐒');
+
+            deleteFunction(id);
+        }
     };
 
     const renderEmptyState = () => (
         <EmptyState
             category={category}
             onCreatePress={() => {
-                tabNavigation.navigate('Sandbox', {});
+                navigateToEditor('Function');
             }}
+
         />
     );
 
@@ -91,16 +87,9 @@ export default function FunctionLibraryScreen({ category }: LibraryProps) {
             title={item.title}
             content={item.content}
             onPress={() => handleFunctionTap(item)}
-            onEdit={() =>
-                navigation.navigate('Main', {
-                    screen: 'Sandbox',
-                    params: {
-                        editId: item.id,
-                        prompt: item,
-                        autoRun: false,
-                    },
-                })
-            }
+            onEdit={() => {
+                navigateToEditor('Function');
+            }}
             onDelete={() => handleDeleteFunction(item.id)}
         />
     );
@@ -138,12 +127,35 @@ export default function FunctionLibraryScreen({ category }: LibraryProps) {
                                 }}
                                 style={styles.modalItem}
                             >
-                                <Text style={styles.modalItemText}>{folder.name}</Text>
+                                <Text style={styles.modalItemText}>{folder.id}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>
                 </View>
             )}
+
+            <ConfirmModal
+                visible={showConfirmModal}
+                title="Delete Prompt?"
+                message="Are you sure you want to delete this prompt?"
+                confirmText="Delete"
+                cancelText="Cancel"
+                showCheckbox
+                onCancel={() => {
+                    setShowConfirmModal(false);
+                    setPendingDeleteId(null);
+                }}
+                onConfirm={(dontShowAgain: any) => {
+                    if (dontShowAgain) {
+                        setConfirmFunctionDelete(false);
+                    }
+                    if (pendingDeleteId) {
+                        handleDeleteFunction(pendingDeleteId);
+                    }
+                    setShowConfirmModal(false);
+                    setPendingDeleteId(null);
+                }}
+            />
         </SafeAreaView>
     );
 }

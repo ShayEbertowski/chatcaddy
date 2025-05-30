@@ -18,6 +18,7 @@ import { runPrompt } from '../../src/utils/prompt/runPrompt';
 import { usePromptEditorStore } from '../../src/stores/usePromptEditorStore';
 import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
 import { useNavigation } from 'expo-router';
+import InsertModalV2 from '../../src/components/modals/InsertModalV2';
 
 
 export default function RunPrompt() {
@@ -35,6 +36,7 @@ export default function RunPrompt() {
     const [showInsertModal, setShowInsertModal] = useState(false);
 
     const navigation = useNavigation();
+    const functions = useFunctionStore((s) => s.functions);
 
     useEffect(() => {
         navigation.setOptions({
@@ -129,33 +131,22 @@ export default function RunPrompt() {
                             setInsertTarget(null);
                         }}
                     >
-                        <Text style={styles.title}>Insert Function</Text>
-                        {useFunctionStore.getState().functions.map((fn) => (
-                            <TouchableOpacity
-                                key={fn.id}
-                                style={{ paddingVertical: 10 }}
-                                onPress={() => {
-                                    setInputs((prev) => ({
-                                        ...prev,
-                                        [insertTarget]: fn.value,
-                                    }));
-                                    setShowInsertModal(false);
-                                    setInsertTarget(null);
-                                }}
-                            >
-                                <Text style={{ color: colors.primary }}>{fn.name}</Text>
-                            </TouchableOpacity>
-                        ))}
-
-                        <TouchableOpacity
-                            onPress={() => {
+                        <InsertModalV2
+                            visible={showInsertModal}
+                            onRequestClose={() => {
                                 setShowInsertModal(false);
                                 setInsertTarget(null);
                             }}
-                            style={[styles.button, { marginTop: 16 }]}
-                        >
-                            <Text style={styles.cancelText}>Cancel</Text>
-                        </TouchableOpacity>
+                            insertTarget={insertTarget ?? ''}
+                            onInsert={(value) => {
+                                setInputs((prev) => ({
+                                    ...prev,
+                                    [insertTarget ?? '']: value,
+                                }));
+                            }}
+                            entityType="Function" // or dynamically pass in entity type if you want
+                        />
+
                     </BaseModal>
                 )}
 
@@ -233,6 +224,8 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             marginBottom: 4,
         },
         button: {},
-        cancelText: {}
+        cancelText: {
+            color: colors.text
+        }
 
     });

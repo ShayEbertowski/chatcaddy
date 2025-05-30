@@ -1,13 +1,14 @@
 import React from 'react';
-import { ViewProps } from 'react-native';
+import { ViewProps, StyleProp, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColors } from '../../hooks/useColors';
 
-export const ThemedSafeArea = ({
-    children,
-    style,
-    ...rest
-}: ViewProps & { children?: React.ReactNode }) => {
+type ThemedSafeAreaProps = ViewProps & {
+    children?: React.ReactNode;
+    style?: StyleProp<ViewStyle>;
+};
+
+export const ThemedSafeArea: React.FC<ThemedSafeAreaProps> = ({ children, style, ...rest }) => {
     const colors = useColors();
 
     return (

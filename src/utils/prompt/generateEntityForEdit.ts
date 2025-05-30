@@ -15,12 +15,12 @@ export function getEntityForEdit(name: string): { type: EntityType; value: strin
 
     const getSnippet = useSnippetStore.getState().getSnippet(name);
     if (getSnippet !== undefined) {
-        return { type: 'Snippet', value: getSnippet };
+        return { type: 'Snippet', value: getSnippet.content };
     }
 
     const getFunction = useFunctionStore.getState().getFunction(name);
     if (getFunction !== undefined) {
-        return { type: 'Function', value: getFunction.value };
+        return { type: 'Function', value: getFunction.content };
     }
 
     // Fallback

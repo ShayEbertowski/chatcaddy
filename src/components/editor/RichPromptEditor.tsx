@@ -46,7 +46,6 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
     const sharedStyles = getSharedStyles(colors);
     const styles = getStyles(colors);
 
-    // const [entityType, setEntityType] = useState<'Prompt' | 'Function' | 'Snippet'>('Prompt');
 
 
     const parsedPrompt = useMemo(() => {
@@ -278,7 +277,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                 onInsert={(mode, name, value) => {
                     if (mode === 'Function') {
                         const store = useFunctionStore.getState();
-                        if (isEditingVariable) store.removeFunction(name);
+                        if (isEditingVariable) store.deleteFunction(name);
                         store.setFunction(name, value);
                     } else if (mode === 'Snippet') {
                         const store = useSnippetStore.getState();

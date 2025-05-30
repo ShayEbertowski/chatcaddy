@@ -9,6 +9,7 @@ import PromptSearch from '../../../src/components/prompt/PromptSearch';
 import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
 import { useVariableStore } from '../../../src/stores/useVariableStore';
 import PromptComposer from '../../../src/components/composer/PromptComposer';
+import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 
 export default function Composer() {
     const [promptMap, setPromptMap] = useState<Record<string, Prompt>>({});
@@ -51,105 +52,112 @@ export default function Composer() {
 
     if (isPicking) {
         return (
-            <View style={{ flex: 1 }}>
-                {/* 🧭 This toggle block stays here, inside the screen */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Start With</Text>
-                    <View style={styles.toggleRow}>
-                        <TouchableOpacity
-                            style={[
-                                styles.toggleButton,
-                                mode === 'search' && styles.toggleButtonSelected,
-                            ]}
-                            onPress={() => setMode('search')}
-                        >
-                            <Text
+            <ThemedSafeArea>
+                <View style={{ flex: 1 }}>
+                    {/* 🧭 This toggle block stays here, inside the screen */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Start With</Text>
+                        <View style={styles.toggleRow}>
+                            <TouchableOpacity
                                 style={[
-                                    styles.toggleButtonText,
-                                    mode === 'search' && styles.toggleButtonTextSelected,
+                                    styles.toggleButton,
+                                    mode === 'search' && styles.toggleButtonSelected,
                                 ]}
+                                onPress={() => setMode('search')}
                             >
-                                Search
-                            </Text>
-                        </TouchableOpacity>
+                                <Text
+                                    style={[
+                                        styles.toggleButtonText,
+                                        mode === 'search' && styles.toggleButtonTextSelected,
+                                    ]}
+                                >
+                                    Search
+                                </Text>
+                            </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={[
-                                styles.toggleButton,
-                                mode === 'create' && styles.toggleButtonSelected,
-                            ]}
-                            onPress={() => setMode('create')}
-                        >
-                            <Text
+                            <TouchableOpacity
                                 style={[
-                                    styles.toggleButtonText,
-                                    mode === 'create' && styles.toggleButtonTextSelected,
+                                    styles.toggleButton,
+                                    mode === 'create' && styles.toggleButtonSelected,
                                 ]}
+                                onPress={() => setMode('create')}
                             >
-                                Create New
-                            </Text>
-                        </TouchableOpacity>
+                                <Text
+                                    style={[
+                                        styles.toggleButtonText,
+                                        mode === 'create' && styles.toggleButtonTextSelected,
+                                    ]}
+                                >
+                                    Create New
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
+
+                    {/* 👇 Then conditional render based on mode */}
+                    {mode === 'search' && (
+                        <PromptSearch onSelect={(prompt) => {
+                            setCurrentPrompt(prompt);
+                            setIsPicking(false);
+                            setHistory([]);
+                        }} />
+                    )}
+
+                    {mode === 'create' && (
+                        <View style={{ flex: 1, padding: 16 }}>
+                            <RichPromptEditor
+                                text={newText}
+                                onChangeText={setNewText}
+                                entityType={newType}
+                                onChangeEntityType={setNewType}
+                            />
+                            <Button
+                                title="Use This Prompt"
+                                onPress={() => {
+                                    const prompt: Prompt = {
+                                        id: Date.now().toString(),
+                                        title: 'Untitled',
+                                        content: newText,
+                                        folder: 'default',
+                                        type: newType,
+                                        variables: useVariableStore.getState().values,
+
+                                    };
+                                    setCurrentPrompt(prompt);
+                                    setIsPicking(false);
+                                    setHistory([]);
+                                    setNewText('');
+                                }}
+                            />
+                        </View>
+                    )}
                 </View>
-
-                {/* 👇 Then conditional render based on mode */}
-                {mode === 'search' && (
-                    <PromptSearch onSelect={(prompt) => {
-                        setCurrentPrompt(prompt);
-                        setIsPicking(false);
-                        setHistory([]);
-                    }} />
-                )}
-
-                {mode === 'create' && (
-                    <View style={{ flex: 1, padding: 16 }}>
-                        <RichPromptEditor
-                            text={newText}
-                            onChangeText={setNewText}
-                            entityType={newType}
-                            onChangeEntityType={setNewType}
-                        />
-                        <Button
-                            title="Use This Prompt"
-                            onPress={() => {
-                                const prompt: Prompt = {
-                                    id: Date.now().toString(),
-                                    title: 'Untitled',
-                                    content: newText,
-                                    folder: 'default',
-                                    type: newType,
-                                    variables: useVariableStore.getState().values,
-
-                                };
-                                setCurrentPrompt(prompt);
-                                setIsPicking(false);
-                                setHistory([]);
-                                setNewText('');
-                            }}
-                        />
-                    </View>
-                )}
-            </View>
+            </ThemedSafeArea>
         );
     }
 
 
     if (!currentPrompt) {
-        return <Text style={{ padding: 20, fontSize: 16 }}>Loading...</Text>;
+        return
+        <ThemedSafeArea>
+            <Text style={{ padding: 20, fontSize: 16 }}>Loading...</Text>
+        </ThemedSafeArea>;
     }
 
     return (
-        <View style={{ flex: 1 }}>
-            <PromptComposer prompt={currentPrompt} onZoomIntoPrompt={zoomIntoPrompt} />
+        <ThemedSafeArea>
+            <View style={{ flex: 1 }}>
+                <PromptComposer prompt={currentPrompt} onZoomIntoPrompt={zoomIntoPrompt} />
 
-            {history.length > 0 && (
-                <Button title="‹ Zoom Out" onPress={zoomOut} />
-            )}
+                {history.length > 0 && (
+                    <Button title="‹ Zoom Out" onPress={zoomOut} />
+                )}
 
-            <Button
-                title="Pick a different prompt"
-                onPress={() => router.push('/pick-prompt?mode=root')}
-            />        </View>
+                <Button
+                    title="Pick a different prompt"
+                    onPress={() => router.push('/pick-prompt?mode=root')}
+                />        </View>
+        </ThemedSafeArea>
     );
 }
 
