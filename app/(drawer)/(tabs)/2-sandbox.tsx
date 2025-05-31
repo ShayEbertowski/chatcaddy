@@ -197,7 +197,7 @@ export default function Sandbox() {
         console.log('😳😳');
 
         try {
-            await addOrUpdatePrompt(updatedPrompt, isEditing);
+            await addOrUpdatePrompt(updatedPrompt);
             resetEditor();
         } catch {
             Alert.alert('Error', `Failed to ${isEditing ? 'update' : 'save'} prompt.`);

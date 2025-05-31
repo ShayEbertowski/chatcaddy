@@ -26,21 +26,34 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     signUp: async (email, password) => {
         set({ loading: true });
-        const res = await signUp(email, password);
-        console.log('Signed up', res);
-        set({ loading: false });
+        try {
+            const res = await signUp(email, password);
+            console.log('Signed up', res);
+        } catch (e) {
+            console.error('Sign up failed', e);
+            throw e; // allow error to bubble up so your UI can alert
+        } finally {
+            set({ loading: false });
+        }
     },
 
     signIn: async (email, password) => {
         set({ loading: true });
-        const res = await signIn(email, password);
-        await SecureStore.setItemAsync('accessToken', res.access_token);
-        set({
-            accessToken: res.access_token,
-            user: res.user,
-            loading: false,
-        });
+        try {
+            const res = await signIn(email, password);
+            await SecureStore.setItemAsync('accessToken', res.access_token);
+            set({
+                accessToken: res.access_token,
+                user: res.user,
+            });
+        } catch (e) {
+            console.error('Sign in failed', e);
+            throw e;
+        } finally {
+            set({ loading: false });
+        }
     },
+
 
     signOut: async () => {
         await SecureStore.deleteItemAsync('accessToken');

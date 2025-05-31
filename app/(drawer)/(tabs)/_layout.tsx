@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerActions, useNavigation } from '@react-navigation/native';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
@@ -8,8 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function TabLayout() {
     const navigation = useNavigation();
     const colors = useColors();
-    const insets = useSafeAreaInsets();
-
+    const router = useRouter();
 
     const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
         '1-library': 'library-outline',
@@ -44,7 +43,7 @@ export default function TabLayout() {
                     borderTopColor: colors.border,
                     color: colors.text
                 },
-             
+
                 headerTitleStyle: {
                     color: colors.text,
                 },
@@ -63,6 +62,14 @@ export default function TabLayout() {
                             source={require('../../../assets/avatar.png')}
                             style={{ width: 32, height: 32, borderRadius: 16 }}
                         />
+                    </TouchableOpacity>
+                ),
+                headerRight: () => (
+                    <TouchableOpacity
+                        onPress={() => router.push('/ideas')}
+                        style={{ marginRight: 12 }}
+                    >
+                        <Ionicons name="bulb-outline" size={24} color={colors.primary} />
                     </TouchableOpacity>
                 ),
                 headerTitle: labels[route.name] ?? route.name, // ✅ just a string, not a View

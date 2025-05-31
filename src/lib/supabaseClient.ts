@@ -2,8 +2,8 @@ import { PostgrestClient } from '@supabase/postgrest-js';
 import 'react-native-url-polyfill/auto';
 import 'react-native-get-random-values';
 
-const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR-ANON-KEY';
+const SUPABASE_URL = 'https://zepkjgnkqdddzsmstqtu.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplcGtqZ25rcWRkZHpzbXN0cXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Mzc5OTEsImV4cCI6MjA2NDIxMzk5MX0.hKJbh0SuH1GeK2UmnxnE108bw2Jc1f8IGpLJN_h4XWI';
 
 export const supabaseData = new PostgrestClient(`${SUPABASE_URL}/rest/v1`, {
     headers: {

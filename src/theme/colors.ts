@@ -1,10 +1,13 @@
 // theme/colors.ts
 
 export const light = {
-    primary: '#007AFF',
+    primary: '#2ab3a6',
     onPrimary: '#f8f9fa',
     background: '#ffffff',
     surface: '#ffffff',
+    placeholder: '#999999',
+
+    accent: '#145374',
 
     active: "#007AFF",
 
@@ -19,15 +22,23 @@ export const light = {
     inputBackground: '#f9f9f9',
     disabledBackground: '#eeeeee',
 
+    warning: '#ffa726',
+
     error: 'red',
     toggleBackground: '#eeeeee',
+
+    success: '4caf50'
 };
 
 export const dark = {
-    primary: '#0a84ff',
+    primary: '#2ab3a6',
     onPrimary: '#ffffff',
     background: '#0e0e0e',
     surface: '#1a1a1a',
+    placeholder: '#AAAAAA',
+
+    accent: '#145374',
+
 
     active: "#007AFF",
 
@@ -42,6 +53,11 @@ export const dark = {
     inputBackground: '#2c2c2e',
     disabledBackground: '#3a3a3c',
 
+    warning: '#ffa726',
+
     error: '#ff453a',
     toggleBackground: '#3a3a3c',
+
+    success: '4caf50'
+
 };

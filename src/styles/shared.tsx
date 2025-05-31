@@ -123,6 +123,14 @@ export const getSharedStyles = ({ isDark, ...colors }: Theme) =>
       flex: 1,
       color: colors.text,
     },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.text,
+      color: colors.text,
+      borderRadius: 8,
+      padding: 12,
+      marginBottom: 8,
+    },
   });
 
 

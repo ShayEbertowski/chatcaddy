@@ -162,7 +162,7 @@ export default function Settings() {
                         <TouchableOpacity style={styles.actionButton} onPress={handleEditOrSave}>
                             <Text style={styles.actionButtonText}>{editable ? 'Save' : 'Edit'}</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.actionButton} onPress={handleTestKey}>
+                        <TouchableOpacity style={styles.actionButtonSecondary} onPress={handleTestKey}>
                             <Text style={styles.actionButtonText}>Test</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.clearButton} onPress={confirmClearKey}>
@@ -330,7 +330,14 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             marginTop: 12,
         },
         actionButton: {
-            backgroundColor: colors.primary,
+            backgroundColor: colors.accent,
+            paddingVertical: 10,
+            paddingHorizontal: 16,
+            borderRadius: 8,
+        },
+        actionButtonSecondary: {
+            borderColor: colors.accent,
+            borderWidth: 3,
             paddingVertical: 8,
             paddingHorizontal: 16,
             borderRadius: 8,
@@ -345,7 +352,7 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             alignSelf: 'center',
         },
         clearButtonText: {
-            color: colors.error ?? 'red',
+            color: colors.warning ?? 'red',
             fontSize: 14,
             fontWeight: '600',
         },
