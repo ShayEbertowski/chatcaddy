@@ -28,7 +28,7 @@ export default function CollapsibleSection({ title, isOpen, onToggle, children }
                 <MaterialIcons
                     name={isOpen ? 'expand-less' : 'expand-more'}
                     size={20}
-                    color={colors.secondaryText} // ← ✅ dynamic icon color
+                    color={colors.accent} // ← ✅ dynamic icon color
                 />
             </TouchableOpacity>
 
@@ -51,7 +51,7 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
         title: {
             fontSize: 15,
             fontWeight: '600',
-            color: colors.text, // ← was '#8e8e93'
+            color: colors.accent, // ← was '#8e8e93'
         },
         body: {
             marginTop: 12,

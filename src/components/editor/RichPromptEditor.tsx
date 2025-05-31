@@ -142,7 +142,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                 }
                 selection={selection}
                 multiline
-                style={styles.input}
+                style={[styles.input, {borderColor: colors.borderThin}]}
                 placeholder="Try anything here..."
                 placeholderTextColor={colors.secondaryText}
             />
@@ -151,6 +151,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                 title="Variables"
                 isOpen={showVariables}
                 onToggle={() => setShowVariables(!showVariables)}
+
             >
                 <View style={styles.chipContainer}>
                     {usedVars.length === 0 ? (
@@ -166,6 +167,9 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                     )}
                 </View>
             </CollapsibleSection>
+
+            <View style={sharedStyles.divider} />
+
 
             <CollapsibleSection
                 title="Preview"
@@ -191,6 +195,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                 </View>
             </CollapsibleSection>
 
+            <View style={sharedStyles.divider} />
 
 
             <InsertModal
@@ -289,7 +294,7 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
         },
 
         previewContainer: {
-            paddingVertical: 12, 
-            paddingHorizontal: 8, 
+            paddingVertical: 12,
+            paddingHorizontal: 8,
         },
     });

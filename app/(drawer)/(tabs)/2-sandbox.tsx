@@ -53,8 +53,8 @@ export default function Sandbox() {
     const autoRun = usePromptEditorStore((s) => s.autoRun);
 
     const saveButtonDisabled = inputText.trim() === '';
-    const saveButtonIconColor = saveButtonDisabled ? colors.secondaryText : colors.primary;
-    const saveButtonTextColor = saveButtonDisabled ? colors.secondaryText : colors.primary;
+    const saveButtonIconColor = saveButtonDisabled ? colors.border : colors.accent;
+    const saveButtonTextColor = saveButtonDisabled ? colors.border : colors.accent;
     const prompts = usePromptStore((state) => state.prompts);
     const addOrUpdatePrompt = usePromptStore((state) => state.addOrUpdatePrompt);
     const params = useLocalSearchParams();
@@ -259,9 +259,10 @@ export default function Sandbox() {
                     style={[
                         styles.button,
                         {
+                            opacity: saveButtonDisabled ? 0.4 : 1,
                             backgroundColor: colors.card,
                             borderWidth: 1,
-                            borderColor: saveButtonDisabled ? colors.border : colors.primary,
+                            borderColor: colors.accent,
                         },
                     ]}
                     onPress={handleSavePrompt}
