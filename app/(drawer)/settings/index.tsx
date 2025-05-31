@@ -3,23 +3,20 @@ import {
     View,
     Text,
     TextInput,
-    Button,
     Alert,
     StyleSheet,
     ScrollView,
     TouchableOpacity,
     Switch,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { useColors } from '../../../src/hooks/useColors';
 import { useSettingsStore } from '../../../src/stores/useSettingsStore';
 import { getSharedStyles } from '../../../src/styles/shared';
 import { useThemeMode } from '../../../src/theme/ThemeProvider';
-
+import { loadUserPreferences, saveUserPreferences } from '../../../src/utils/preferences/preferences';
+import { loadApiKey } from '../../../src/utils/apiKeyStorage';
 
 
 const API_KEY_STORAGE_KEY = 'openai_api_key';
@@ -41,37 +38,38 @@ export default function Settings() {
     const setConfirmPromptDelete = useSettingsStore((s) => s.setConfirmPromptDelete);
     const navigation = useNavigation();
 
-
     useEffect(() => {
-        const loadKey = async () => {
-            try {
-                const storedKey = await SecureStore.getItemAsync(API_KEY_STORAGE_KEY);
-                if (storedKey) {
-                    setApiKey(storedKey);
-                    setHasSavedKey(true);
-                    setEditable(false);
-                }
-            } catch (error) {
-                console.error('Failed to load API key:', error);
+        const loadAllSettings = async () => {
+            // load API Key locally
+            const storedKey = await loadApiKey();
+            if (storedKey) {
+                setApiKey(storedKey);
+                setHasSavedKey(true);
+                setEditable(false);
+            }
+
+            // load preferences from DB
+            const prefs = await loadUserPreferences();
+            if (!prefs) return;
+
+            if (prefs.tap_behavior) {
+                setTapBehavior(prefs.tap_behavior);
+            }
+            if (prefs.appearance_mode) {
+                setMode(prefs.appearance_mode);
+            }
+            if (prefs.confirm_prompt_delete !== undefined) {
+                setConfirmPromptDelete(prefs.confirm_prompt_delete);
             }
         };
 
-        const loadSettings = async () => {
-            try {
-                const storedBehavior = await AsyncStorage.getItem(TAP_BEHAVIOR_KEY);
-                if (storedBehavior) setTapBehavior(storedBehavior);
-            } catch (error) {
-                console.error('Failed to load tap behavior:', error);
-            }
-        };
-
-        loadKey();
-        loadSettings();
+        loadAllSettings();
     }, []);
 
-    const saveApiKey = async () => {
+
+    const saveApiKey = async (apiKey: string) => {
         try {
-            await SecureStore.setItemAsync(API_KEY_STORAGE_KEY, apiKey);
+            await saveApiKey(apiKey);  // ← from utils/apiKeyStorage
             Alert.alert('Success', 'API key saved.');
             setStatus('');
             setEditable(false);
@@ -84,7 +82,7 @@ export default function Settings() {
 
     const clearApiKey = async () => {
         try {
-            await SecureStore.deleteItemAsync(API_KEY_STORAGE_KEY);
+            await clearApiKey(); // from utils/apiKeyStorage
             setApiKey('');
             setStatus('🔒 Key cleared');
             setEditable(true);
@@ -96,7 +94,6 @@ export default function Settings() {
         }
     };
 
-
     const confirmClearKey = () => {
         Alert.alert('Confirm Deletion', 'Are you sure?', [
             { text: 'Cancel', style: 'cancel' },
@@ -104,9 +101,9 @@ export default function Settings() {
         ]);
     };
 
-    const saveTapBehavior = async (value: string) => {
+    const saveTapBehavior = async (value: 'preview' | 'run') => {
         try {
-            await AsyncStorage.setItem(TAP_BEHAVIOR_KEY, value);
+            await saveUserPreferences({ tap_behavior: value });
             setTapBehavior(value);
         } catch (error) {
             console.error('Failed to save tap behavior:', error);
@@ -115,7 +112,7 @@ export default function Settings() {
 
     const handleEditOrSave = () => {
         if (editable) {
-            saveApiKey();
+            saveApiKey(apiKey);  // ✅ pass current state value
         } else {
             setEditable(true);
         }
@@ -405,3 +402,7 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
 Settings.options = {
     title: 'Settings',
 };
+function loadPreferences() {
+    throw new Error('Function not implemented.');
+}
+
