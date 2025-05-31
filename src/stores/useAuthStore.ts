@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
-import { signIn as signInApi, signUp as signUpApi } from '../lib/auth';
+import { signIn, signUp } from '../lib/auth';
 
 type AuthState = {
     user: any | null;
@@ -19,17 +19,20 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     loadSession: async () => {
         const token = await SecureStore.getItemAsync('accessToken');
-        if (token) {
-            set({ accessToken: token });
-        }
+        if (!token) return;
+
+        // You may optionally hit /auth/v1/user to fetch user info if needed:
+        set({
+            accessToken: token,
+            user: { email: 'restored-session' },  // Simplified
+        });
     },
 
     signUp: async (email, password) => {
         set({ loading: true });
         try {
-            const data = await signInApi(email, password);
+            const data = await signUp(email, password);
             console.log('Signed up:', data);
-            // OPTIONAL: you can also auto-login after signup if you want
         } catch (e: any) {
             console.error('Sign up failed', e);
             throw e;
@@ -41,14 +44,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     signIn: async (email, password) => {
         set({ loading: true });
         try {
-            const data = await signInApi(email, password);
-            const session = data.session;
-            if (!session) throw new Error('No session returned');
+            const data = await signIn(email, password);
+            const { access_token, user } = data;
 
-            await SecureStore.setItemAsync('accessToken', session.access_token);
+            await SecureStore.setItemAsync('accessToken', access_token);
             set({
-                accessToken: session.access_token,
-                user: session.user,
+                accessToken: access_token,
+                user: user,
             });
         } catch (e: any) {
             console.error('Sign in failed', e);

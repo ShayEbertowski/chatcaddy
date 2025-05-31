@@ -1,30 +1,38 @@
-const SUPABASE_URL = 'https://zepkjgnkqdddzsmstqtu.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InplcGtqZ25rcWRkZHpzbXN0cXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Mzc5OTEsImV4cCI6MjA2NDIxMzk5MX0.hKJbh0SuH1GeK2UmnxnE108bw2Jc1f8IGpLJN_h4XWI';
+import Constants from 'expo-constants';
 
-import { supabase } from './supabaseClient';
+const SUPABASE_URL = Constants.expoConfig?.extra?.SUPABASE_URL;
+const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.SUPABASE_ANON_KEY;
 
-export async function signIn(email: string, password: string) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-        throw error;
-    }
-
-    return data;  // ✅ Now Zustand receives { session, user }
-}
+const AUTH_URL = `${SUPABASE_URL}/auth/v1`;
 
 export async function signUp(email: string, password: string) {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const res = await fetch(`${AUTH_URL}/signup`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ email, password }),
+    });
 
-    if (error) {
-        throw error;
-    }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'Sign up failed');
 
     return data;
 }
 
+export async function signIn(email: string, password: string) {
+    const res = await fetch(`${AUTH_URL}/token?grant_type=password`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ email, password }),
+    });
 
-// Sign out (optional - mostly handled client-side now)
-export async function signOut() {
-    // Supabase tokens are stateless JWTs - client-side delete usually enough
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'Sign in failed');
+
+    return data;
 }
