@@ -17,10 +17,8 @@ function ThemedStatusBar() {
 }
 
 export default function RootLayout() {
-    const loadSession = useAuthStore((s) => s.loadSession);
-
     useEffect(() => {
-        loadSession();
+        useAuthStore.getState().loadSession();
     }, []);
 
     return (
