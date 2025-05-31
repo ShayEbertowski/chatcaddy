@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { PostgrestClient } from '@supabase/postgrest-js';
 import { useAuthStore } from './useAuthStore';
 import { normalizeVariables } from '../utils/prompt/promptManager';
-import { Prompt } from '../types/prompt';
+import { Prompt, PromptRow } from '../types/prompt';
+import { createSupabaseClient } from '../lib/supabaseClient';
 
 const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
 
@@ -17,18 +17,14 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
     prompts: [],
 
     loadPrompts: async () => {
-        const token = useAuthStore.getState().accessToken;
-        if (!token) return;
+        const client = createSupabaseClient();
 
-        const client = new PostgrestClient(`${SUPABASE_URL}/rest/v1`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const { data, error } = await client.from('prompts').select('*');
-        if (error) {
-            console.error('Error loading prompts:', error);
-            return;
-        }
+        const { data, error } = await client
+            .from<'prompts', PromptRow>('prompts')
+            .select('*'); if (error) {
+                console.error('Error loading prompts:', error);
+                return;
+            }
 
         set({
             prompts: data.map((p: any) => ({
@@ -38,37 +34,41 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
         });
     },
 
+
     addOrUpdatePrompt: async (prompt) => {
-        const token = useAuthStore.getState().accessToken;
-        if (!token) return;
-
-        const client = new PostgrestClient(`${SUPABASE_URL}/rest/v1`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const { error } = await client.from('prompts').upsert(prompt);
-        if (error) {
-            console.error('Error saving prompt:', error);
+        const user = useAuthStore.getState().user;
+        if (!user?.id) {
+            console.error('No user ID available');
             return;
+        }
+
+        const client = createSupabaseClient();
+
+        const { data, error } = await client
+            .from<'prompts', PromptRow>('prompts')
+            .select('*');
+
+        if (error) {
+            console.error('Supabase error:', error);
+        } else {
+            console.log('Supabase upsert success:', data);
         }
 
         await get().loadPrompts();
     },
+
 
     deletePrompt: async (id) => {
-        const token = useAuthStore.getState().accessToken;
-        if (!token) return;
+        const client = createSupabaseClient();
 
-        const client = new PostgrestClient(`${SUPABASE_URL}/rest/v1`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const { error } = await client.from('prompts').delete().eq('id', id);
-        if (error) {
-            console.error('Error deleting prompt:', error);
-            return;
-        }
+        const { data, error } = await client
+            .from<'prompts', PromptRow>('prompts')
+            .select('*'); if (error) {
+                console.error('Error deleting prompt:', error);
+                return;
+            }
 
         await get().loadPrompts();
     },
+
 }));

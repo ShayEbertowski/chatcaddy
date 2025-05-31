@@ -41,3 +41,15 @@ export type LibraryProps = {
 export type PromptPart =
     | { type: 'text'; value: string }
     | { type: 'variable'; value: string; defaultValue?: string };
+
+export type PromptRow = {
+    id: string;
+    title: string;
+    content: string;
+    folder: string;
+    type: 'Prompt' | 'Function' | 'Snippet';
+    variables: any; // or make this stricter if desired
+    user_id: string;
+    created_at: string;
+};
+

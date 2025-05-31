@@ -2,8 +2,13 @@ import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import { signIn, signUp } from '../lib/auth';
 
+type User = {
+    id: string;
+    email: string;
+};
+
 type AuthState = {
-    user: any | null;
+    user: User | null;
     accessToken: string | null;
     loading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
@@ -21,10 +26,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         const token = await SecureStore.getItemAsync('accessToken');
         if (!token) return;
 
-        // You may optionally hit /auth/v1/user to fetch user info if needed:
+        // Optional: you can fetch user from Supabase if you want full user object
         set({
             accessToken: token,
-            user: { email: 'restored-session' },  // Simplified
+            user: null,  // ← you may replace this with a fetched user if desired
         });
     },
 
@@ -48,9 +53,13 @@ export const useAuthStore = create<AuthState>((set) => ({
             const { access_token, user } = data;
 
             await SecureStore.setItemAsync('accessToken', access_token);
+
             set({
                 accessToken: access_token,
-                user: user,
+                user: {
+                    id: user.id,          // ✅ explicitly grab id
+                    email: user.email,    // ✅ explicitly grab email
+                },
             });
         } catch (e: any) {
             console.error('Sign in failed', e);
