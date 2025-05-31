@@ -29,7 +29,7 @@ type Props = {
     onChangeEntityType: (newType: 'Prompt' | 'Function' | 'Snippet') => void;
 };
 
-export default async function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType }: Props) {
+export default function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType }: Props) {
     const [selection, setSelection] = useState({ start: 0, end: 0 });
     const [showInsertModal, setShowInsertModal] = useState(false);
     const [isEditingVariable, setIsEditingVariable] = useState(false);
@@ -44,13 +44,6 @@ export default async function RichPromptEditor({ text, onChangeText, entityType,
     const styles = getStyles(colors);
     const addFunction = useFunctionStore((state) => state.addFunction);
     const variable = values[tempVariableName];
-
-    if (variable?.type !== 'string') {
-        console.warn("Only string variables can be saved as functions.");
-        return;
-    }
-
-    await addFunction(tempVariableName, variable.value);
 
     const parsedPrompt = useMemo(() => {
         const parts = text.split(/({{.*?}})/g);

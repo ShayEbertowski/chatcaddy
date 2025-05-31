@@ -2,8 +2,8 @@ import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { View, TouchableOpacity } from 'react-native';
 import UserAvatar from '../../../src/components/shared/UserAvatar';
-import { useThemeStore } from '../../../src/stores/useThemeStore';
 import { useColors } from '../../../src/hooks/useColors';
+import { useThemeStore } from '../../../src/stores/useThemeStore';
 
 export default function TabLayout() {
     const router = useRouter();
