@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
-import { signIn, signUp } from '../lib/auth';
+import { signIn as signInApi, signUp as signUpApi } from '../lib/auth';
 
 type AuthState = {
     user: any | null;
@@ -27,11 +27,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     signUp: async (email, password) => {
         set({ loading: true });
         try {
-            const res = await signUp(email, password);
-            console.log('Signed up', res);
-        } catch (e) {
+            const data = await signInApi(email, password);
+            console.log('Signed up:', data);
+            // OPTIONAL: you can also auto-login after signup if you want
+        } catch (e: any) {
             console.error('Sign up failed', e);
-            throw e; // allow error to bubble up so your UI can alert
+            throw e;
         } finally {
             set({ loading: false });
         }
@@ -40,20 +41,22 @@ export const useAuthStore = create<AuthState>((set) => ({
     signIn: async (email, password) => {
         set({ loading: true });
         try {
-            const res = await signIn(email, password);
-            await SecureStore.setItemAsync('accessToken', res.access_token);
+            const data = await signInApi(email, password);
+            const session = data.session;
+            if (!session) throw new Error('No session returned');
+
+            await SecureStore.setItemAsync('accessToken', session.access_token);
             set({
-                accessToken: res.access_token,
-                user: res.user,
+                accessToken: session.access_token,
+                user: session.user,
             });
-        } catch (e) {
+        } catch (e: any) {
             console.error('Sign in failed', e);
             throw e;
         } finally {
             set({ loading: false });
         }
     },
-
 
     signOut: async () => {
         await SecureStore.deleteItemAsync('accessToken');

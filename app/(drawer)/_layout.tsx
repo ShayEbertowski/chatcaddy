@@ -8,6 +8,7 @@ import { useAuthStore } from '../../src/stores/useAuthStore';
 export function CustomDrawerContent(props: any) {
     const colors = useColors();
     const user = useAuthStore((state) => state.user);
+    const signOut = useAuthStore((state) => state.signOut);
 
     return (
         <View
@@ -29,7 +30,6 @@ export function CustomDrawerContent(props: any) {
                     🧠 ChatCaddy
                 </Text>
 
-                {/* ✅ Always show Settings */}
                 <DrawerItem
                     label="Settings"
                     onPress={() => props.navigation.navigate('settings')}
@@ -45,7 +45,6 @@ export function CustomDrawerContent(props: any) {
                     inactiveTintColor={colors.text}
                 />
 
-                {/* ✅ Show Sign In only if not signed in */}
                 {!user && (
                     <DrawerItem
                         label="Sign In"
@@ -62,16 +61,35 @@ export function CustomDrawerContent(props: any) {
                         inactiveTintColor={colors.text}
                     />
                 )}
+
+                {user && (
+                    <DrawerItem
+                        label="Log Out"
+                        onPress={async () => {
+                            await signOut();
+                            // Optional: navigate after logout if needed
+                        }}
+                        icon={({ color, size }) => (
+                            <Ionicons name="log-out-outline" color={color} size={size} />
+                        )}
+                        labelStyle={{
+                            color: colors.text,
+                            fontWeight: '500',
+                            fontSize: 16,
+                        }}
+                        activeTintColor={colors.primary}
+                        inactiveTintColor={colors.text}
+                    />
+                )}
             </DrawerContentScrollView>
         </View>
     );
 }
 
-
 export default function DrawerLayout() {
     return (
         <Drawer
-            drawerContent={CustomDrawerContent}
+            drawerContent={(props) => <CustomDrawerContent {...props} />}
             screenOptions={{
                 headerShown: false,
             }}

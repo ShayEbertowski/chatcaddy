@@ -4,6 +4,7 @@ import { DrawerActions, useNavigation } from '@react-navigation/native';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { useColors } from '../../../src/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import UserAvatar from '../../../src/components/shared/UserAvatar';
 
 export default function TabLayout() {
     const navigation = useNavigation();
@@ -37,7 +38,7 @@ export default function TabLayout() {
                         color={color}
                     />
                 ),
-                tabBarActiveTintColor: colors.active,
+                tabBarActiveTintColor: colors.primary,
                 tabBarStyle: {
                     backgroundColor: colors.background,
                     borderTopColor: colors.border,
@@ -53,17 +54,7 @@ export default function TabLayout() {
                     borderBottomWidth: 1, // optional for a divider effect
                 },
                 headerTitleAlign: 'center', // ✅ center the title
-                headerLeft: () => (
-                    <TouchableOpacity
-                        onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-                        style={{ marginLeft: 12 }}
-                    >
-                        <Image
-                            source={require('../../../assets/avatar.png')}
-                            style={{ width: 32, height: 32, borderRadius: 16 }}
-                        />
-                    </TouchableOpacity>
-                ),
+                headerLeft: () => <UserAvatar />,
                 headerRight: () => (
                     <TouchableOpacity
                         onPress={() => router.push('/ideas')}
