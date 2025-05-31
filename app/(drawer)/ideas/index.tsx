@@ -1,27 +1,42 @@
 // app/(drawer)/ideas.tsx
-import { useState } from 'react';
 import { View, TextInput, Button, FlatList, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { getSharedStyles } from '../../../src/styles/shared';
 import { useColors } from '../../../src/hooks/useColors';
+import { useIdeaStore } from '../../../src/stores/useIdeaStore';
+import { useEffect, useState } from 'react';
+
 
 export default function IdeasScreen() {
-    const [ideas, setIdeas] = useState<string[]>([]);
     const [input, setInput] = useState('');
+
+    const ideas = useIdeaStore((state) => state.ideas);
+    const loadIdeas = useIdeaStore((state) => state.loadIdeas);
+    const addIdea = useIdeaStore((state) => state.addIdea);
+    const deleteIdea = useIdeaStore((state) => state.deleteIdea);
+
 
     const colors = useColors();
     const sharedStyle = getSharedStyles(colors);
 
-    const handleAddIdea = () => {
+    const handleAddIdea = async () => {
         if (input.trim() !== '') {
-            setIdeas((prevIdeas) => [...prevIdeas, input.trim()]);
+            await addIdea(input.trim());
             setInput('');
         }
     };
 
-    const handleDeleteIdea = (index: number) => {
-        setIdeas((prevIdeas) => prevIdeas.filter((_, i) => i !== index));
+    const handleDeleteIdea = async (id: string) => {
+        await deleteIdea(id);
     };
+
+
+    useEffect(() => {
+        loadIdeas();
+    }, []);
+
+
+
 
     return (
         <ThemedSafeArea>
@@ -36,16 +51,17 @@ export default function IdeasScreen() {
                 <Button title="Submit" onPress={handleAddIdea} />
                 <FlatList
                     data={ideas}
-                    keyExtractor={(item, index) => index.toString()}
-                    renderItem={({ item, index }) => (
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
                         <View style={styles.ideaItem}>
-                            <Text style={[styles.ideaText, { color: colors.text}]}>{item}</Text>
-                            <TouchableOpacity onPress={() => handleDeleteIdea(index)}>
+                            <Text style={[styles.ideaText, { color: colors.text }]}>{item.content}</Text>
+                            <TouchableOpacity onPress={() => handleDeleteIdea(item.id)}>
                                 <Text style={styles.deleteText}>Delete</Text>
                             </TouchableOpacity>
                         </View>
                     )}
                 />
+
             </View>
         </ThemedSafeArea>
     );

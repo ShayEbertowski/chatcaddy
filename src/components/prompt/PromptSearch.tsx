@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -8,34 +8,22 @@ import {
     ScrollView,
 } from 'react-native';
 import { Prompt } from '../../types/prompt';
-import { loadPrompts } from '../../utils/prompt/promptManager';
+import { usePromptStore } from '../../stores/usePromptsStore';
 
 type Props = {
     onSelect: (prompt: Prompt) => void;
 };
 
 export default function PromptSearch({ onSelect }: Props) {
-    const [prompts, setPrompts] = useState<Prompt[]>([]);
+    const prompts = usePromptStore((state) => state.prompts);
     const [search, setSearch] = useState('');
-
-    useEffect(() => {
-        loadPrompts().then(setPrompts);
-    }, []);
-
-    useEffect(() => {
-        setSearch('');
-        setPrompts([]); // optional: force re-fetch
-        loadPrompts().then(setPrompts);
-    }, []);
-
-
     const [isFocused, setIsFocused] = useState(false);
 
     const filtered = !isFocused
-        ? [] // only show results when focused
+        ? []
         : prompts.filter((p) => {
             const query = search.toLowerCase().trim();
-            if (query === '') return true; // 👈 show all if no search input
+            if (query === '') return true;
 
             const titleMatch = p.title.toLowerCase().includes(query);
             const contentMatch = p.content.toLowerCase().includes(query);
@@ -52,7 +40,6 @@ export default function PromptSearch({ onSelect }: Props) {
 
             return titleMatch || contentMatch || variableMatch;
         });
-
 
     return (
         <View style={styles.container}>
@@ -94,9 +81,7 @@ export default function PromptSearch({ onSelect }: Props) {
                 )}
             </ScrollView>
         </View>
-
     );
-
 }
 
 const styles = StyleSheet.create({

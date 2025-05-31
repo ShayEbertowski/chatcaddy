@@ -20,11 +20,14 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
     prompts: [],
 
     loadPrompts: async () => {
-        const client = createSupabaseClient();
+        const state = useAuthStore.getState();
+        const token = state.accessToken ?? undefined;
+        const client = createSupabaseClient(token);
 
         const { data, error } = await client
-            .from<'prompts', PromptRow>('prompts')
-            .select('*');
+            .from('prompts')
+            .select('*')
+            .eq('type', 'Prompt');
 
         if (error) {
             console.error('Error loading prompts:', error);
@@ -40,19 +43,16 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
     },
 
     addOrUpdatePrompt: async (prompt) => {
-        const user = useAuthStore.getState().user;
+        const state = useAuthStore.getState();
+        const user = state.user;
+        const token = state.accessToken ?? undefined;
+
         if (!user?.id) {
             console.error('No user ID available');
             return;
         }
 
-        const state = useAuthStore.getState();
-        const token = state.accessToken ?? undefined;
         const client = createSupabaseClient(token);
-        console.log({
-            apikey: SUPABASE_ANON_KEY,
-            authorization: token ? `Bearer ${token}` : `Bearer ${SUPABASE_ANON_KEY}`
-        });
 
         const { error } = await client
             .from('prompts')
@@ -68,7 +68,9 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
     },
 
     deletePrompt: async (id) => {
-        const client = createSupabaseClient();
+        const state = useAuthStore.getState();
+        const token = state.accessToken ?? undefined;
+        const client = createSupabaseClient(token);
 
         const { error } = await client
             .from('prompts')

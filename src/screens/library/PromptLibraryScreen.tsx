@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Text,
   StyleSheet,
@@ -7,9 +7,6 @@ import {
   SafeAreaView,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../types/navigation';
 import EmptyState from '../../components/shared/EmptyState';
 import PromptCard from '../../components/prompt/PromptCard';
 import { LibraryProps, Prompt } from '../../types/prompt';
@@ -21,6 +18,7 @@ import { useRouter } from 'expo-router';
 import { usePromptEditorStore } from '../../stores/usePromptEditorStore';
 import { usePromptStore } from '../../stores/usePromptsStore';
 import { useNavigateToEditor } from '../../stores/useNavigateToEditor';
+import { useAuthStore } from '../../stores/useAuthStore';
 
 export default function PromptLibraryScreen({ category }: LibraryProps) {
 
@@ -37,11 +35,13 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
   const filteredPrompts = filterByFolder(prompts, selectedFolder);
   const { deletePrompt } = usePromptStore();
   const navigateToEditor = useNavigateToEditor();
+  const initialized = useAuthStore((state) => state.initialized);
+  const loadPrompts = usePromptStore((state) => state.loadPrompts);
 
 
   const handlePromptTap = (prompt: Prompt) => {
     usePromptEditorStore.getState().setEditingPrompt(prompt, { autoRun: true });
-    router.push('run-prompt'); 
+    router.push('run-prompt');
   };
 
   const handleEditPrompt = (prompt: Prompt) => {
@@ -76,6 +76,12 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
       }}
     />
   );
+
+  useEffect(() => {
+    if (initialized) {
+      loadPrompts();
+    }
+  }, [initialized]);
 
   return (
     <SafeAreaView style={styles.container}>

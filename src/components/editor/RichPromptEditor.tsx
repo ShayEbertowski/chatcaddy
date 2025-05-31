@@ -19,8 +19,8 @@ import { useSnippetStore } from '../../stores/useSnippetStore';
 import { getEntityForEdit } from '../../utils/prompt/generateEntityForEdit';
 import { getSharedStyles, placeholderText } from '../../styles/shared';
 import { useColors } from '../../hooks/useColors';
-import { PromptPart, VariableValue } from '../../types/prompt';
-import { createStringValue, isStringValue, resolveVariableDisplayValue } from '../../utils/variables/variables';
+import { PromptPart } from '../../types/prompt';
+import { createStringValue, resolveVariableDisplayValue } from '../../utils/variables/variables';
 
 type Props = {
     text: string;
@@ -29,24 +29,28 @@ type Props = {
     onChangeEntityType: (newType: 'Prompt' | 'Function' | 'Snippet') => void;
 };
 
-export default function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType }: Props) {
+export default async function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType }: Props) {
     const [selection, setSelection] = useState({ start: 0, end: 0 });
     const [showInsertModal, setShowInsertModal] = useState(false);
     const [isEditingVariable, setIsEditingVariable] = useState(false);
     const [editMode, setEditMode] = useState<'Variable' | 'Function' | 'Snippet'>('Variable');
-
     const [tempVariableName, setTempVariableName] = useState('');
     const [tempVariableValue, setTempVariableValue] = useState('');
-    const [originalVariableName, setOriginalVariableName] = useState('');
     const [showVariables, setShowVariables] = useState(false);
     const [showPreview, setShowPreview] = useState(true);
-
     const { values, setVariable, getVariable, removeVariable } = useVariableStore.getState();
     const colors = useColors();
     const sharedStyles = getSharedStyles(colors);
     const styles = getStyles(colors);
+    const addFunction = useFunctionStore((state) => state.addFunction);
+    const variable = values[tempVariableName];
 
+    if (variable?.type !== 'string') {
+        console.warn("Only string variables can be saved as functions.");
+        return;
+    }
 
+    await addFunction(tempVariableName, variable.value);
 
     const parsedPrompt = useMemo(() => {
         const parts = text.split(/({{.*?}})/g);
@@ -87,20 +91,17 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
         });
     }, [parsedPrompt]);
 
-    const handleEditVariable = (name: string) => {
-        setIsEditingVariable(true);
-        setOriginalVariableName(name);
-        setTempVariableName(name);
-
-        const val = getVariable(name);
-        if (isStringValue(val)) {
-            setTempVariableValue(val.value);
-        } else {
-            setTempVariableValue('');
+    useEffect(() => {
+        if (variable?.type !== 'string') {
+            console.warn("Only string variables can be saved as functions.");
+            return;
         }
 
-        setShowInsertModal(true);
-    };
+        // safe to call async function inside here if needed
+        (async () => {
+            await addFunction(tempVariableName, variable.value);
+        })();
+    }, [variable, tempVariableName]);
 
 
     const renderPart = (part: PromptPart, i: number) => {
@@ -127,31 +128,6 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
         );
     };
 
-    const insertNamedVariable = () => {
-        const insert = `{{${tempVariableName}}}`;
-
-        if (isEditingVariable) {
-            const updatedText = text.replace(
-                new RegExp(`{{${originalVariableName}}}`, 'g'),
-                insert
-            );
-            onChangeText(updatedText);
-        } else {
-            const before = text.slice(0, selection.start);
-            const after = text.slice(selection.end);
-            const newText = before + insert + after;
-            const cursor = before.length + insert.length;
-            onChangeText(newText);
-            setSelection({ start: cursor, end: cursor });
-        }
-
-        setVariable(tempVariableName, createStringValue(tempVariableValue));
-        setShowInsertModal(false);
-        setIsEditingVariable(false);
-        setTempVariableName('');
-        setTempVariableValue('');
-    };
-
     const previewChunks = useMemo(() => {
         const parts = text.split(/({{.*?}})/g);
         return parts.map(part => {
@@ -164,6 +140,46 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
             return { type: 'text' as const, value: part };
         });
     }, [text]);
+
+    async function handleInsert(mode: 'Function' | 'Snippet' | 'Variable', name: string, value: string) {
+        if (mode === 'Function') {
+            const addFunction = useFunctionStore.getState().addFunction;
+            const deleteFunction = useFunctionStore.getState().deleteFunction;
+            const allFunctions = useFunctionStore.getState().functions;
+
+            if (isEditingVariable) {
+                const found = allFunctions.find((f) => f.title === name);
+                if (found) {
+                    await deleteFunction(found.id);
+                }
+            }
+
+            await addFunction(name, value);
+        }
+        else if (mode === 'Snippet') {
+            const store = useSnippetStore.getState();
+            if (isEditingVariable) store.removeSnippet(name);
+            store.setSnippet(name, value);
+        }
+        else {
+            if (isEditingVariable) removeVariable(name);
+            setVariable(name, createStringValue(value));
+        }
+
+        if (!isEditingVariable) {
+            const before = text.slice(0, selection.start);
+            const after = text.slice(selection.end);
+            const insert = `{{${name}}}`;
+            const newText = before + insert + after;
+            onChangeText(newText);
+            setSelection({ start: before.length + insert.length, end: before.length + insert.length });
+        }
+
+        setIsEditingVariable(false);
+        setTempVariableName('');
+        setTempVariableValue('');
+        setShowInsertModal(false);
+    }
 
     return (
         <View style={styles.container}>
@@ -198,9 +214,6 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                     </TouchableOpacity>
                 ))}
             </View>
-
-
-
 
             <TextInput
                 value={text}
@@ -274,34 +287,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                     setTempVariableName('');
                     setTempVariableValue('');
                 }}
-                onInsert={(mode, name, value) => {
-                    if (mode === 'Function') {
-                        const store = useFunctionStore.getState();
-                        if (isEditingVariable) store.deleteFunction(name);
-                        store.setFunction(name, value);
-                    } else if (mode === 'Snippet') {
-                        const store = useSnippetStore.getState();
-                        if (isEditingVariable) store.removeSnippet(name);
-                        store.setSnippet(name, value);
-                    } else {
-                        if (isEditingVariable) removeVariable(name);
-                        setVariable(name, createStringValue(value));
-                    }
-
-                    if (!isEditingVariable) {
-                        const before = text.slice(0, selection.start);
-                        const after = text.slice(selection.end);
-                        const insert = `{{${name}}}`;
-                        const newText = before + insert + after;
-                        onChangeText(newText);
-                        setSelection({ start: before.length + insert.length, end: before.length + insert.length });
-                    }
-
-                    setIsEditingVariable(false);
-                    setTempVariableName('');
-                    setTempVariableValue('');
-                    setShowInsertModal(false);
-                }}
+                onInsert={handleInsert}
             />
         </View>
     );

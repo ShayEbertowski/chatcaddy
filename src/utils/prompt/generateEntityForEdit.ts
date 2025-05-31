@@ -18,10 +18,12 @@ export function getEntityForEdit(name: string): { type: EntityType; value: strin
         return { type: 'Snippet', value: getSnippet.content };
     }
 
-    const getFunction = useFunctionStore.getState().getFunction(name);
-    if (getFunction !== undefined) {
-        return { type: 'Function', value: getFunction.content };
+    const functions = useFunctionStore.getState().functions;
+    const foundFunction = functions.find((f) => f.title === name);
+    if (foundFunction) {
+        return { type: 'Function', value: foundFunction.content };
     }
+
 
     // Fallback
     return { type: 'Variable', value: '' };

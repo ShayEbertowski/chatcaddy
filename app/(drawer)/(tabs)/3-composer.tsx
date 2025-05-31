@@ -4,16 +4,16 @@ import { StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Prompt } from '../../../src/types/prompt';
 import { useColors } from '../../../src/hooks/useColors';
-import { loadPrompts } from '../../../src/utils/prompt/promptManager';
+import { useAuthStore } from '../../../src/stores/useAuthStore';
 import PromptSearch from '../../../src/components/prompt/PromptSearch';
 import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
 import { useVariableStore } from '../../../src/stores/useVariableStore';
 import PromptComposer from '../../../src/components/composer/PromptComposer';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
+import { usePromptStore } from '../../../src/stores/usePromptsStore';
 
 export default function Composer() {
-    const [promptMap, setPromptMap] = useState<Record<string, Prompt>>({});
-    const [allPrompts, setAllPrompts] = useState<Prompt[]>([]);
+    const prompts = usePromptStore((state) => state.prompts);
     const [currentPrompt, setCurrentPrompt] = useState<Prompt | null>(null);
     const [history, setHistory] = useState<Prompt[]>([]);
     const [isPicking, setIsPicking] = useState(true);
@@ -24,22 +24,22 @@ export default function Composer() {
     const styles = getStyles(colors);
     const router = useRouter();
 
+    const initialized = useAuthStore((state) => state.initialized);
+    const loadPrompts = usePromptStore((state) => state.loadPrompts);
 
     useEffect(() => {
-        loadPrompts().then((prompts) => {
-            console.log('📦 Loaded prompts:', prompts);
-            const map = Object.fromEntries(prompts.map(p => [p.id, p]));
-            setPromptMap(map);
-            setAllPrompts(prompts);
-        });
-    }, []);
+        if (initialized) {
+            loadPrompts();
+        }
+    }, [initialized]);
 
     const zoomIntoPrompt = (id: string) => {
-        const next = promptMap[id];
+        const next = prompts.find(p => p.id === id);
         if (!next) return;
         setHistory(prev => [...prev, currentPrompt!]);
         setCurrentPrompt(next);
     };
+
 
     const zoomOut = () => {
         const newHistory = [...history];

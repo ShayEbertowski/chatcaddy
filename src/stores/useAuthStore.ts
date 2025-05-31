@@ -11,6 +11,7 @@ type AuthState = {
     user: User | null;
     accessToken: string | null;
     loading: boolean;
+    initialized: boolean;
     signIn: (email: string, password: string) => Promise<void>;
     signUp: (email: string, password: string) => Promise<void>;
     signOut: () => Promise<void>;
@@ -21,36 +22,37 @@ export const useAuthStore = create<AuthState>((set) => ({
     user: null,
     accessToken: null,
     loading: false,
+    initialized: false,
 
     loadSession: async () => {
         const refreshToken = await SecureStore.getItemAsync('refreshToken');
-        if (!refreshToken) return;
+        if (!refreshToken) {
+            set({ initialized: true }); // 👈 mark initialized even if no token exists
+            return;
+        }
 
         try {
-            // 🔑 Refresh the access token
             const data = await refreshAccessToken(refreshToken);
             const { access_token, refresh_token } = data;
 
-            // 🔑 Store the new tokens
             await SecureStore.setItemAsync('accessToken', access_token);
             await SecureStore.setItemAsync('refreshToken', refresh_token);
 
-            // 🔑 NOW: fetch user info using the new access_token
             const user = await getUser(access_token);
 
-            // 🔑 Update Zustand state fully
             set({
                 accessToken: access_token,
                 user: { id: user.id, email: user.email },
+                initialized: true,  // 👈 mark initialized after successful refresh
             });
 
         } catch (e) {
             console.error('Failed to refresh session', e);
             await SecureStore.deleteItemAsync('accessToken');
             await SecureStore.deleteItemAsync('refreshToken');
+            set({ initialized: true }); // 👈 mark initialized even on failure
         }
     },
-
 
 
     signUp: async (email, password) => {

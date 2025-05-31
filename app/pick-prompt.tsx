@@ -1,20 +1,25 @@
-// app/pick-prompt.tsx
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
-import { loadPrompts } from '../src/utils/prompt/promptManager';
-import { Prompt } from '../src/types/prompt';
 import { useColors } from '../src/hooks/useColors';
+import { useAuthStore } from '../src/stores/useAuthStore';
+import { Prompt } from '../src/types/prompt';
+import { usePromptStore } from '../src/stores/usePromptsStore';
 
 export default function PickPromptScreen() {
-    const [prompts, setPrompts] = useState<Prompt[]>([]);
     const router = useRouter();
     const { target } = useLocalSearchParams<{ target?: string }>();
     const colors = useColors();
 
+    const prompts = usePromptStore((state) => state.prompts);
+    const loadPrompts = usePromptStore((state) => state.loadPrompts);
+    const initialized = useAuthStore((state) => state.initialized);
+
     useEffect(() => {
-        loadPrompts().then(setPrompts);
-    }, []);
+        if (initialized) {
+            loadPrompts();
+        }
+    }, [initialized]);
 
     const handleSelect = (prompt: Prompt) => {
         router.replace({
@@ -33,7 +38,7 @@ export default function PickPromptScreen() {
                 data={prompts}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.item} onPress={() => handleSelect(item)}>
+                    <TouchableOpacity style={[styles.item, { borderColor: colors.border }]} onPress={() => handleSelect(item)}>
                         <Text style={[styles.title, { color: colors.text }]}>{item.title}</Text>
                         <Text style={[styles.content, { color: colors.secondaryText }]} numberOfLines={1}>
                             {item.content}
