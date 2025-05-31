@@ -20,6 +20,8 @@ export default function UserAvatar() {
                         backgroundColor: colors.primary,
                         alignItems: 'center',
                         justifyContent: 'center',
+                        marginLeft: 8,
+                        marginBottom: 4
                     }}
                 >
                     <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
@@ -28,7 +30,7 @@ export default function UserAvatar() {
                 </View>
             ) : (
                 <Image
-                    source={require('../../../assets/avatar.png')}  // adjust path if needed
+                    source={require('../../../assets/avatar.png')}
                     style={{ width: 32, height: 32, borderRadius: 16 }}
                 />
             )}

@@ -29,7 +29,7 @@ export const dark = {
     background: '#0e0e0e',
     surface: '#1a1a1a',
     placeholder: '#AAAAAA',
-    accent: '#145374',
+    accent: '#4da8ff',
     text: '#ffffff',
     mutedText: '#999999',
     secondaryText: '#aaaaaa', // softer than full white
