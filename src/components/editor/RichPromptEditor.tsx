@@ -11,16 +11,14 @@ import {
 
 import InsertModal from '../modals/InsertModal';
 import CollapsibleSection from '../shared/CollapsibleSection';
-
 import { useVariableStore } from '../../stores/useVariableStore';
 import { useFunctionStore } from '../../stores/useFunctionStore';
 import { useSnippetStore } from '../../stores/useSnippetStore';
-
 import { getEntityForEdit } from '../../utils/prompt/generateEntityForEdit';
 import { getSharedStyles, placeholderText } from '../../styles/shared';
 import { useColors } from '../../hooks/useColors';
-import { PromptPart } from '../../types/prompt';
 import { createStringValue, resolveVariableDisplayValue } from '../../utils/variables/variables';
+import { parsePromptParts } from '../../utils/prompt/promptManager';
 
 type Props = {
     text: string;
@@ -36,125 +34,47 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
     const [editMode, setEditMode] = useState<'Variable' | 'Function' | 'Snippet'>('Variable');
     const [tempVariableName, setTempVariableName] = useState('');
     const [tempVariableValue, setTempVariableValue] = useState('');
-    const [showVariables, setShowVariables] = useState(false);
-    const [showPreview, setShowPreview] = useState(true);
-    const { values, setVariable, getVariable, removeVariable } = useVariableStore.getState();
+
     const colors = useColors();
     const sharedStyles = getSharedStyles(colors);
     const styles = getStyles(colors);
+    const { values, setVariable, getVariable, removeVariable } = useVariableStore.getState();
     const addFunction = useFunctionStore((state) => state.addFunction);
-    const variable = values[tempVariableName];
+    const { setSnippet, removeSnippet } = useSnippetStore();
+    const [showVariables, setShowVariables] = useState(true);
+    const [showPreview, setShowPreview] = useState(true);
 
-    const parsedPrompt = useMemo(() => {
-        const parts = text.split(/({{.*?}})/g);
-        return parts.map(part => {
-            const match = part.match(/^{{\s*(.*?)\s*}}$/);
-            if (match) {
-                const raw = match[1];
-                const [key, ...rest] = raw.split('=');
-                const defaultValue = rest.join('=').trim();
-                return {
-                    type: 'variable',
-                    value: key.trim(),
-                    defaultValue: defaultValue || undefined,
-                };
-            }
-            return { type: 'text', value: part };
-        });
+    const parts = useMemo(() => parsePromptParts(text), [text]);
+
+    const previewChunks = useMemo(() => {
+        return parsePromptParts(text);
     }, [text]);
 
     const usedVars = useMemo(() => {
-        return Array.from(
-            new Set(
-                parsedPrompt
-                    .filter(part => part.type === 'variable')
-                    .map(part => part.value.split('=')[0].trim())
-            )
-        );
-    }, [parsedPrompt]);
+        return Array.from(new Set(parts.filter(p => p.type === 'variable').map(p => p.name)));
+    }, [parts]);
 
     useEffect(() => {
-        parsedPrompt.forEach(part => {
-            if (part.type === 'variable' && part.defaultValue !== undefined) {
-                const key = part.value.split('=')[0].trim();
+        parts.forEach(part => {
+            if (part.type === 'variable') {
+                const key = part.name;
                 if (!getVariable(key)) {
-                    setVariable(key, createStringValue(part.defaultValue));
+                    setVariable(key, createStringValue(""));
                 }
             }
         });
-    }, [parsedPrompt]);
+    }, [parts]);
 
-    useEffect(() => {
-        if (variable?.type !== 'string') {
-            console.warn("Only string variables can be saved as functions.");
-            return;
-        }
-
-        // safe to call async function inside here if needed
-        (async () => {
-            await addFunction(tempVariableName, variable.value);
-        })();
-    }, [variable, tempVariableName]);
-
-
-    const renderPart = (part: PromptPart, i: number) => {
-        if (part.type === 'text') return null;
-        const raw = part.value;
-        const [name, defaultValue] = raw.split('=');
-        const { type, value } = getEntityForEdit(name);
-        const displayValue = value || defaultValue || '';
-
-        return (
-            <TouchableOpacity
-                key={i}
-                onPress={() => {
-                    setTempVariableName(name);
-                    setTempVariableValue(displayValue);
-                    setEditMode(type);
-                    setIsEditingVariable(true);
-                    setShowInsertModal(true);
-                }}
-                style={sharedStyles.chip}
-            >
-                <Text style={sharedStyles.chipText}>{name}</Text>
-            </TouchableOpacity>
-        );
-    };
-
-    const previewChunks = useMemo(() => {
-        const parts = text.split(/({{.*?}})/g);
-        return parts.map(part => {
-            const match = part.match(/^{{(.*?)}}$/);
-            if (match) {
-                const raw = match[1];
-                const [key] = raw.split('=');
-                return { type: 'variable' as const, value: key.trim() };
-            }
-            return { type: 'text' as const, value: part };
-        });
-    }, [text]);
-
-    async function handleInsert(mode: 'Function' | 'Snippet' | 'Variable', name: string, value: string) {
+    const handleInsert = async (mode: 'Function' | 'Snippet' | 'Variable', name: string, value: string) => {
         if (mode === 'Function') {
-            const addFunction = useFunctionStore.getState().addFunction;
-            const deleteFunction = useFunctionStore.getState().deleteFunction;
-            const allFunctions = useFunctionStore.getState().functions;
-
             if (isEditingVariable) {
-                const found = allFunctions.find((f) => f.title === name);
-                if (found) {
-                    await deleteFunction(found.id);
-                }
+                await useFunctionStore.getState().deleteFunction(name);
             }
-
             await addFunction(name, value);
-        }
-        else if (mode === 'Snippet') {
-            const store = useSnippetStore.getState();
-            if (isEditingVariable) store.removeSnippet(name);
-            store.setSnippet(name, value);
-        }
-        else {
+        } else if (mode === 'Snippet') {
+            if (isEditingVariable) removeSnippet(name);
+            setSnippet(name, value);
+        } else {
             if (isEditingVariable) removeVariable(name);
             setVariable(name, createStringValue(value));
         }
@@ -172,16 +92,22 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
         setTempVariableName('');
         setTempVariableValue('');
         setShowInsertModal(false);
-    }
+    };
+
+    const handleChipPress = (name: string) => {
+        const { type, value } = getEntityForEdit(name);
+        setTempVariableName(name);
+        setTempVariableValue(value ?? '');
+        setEditMode(type);
+        setIsEditingVariable(true);
+        setShowInsertModal(true);
+    };
 
     return (
         <View style={styles.container}>
             <View style={styles.headerRow}>
                 <View style={{ flex: 1 }} />
-                <TouchableOpacity
-                    onPress={() => setShowInsertModal(true)}
-                    style={styles.addButton}
-                >
+                <TouchableOpacity onPress={() => setShowInsertModal(true)} style={styles.addButton}>
                     <Text style={styles.addButtonText}>+ Insert</Text>
                 </TouchableOpacity>
             </View>
@@ -222,7 +148,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
             />
 
             <CollapsibleSection
-                title="variables"
+                title="Variables"
                 isOpen={showVariables}
                 onToggle={() => setShowVariables(!showVariables)}
             >
@@ -232,17 +158,17 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                             No variables yet. Add one above.
                         </Text>
                     ) : (
-                        usedVars.map((varName, i) =>
-                            renderPart({ type: 'variable', value: varName }, i)
-                        )
+                        usedVars.map((varName, i) => (
+                            <TouchableOpacity key={i} onPress={() => handleChipPress(varName)} style={sharedStyles.chip}>
+                                <Text style={sharedStyles.chipText}>{varName}</Text>
+                            </TouchableOpacity>
+                        ))
                     )}
                 </View>
             </CollapsibleSection>
 
-            <View style={sharedStyles.divider} />
-
             <CollapsibleSection
-                title="preview"
+                title="Preview"
                 isOpen={showPreview}
                 onToggle={() => setShowPreview(!showPreview)}
             >
@@ -256,9 +182,8 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                             <Text style={sharedStyles.previewVariable}>
                                 {previewChunks.map((chunk, i) => {
                                     return chunk.type === 'variable'
-                                        ? resolveVariableDisplayValue(getVariable(chunk.value))
+                                        ? resolveVariableDisplayValue(getVariable(chunk.name))
                                         : chunk.value;
-
                                 }).join('')}
                             </Text>
                         </View>
@@ -266,7 +191,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                 </View>
             </CollapsibleSection>
 
-            <View style={sharedStyles.divider} />
+
 
             <InsertModal
                 visible={showInsertModal}
@@ -288,51 +213,26 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
-        section: {
-            backgroundColor: colors.card,
-            borderRadius: 12,
-            paddingVertical: 10,
-            paddingHorizontal: 16,
-            marginBottom: 12,
-        },
-        container: {
-            padding: 4,
-        },
+        container: { padding: 4 },
+
         headerRow: {
             flexDirection: 'row',
             justifyContent: 'flex-end',
             marginBottom: 8,
         },
-        input: {
-            fontSize: 16,
-            borderWidth: 1,
-            borderColor: colors.border,
-            padding: 16,
-            borderRadius: 6,
-            minHeight: 60,
-            color: colors.text,
-            backgroundColor: colors.inputBackground,
-        },
+
         addButton: {
             backgroundColor: colors.primary,
             paddingHorizontal: 12,
             paddingVertical: 6,
             borderRadius: 6,
         },
+
         addButtonText: {
             color: colors.onPrimary,
             fontWeight: '600',
         },
-        chipContainer: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 8,
-            marginTop: 10,
-        },
 
-        previewContainer: {
-            marginTop: 16,
-        },
         typeSelector: {
             flexDirection: 'row',
             marginBottom: 12,
@@ -362,5 +262,34 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             fontWeight: '600',
         },
 
-    });
+        input: {
+            fontSize: 16,
+            borderWidth: 1,
+            borderColor: colors.border,
+            padding: 16,
+            borderRadius: 6,
+            minHeight: 60,
+            color: colors.text,
+            backgroundColor: colors.inputBackground,
+        },
 
+        chipContainer: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginTop: 10,
+        },
+
+        section: {
+            backgroundColor: colors.card,
+            borderRadius: 12,
+            paddingVertical: 10,
+            paddingHorizontal: 16,
+            marginBottom: 12,
+        },
+
+        previewContainer: {
+            paddingVertical: 12, 
+            paddingHorizontal: 8, 
+        },
+    });

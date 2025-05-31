@@ -40,7 +40,7 @@ export type LibraryProps = {
 
 export type PromptPart =
     | { type: 'text'; value: string }
-    | { type: 'variable'; value: string; defaultValue?: string };
+    | { type: 'variable'; name: string };
 
 export type PromptRow = {
     id: string;

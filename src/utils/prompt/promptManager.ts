@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Prompt, VariableValue } from '../../types/prompt';
+import { Prompt, PromptPart, VariableValue } from '../../types/prompt';
 import { cleanPromptVariables } from './cleanPrompt';
 import { useVariableStore } from '../../stores/useVariableStore';
 import { generateSmartTitle } from './generateSmartTitle';
@@ -50,4 +50,17 @@ export function preparePromptToSave({
 export async function getSmartTitle(inputText: string): Promise<string> {
     const raw = await generateSmartTitle(inputText);
     return raw.trim().replace(/^["']+|["']+$/g, '');
+}
+
+export function parsePromptParts(raw: string): PromptPart[] {
+    const splitParts = raw.split(/({{.*?}})/g);
+
+    return splitParts.map(part => {
+        const match = part.match(/^{{\s*(.*?)\s*}}$/);
+        if (match) {
+            const name = match[1]!; // ✅ non-null assertion
+            return { type: 'variable', name };
+        }
+        return { type: 'text', value: part };
+    });
 }

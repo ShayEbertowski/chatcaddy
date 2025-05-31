@@ -66,7 +66,6 @@ export const getSharedStyles = ({ isDark, ...colors }: Theme) =>
       opacity: 0.6,
     }, 
     previewVariable: {
-      backgroundColor: colors.inputBackground,
       color: colors.text,
       fontStyle: 'italic',
       fontWeight: 'bold',
