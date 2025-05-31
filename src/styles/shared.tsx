@@ -64,7 +64,7 @@ export const getSharedStyles = ({ isDark, ...colors }: Theme) =>
       backgroundColor: colors.border,
       marginVertical: 16,
       opacity: 0.6,
-    },
+    }, 
     previewVariable: {
       backgroundColor: colors.inputBackground,
       color: colors.text,

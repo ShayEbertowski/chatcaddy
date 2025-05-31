@@ -3,9 +3,9 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet 
 import { useRouter } from 'expo-router';
 import { useColors } from '../../../src/hooks/useColors';
 import { useAuthStore } from '../../../src/stores/useAuthStore';
+import { getSharedStyles } from '../../../src/styles/shared';
 
 export default function SignInScreen() {
-    const colors = useColors();
     const router = useRouter();
 
     const signIn = useAuthStore((s) => s.signIn);
@@ -15,7 +15,9 @@ export default function SignInScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
+    const colors = useColors();
     const styles = getStyles(colors);
+    const sharedStyles = getSharedStyles(colors);
 
     async function handleSignIn() {
         try {
@@ -44,7 +46,7 @@ export default function SignInScreen() {
                 placeholderTextColor={colors.primary}
                 value={email}
                 onChangeText={setEmail}
-                style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]}
+                style={[sharedStyles.input, { backgroundColor: colors.surface, color: colors.text }]}
                 autoCapitalize="none"
                 keyboardType="email-address"
             />
@@ -54,7 +56,7 @@ export default function SignInScreen() {
                 placeholderTextColor={colors.primary}
                 value={password}
                 onChangeText={setPassword}
-                style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]}
+                style={[sharedStyles.input, { backgroundColor: colors.surface, color: colors.text }]}
                 secureTextEntry
             />
 
@@ -94,12 +96,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             fontWeight: 'bold',
             marginBottom: 32,
             alignSelf: 'center',
-        },
-        input: {
-            height: 50,
-            borderRadius: 8,
-            paddingHorizontal: 16,
-            marginBottom: 16,
         },
         button: {
             padding: 16,

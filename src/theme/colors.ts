@@ -18,7 +18,9 @@ export const light = {
     warning: '#ffa726',
     error: 'red',
     toggleBackground: '#eeeeee',
-    success: '4caf50'
+    success: '#4caf50',
+    toggle: '#FFD700' // 👈 add this
+
 };
 
 export const dark = {
@@ -39,5 +41,7 @@ export const dark = {
     warning: '#ffa726',
     error: '#ff453a',
     toggleBackground: '#3a3a3c',
-    success: '4caf50'
+    success: '#4caf50',
+    toggle: '#FFD700' // 👈 add this
+
 };
