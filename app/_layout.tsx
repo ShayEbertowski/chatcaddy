@@ -1,22 +1,12 @@
 import { Stack } from 'expo-router';
-import { ThemeProvider, useThemeMode } from '../src/theme/ThemeProvider';
+import { ThemeProvider } from '../src/theme/ThemeProvider';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
+import { StatusBar, View } from 'react-native';
 import { useAuthStore } from '../src/stores/useAuthStore';
 import React, { useEffect } from 'react';
 import { useThemeStore } from '../src/stores/useThemeStore';
 import LoadingScreen from '../src/screens/LoadingScreen';
-
-function ThemedStatusBar() {
-    const { mode } = useThemeMode();
-    return (
-        <StatusBar
-            style={mode === 'dark' ? 'light' : 'dark'}
-            backgroundColor="transparent"
-            translucent
-        />
-    );
-}
+import { useColors } from '../src/hooks/useColors';
 
 export default function RootLayout() {
     useEffect(() => {
@@ -24,6 +14,8 @@ export default function RootLayout() {
     }, []);
 
     const initialized = useThemeStore((s) => s.initialized);
+    const colors = useColors();
+    const isDark = colors.isDark;
 
     useEffect(() => {
         useThemeStore.getState().hydrate();
@@ -36,8 +28,13 @@ export default function RootLayout() {
     return (
         <SafeAreaProvider>
             <ThemeProvider>
-                <ThemedStatusBar />
-                <Stack screenOptions={{ headerShown: false }} />
+                <View style={{ flex: 1, backgroundColor: colors.background }}>
+                    <StatusBar
+                        barStyle={isDark ? 'light-content' : 'dark-content'}
+                        animated
+                    />
+                    <Stack screenOptions={{ headerShown: false }} />
+                </View>
             </ThemeProvider>
         </SafeAreaProvider>
     );
