@@ -28,7 +28,7 @@ export const getSharedStyles = ({ isDark, ...colors }: Theme) =>
     chipText: {
       fontSize: 16,
       fontWeight: '500',
-      color: colors.accent
+      color: colors.onPrimary
     },
     response: {
       color: colors.text,

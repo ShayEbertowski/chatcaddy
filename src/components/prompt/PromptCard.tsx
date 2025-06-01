@@ -2,7 +2,7 @@ import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getSharedStyles } from '../../styles/shared';
 import { useColors } from '../../hooks/useColors';
-import { RenderPreviewChunks } from './renderPreviewChunks';
+import { RenderPreviewChunks } from './RenderPreviewChunks';
 
 type PromptCardProps = {
     title: string;

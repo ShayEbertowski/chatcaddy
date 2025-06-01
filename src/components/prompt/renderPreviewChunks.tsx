@@ -1,16 +1,15 @@
-import React from 'react';
-import { View, Text } from 'react-native';
-import { useColors } from '../../hooks/useColors';
-import { getSharedStyles } from '../../styles/shared';
+import { View, TouchableOpacity, Text } from "react-native";
+import { useColors } from "../../hooks/useColors";
+import { getSharedStyles } from "../../styles/shared";
 
 type RenderPreviewChunksProps = {
     content: string;
+    onChipPress?: (variableName: string) => void;
 };
 
-export function RenderPreviewChunks({ content }: RenderPreviewChunksProps) {
+export function RenderPreviewChunks({ content, onChipPress }: RenderPreviewChunksProps) {
     const colors = useColors();
     const sharedStyles = getSharedStyles(colors);
-
     const parts = content.split(/({{.*?}})/g);
 
     return (
@@ -20,13 +19,17 @@ export function RenderPreviewChunks({ content }: RenderPreviewChunksProps) {
                 if (match) {
                     const variableName = match[1].split('=')[0].trim();
                     return (
-                        <View key={index} style={sharedStyles.chip}>
+                        <TouchableOpacity
+                            key={index}
+                            style={sharedStyles.chip}
+                            onPress={() => onChipPress?.(variableName)}
+                        >
                             <Text style={sharedStyles.chipText}>{variableName}</Text>
-                        </View>
+                        </TouchableOpacity>
                     );
                 } else {
                     return (
-                        <Text key={index} style={{ color: colors.text }}>
+                        <Text key={index} style={{ color: colors.onPrimary }}>
                             {part}
                         </Text>
                     );

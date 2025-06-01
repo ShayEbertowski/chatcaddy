@@ -4,7 +4,7 @@ import { Prompt } from '../../types/prompt';
 import { useColors } from '../../hooks/useColors';
 import { PromptVariableEditor } from '../prompt/PromptVariableEditor';
 import { useFunctionStore } from '../../stores/useFunctionStore';
-import { RenderPreviewChunks } from '../prompt/renderPreviewChunks';
+import { RenderPreviewChunks } from '../prompt/RenderPreviewChunks';
 
 type PromptComposerProps = {
     prompt: Prompt;

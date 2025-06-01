@@ -17,8 +17,8 @@ import { usePromptEditorStore } from '../../src/stores/usePromptEditorStore';
 import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
 import { PromptVariableEditor } from '../../src/components/prompt/PromptVariableEditor';
 import { useFunctionStore } from '../../src/stores/useFunctionStore';
-import { RenderPreviewChunks } from '../../src/components/prompt/renderPreviewChunks';
 import { PromptResult } from '../../src/components/prompt/PromptResult';
+import { RenderPreviewChunks } from '../../src/components/prompt/RenderPreviewChunks';
 
 export default function RunPrompt() {
     const prompt = usePromptEditorStore((s) => s.editingPrompt);
