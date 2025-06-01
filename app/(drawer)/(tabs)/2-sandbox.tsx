@@ -26,6 +26,7 @@ import { usePromptEditorStore } from '../../../src/stores/usePromptEditorStore';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { usePromptStore } from '../../../src/stores/usePromptsStore';
 import { getSmartTitle } from '../../../src/utils/prompt/promptManager';
+import { PromptResult } from '../../../src/components/prompt/PromptResult';
 
 export default function Sandbox() {
     const [inputText, setInputText] = useState('');
@@ -232,25 +233,11 @@ export default function Sandbox() {
                 />
 
                 <CollapsibleSection title="response" isOpen={showResponse} onToggle={() => setShowResponse(!showResponse)}>
-                    <View style={sharedStyles.section}>
-                        {isLoading ? (
-                            <View style={sharedStyles.loadingContainer}>
-                                <ActivityIndicator size="small" color="#007aff" />
-                                <Text style={sharedStyles.loadingText}>Running...</Text>
-                            </View>
-                        ) : response === '' ? (
-                            <Text style={sharedStyles.placeholderText}>Response will appear here after you run the prompt.</Text>
-                        ) : (
-                            <>
-                                <Text style={sharedStyles.response}>{response}</Text>
-                                <View style={{ alignItems: 'flex-end', marginTop: 10 }}>
-                                    <TouchableOpacity onPress={() => setResponse('')}>
-                                        <Text style={sharedStyles.clearButton}>Clear</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </>
-                        )}
-                    </View>
+                    <PromptResult
+                        response={response}
+                        isLoading={isLoading}
+                        onClear={() => setResponse('')}
+                    />
                 </CollapsibleSection>
             </ScrollView>
 
