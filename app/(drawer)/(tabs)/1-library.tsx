@@ -1,16 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    Modal,
-    StyleSheet,
-} from 'react-native';
-
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColors } from '../../../src/hooks/useColors';
 import FunctionLibraryScreen from '../../../src/screens/library/FunctionLibraryScreen';
 import PromptLibraryScreen from '../../../src/screens/library/PromptLibraryScreen';
+import { getSharedStyles } from '../../../src/styles/shared';
+import BaseModal from '../../../src/components/modals/BaseModal';
 
 type LibraryType = 'prompts' | 'functions';
 
@@ -22,8 +17,6 @@ const options: { label: string; value: LibraryType }[] = [
 const UnknownCategory: React.FC = () => (
     <Text style={{ padding: 16 }}>Unknown category</Text>
 );
-
-
 
 export default function Library() {
     const colors = useColors();
@@ -42,6 +35,11 @@ export default function Library() {
     }, [category]);
 
     const styles = getStyles(colors);
+    const sharedStyles = getSharedStyles(colors);
+
+    const onClose = () => {
+        setModalVisible(false);
+    };
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -50,65 +48,49 @@ export default function Library() {
                     <Text style={styles.dropdownText}>
                         {options.find((o) => o.value === category)?.label}
                     </Text>
-                    <MaterialIcons name="arrow-drop-down" size={24} color={colors.secondaryText} />
+                    <MaterialIcons name="arrow-drop-down" size={24} color={colors.accent} />
                 </TouchableOpacity>
             </View>
+
             <View style={{ height: 24 }} />
 
             <ScreenComponent />
 
-            <Modal visible={modalVisible} transparent animationType="fade">
-                <TouchableOpacity style={styles.overlay} onPress={() => setModalVisible(false)}>
-                    <View style={styles.modal}>
-                        {options.map((opt) => (
-                            <TouchableOpacity
-                                key={opt.value}
-                                style={styles.modalItem}
-                                onPress={() => {
-                                    setCategory(opt.value);
-                                    setModalVisible(false);
-                                }}
-                            >
-                                <Text style={styles.modalText}>{opt.label}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </TouchableOpacity>
-            </Modal>
+            <BaseModal visible={modalVisible} blur dismissOnBackdropPress onRequestClose={onClose}>
+                {options.map((opt) => (
+                    <TouchableOpacity
+                        key={opt.value}
+                        style={styles.modalItem}
+                        onPress={() => {
+                            setCategory(opt.value);
+                            setModalVisible(false);
+                        }}
+                    >
+                        <Text style={styles.modalText}>{opt.label}</Text>
+                    </TouchableOpacity>
+                ))}
+            </BaseModal>
         </View>
     );
 }
 
-
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
-        overlay: {
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.4)',
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
-        modal: {
-            backgroundColor: colors.card,
-            borderRadius: 10,
-            width: 250,
-            paddingVertical: 8,
-        },
+
+
         modalItem: {
             padding: 16,
         },
         modalText: {
             fontSize: 16,
             textAlign: 'center',
-            color: colors.text,
+            color: colors.accent,
         },
         dropdownWrapper: {
             paddingTop: 16,
             paddingBottom: 12,
             paddingHorizontal: 20,
             backgroundColor: colors.background,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border,
         },
         dropdown: {
             flexDirection: 'row',
@@ -122,6 +104,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
         dropdownText: {
             fontSize: 16,
             fontWeight: '500',
-            color: colors.text,
+            color: colors.accent,
         },
     });

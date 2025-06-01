@@ -16,17 +16,17 @@ export function CustomDrawerContent(props: any) {
     return (
         <View style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? StatusBar.currentHeight ?? 44 : 0, backgroundColor: colors.background }}>
             <DrawerContentScrollView {...props} contentContainerStyle={{ paddingHorizontal: 16, flexGrow: 1 }}>
-                <Text style={{ fontSize: 20, fontWeight: '600', marginBottom: 8, color: colors.text }}>
-                    🧠 ChatCaddy
+                <Text style={{ fontSize: 20, fontWeight: '600', marginBottom: 8, color: colors.accent }}>
+                    🌯 ChatCaddy
                 </Text>
 
                 <DrawerItem
                     label="Settings"
                     onPress={() => props.navigation.navigate('settings')}
                     icon={({ color, size }) => (
-                        <Ionicons name="settings-outline" color={color} size={size} />
+                        <Ionicons name="settings-outline" color={colors.accent} size={size} />
                     )}
-                    labelStyle={{ color: colors.text, fontWeight: '500', fontSize: 16 }}
+                    labelStyle={{ color: colors.accent, fontWeight: '500', fontSize: 16 }}
                     activeTintColor={colors.primary}
                     inactiveTintColor={colors.text}
                 />
@@ -52,9 +52,9 @@ export function CustomDrawerContent(props: any) {
                         label="Log Out"
                         onPress={async () => await signOut()}
                         icon={({ color, size }) => (
-                            <Ionicons name="log-out-outline" color={color} size={size} />
+                            <Ionicons name="log-out-outline" color={colors.accent} size={size} />
                         )}
-                        labelStyle={{ color: colors.text, fontWeight: '500', fontSize: 16 }}
+                        labelStyle={{ color: colors.accent, fontWeight: '500', fontSize: 16 }}
                         activeTintColor={colors.primary}
                         inactiveTintColor={colors.text}
                     />

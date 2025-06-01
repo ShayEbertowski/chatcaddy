@@ -11,10 +11,10 @@ export default function StackLayout() {
         <Stack
             screenOptions={{
                 headerStyle: { backgroundColor: colors.surface },
-                headerTintColor: colors.text,
+                headerTintColor: colors.accent,
                 headerLeft: () => (
                     <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 12 }}>
-                        <Ionicons name="arrow-back" size={24} color={colors.text} />
+                        <Ionicons name="arrow-back" size={24} color={colors.accent} />
                     </TouchableOpacity>
                 ),
             }}

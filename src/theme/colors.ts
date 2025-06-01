@@ -1,7 +1,7 @@
 // theme/colors.ts
 
 export const light = (() => {
-    const accent = '#145374';
+    const accent = '#2463A8';
     return {
         primary: '#219e98',
         onPrimary: '#f8f9fa',
@@ -12,7 +12,7 @@ export const light = (() => {
         text: '#1c1c1e',
         mutedText: '#6e6e73',
         secondaryText: '#8e8e93',
-        card: '#f9f9fa',
+        card: '#f6f6f7',
         cardShadow: '#000000',
         border: accent + '99',
         borderThin: accent + '66',
@@ -20,14 +20,15 @@ export const light = (() => {
         disabledBackground: '#dddddd',
         warning: '#ffa726',
         error: 'red',
-        toggleBackground: '#dddddd',
+        softError: '#D33F49',
+        toggleBackground: '#f5f5f5',
         success: '#4caf50',
         toggle: '#FFD700',
     };
 })();
 
 export const dark = (() => {
-    const accent = '#4da8ff';
+    const accent = '#4DA8FF';
     return {
         primary: '#2ab3a6',
         onPrimary: '#ffffff',
@@ -38,7 +39,7 @@ export const dark = (() => {
         text: '#ffffff',
         mutedText: '#999999',
         secondaryText: '#aaaaaa',
-        card: '#1c1c1e',
+        card: '#1E1E1F',
         cardShadow: '#000000',
         border: accent + '99',
         borderThin: accent + '66',
@@ -46,6 +47,7 @@ export const dark = (() => {
         disabledBackground: '#3a3a3c',
         warning: '#ffa726',
         error: '#ff453a',
+        softError: '#FF6B6B',
         toggleBackground: '#3a3a3c',
         success: '#4caf50',
         toggle: '#FFD700',

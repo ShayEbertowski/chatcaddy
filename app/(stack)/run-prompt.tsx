@@ -13,12 +13,13 @@ import BaseModal from '../../src/components/modals/BaseModal';
 import { useColors } from '../../src/hooks/useColors';
 import { useFunctionStore } from '../../src/stores/useFunctionStore';
 import { useVariableStore } from '../../src/stores/useVariableStore';
-import { getSharedStyles, placeholderText } from '../../src/styles/shared';
+import { getSharedStyles } from '../../src/styles/shared';
 import { runPrompt } from '../../src/utils/prompt/runPrompt';
 import { usePromptEditorStore } from '../../src/stores/usePromptEditorStore';
 import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
 import { useNavigation } from 'expo-router';
 import InsertModalV2 from '../../src/components/modals/InsertModalV2';
+import { MaterialIcons } from '@expo/vector-icons';
 
 
 export default function RunPrompt() {
@@ -92,9 +93,9 @@ export default function RunPrompt() {
 
 
     return (
-        <ThemedSafeArea>
-            <ScrollView style={styles.container}>
-                <Text style={styles.title}>{prompt.title}</Text>
+        <ThemedSafeArea style={styles.container}>
+            <ScrollView contentContainerStyle={styles.scrollContent}>
+                <Text style={[styles.title, { color: colors.accent }]}>{prompt.title}</Text>
 
                 {(prompt.content.match(/{{(.*?)}}/g) || []).map((match, index) => {
                     const variableName = match.replace(/[{}]/g, '').split('=')[0].trim();
@@ -102,11 +103,12 @@ export default function RunPrompt() {
                         <View key={index} style={styles.inputGroup}>
                             <View style={styles.inputLabelRow}>
                                 <Text style={styles.label}>{variableName}</Text>
-                                <TouchableOpacity onPress={() => {
-                                    setInsertTarget(variableName);
-                                    setShowInsertModal(true);
-                                }}>
-                                    <Text style={{ color: colors.primary, fontSize: 16 }}>＋</Text>
+                                <TouchableOpacity activeOpacity={0.7}
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => {
+                                        setInsertTarget(variableName);
+                                        setShowInsertModal(true);
+                                    }}>
+                                    <MaterialIcons name="add-circle" size={28} color={colors.accent} />
                                 </TouchableOpacity>
                             </View>
                             <TextInput
@@ -116,40 +118,11 @@ export default function RunPrompt() {
                                     setInputs((prev) => ({ ...prev, [variableName]: text }))
                                 }
                                 placeholder={`Enter ${variableName}`}
-                                placeholderTextColor={colors.text}
+                                placeholderTextColor={colors.placeholder}
                             />
                         </View>
                     );
                 })}
-
-                {showInsertModal && insertTarget && (
-                    <BaseModal
-                        visible
-                        blur
-                        onRequestClose={() => {
-                            setShowInsertModal(false);
-                            setInsertTarget(null);
-                        }}
-                    >
-                        <InsertModalV2
-                            visible={showInsertModal}
-                            onRequestClose={() => {
-                                setShowInsertModal(false);
-                                setInsertTarget(null);
-                            }}
-                            insertTarget={insertTarget ?? ''}
-                            onInsert={(value) => {
-                                setInputs((prev) => ({
-                                    ...prev,
-                                    [insertTarget ?? '']: value,
-                                }));
-                            }}
-                            entityType="Function" // or dynamically pass in entity type if you want
-                        />
-
-                    </BaseModal>
-                )}
-
 
                 <View style={sharedStyles.section}>
                     {isLoading ? (
@@ -165,24 +138,23 @@ export default function RunPrompt() {
                             </TouchableOpacity>
                         </>
                     ) : (
-                        <Text style={placeholderText}>Response will appear here after you run the prompt.</Text>
+                        <Text style={sharedStyles.placeholderText}>Response will appear here after you run the prompt.</Text>
                     )}
                 </View>
-
-                <TouchableOpacity style={styles.runButton} onPress={handleRun}>
-                    <Text style={styles.runButtonText}>Run Prompt</Text>
-                </TouchableOpacity>
             </ScrollView>
+
+            <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.runButton} onPress={handleRun}>
+                    <Text style={styles.runButtonText}>Run</Text>
+                </TouchableOpacity>
+            </View>
         </ThemedSafeArea>
+
     );
 }
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
-        container: {
-            padding: 20,
-            backgroundColor: colors.background,
-        },
         title: {
             fontSize: 20,
             fontWeight: '700',
@@ -194,7 +166,7 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
         },
         label: {
             fontSize: 14,
-            color: colors.text,
+            color: colors.accent,
             marginBottom: 4,
         },
         input: {
@@ -204,13 +176,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             color: colors.text,
             padding: 10,
             borderRadius: 8,
-        },
-        runButton: {
-            marginTop: 20,
-            backgroundColor: colors.primary,
-            paddingVertical: 14,
-            borderRadius: 10,
-            alignItems: 'center',
         },
         runButtonText: {
             color: colors.background,
@@ -226,6 +191,26 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
         button: {},
         cancelText: {
             color: colors.text
-        }
+        },
+        scrollContent: {
+            padding: 20,
+            paddingBottom: 100,  // extra bottom padding so content never gets hidden behind button
+        },
+        container: {
+            flex: 1,
+            backgroundColor: colors.background,
+        },
+        buttonContainer: {
+            padding: 20,
+            borderTopWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.card,  // optional: makes button bar stand out
+        },
+        runButton: {
+            backgroundColor: colors.primary,
+            paddingVertical: 16,
+            borderRadius: 10,
+            alignItems: 'center',
+        },
 
     });

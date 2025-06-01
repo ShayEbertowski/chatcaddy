@@ -44,12 +44,10 @@ export default function TabLayout() {
                             borderTopColor: colors.border,
                         },
                         headerTitleStyle: {
-                            color: colors.text,
+                            color: colors.accent,
                         },
                         headerStyle: {
                             backgroundColor: colors.surface,
-                            borderBottomColor: colors.border,
-                            borderBottomWidth: 1,
                         },
                         headerTitleAlign: 'center',
                         headerLeft: () => <UserAvatar />,

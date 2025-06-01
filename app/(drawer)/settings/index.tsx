@@ -14,9 +14,9 @@ import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { useColors } from '../../../src/hooks/useColors';
 import { useSettingsStore } from '../../../src/stores/useSettingsStore';
 import { getSharedStyles } from '../../../src/styles/shared';
-import { useThemeMode } from '../../../src/theme/ThemeProvider';
 import { loadUserPreferences, saveUserPreferences } from '../../../src/utils/preferences/preferences';
 import { loadApiKey } from '../../../src/utils/apiKeyStorage';
+import { useThemeStore } from '../../../src/stores/useThemeStore';
 
 
 const API_KEY_STORAGE_KEY = 'openai_api_key';
@@ -32,7 +32,7 @@ export default function Settings() {
     const colors = useColors();
     const styles = getStyles(colors);
     const sharedStyles = getSharedStyles(colors);
-    const { mode, setMode } = useThemeMode(); // mode = 'light' | 'dark' | 'system'
+    const { mode, setMode } = useThemeStore();
 
     const confirmPromptDelete = useSettingsStore((s) => s.confirmPromptDelete);
     const setConfirmPromptDelete = useSettingsStore((s) => s.setConfirmPromptDelete);
@@ -55,8 +55,10 @@ export default function Settings() {
             if (prefs.tap_behavior) {
                 setTapBehavior(prefs.tap_behavior);
             }
-            if (prefs.appearance_mode) {
+            if (prefs.appearance_mode === 'light' || prefs.appearance_mode === 'dark') {
                 setMode(prefs.appearance_mode);
+            } else {
+                setMode('light');  // fallback default
             }
             if (prefs.confirm_prompt_delete !== undefined) {
                 setConfirmPromptDelete(prefs.confirm_prompt_delete);
@@ -144,46 +146,49 @@ export default function Settings() {
     return (
 
         <ThemedSafeArea>
-            <ScrollView contentContainerStyle={styles.scroll}>
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>OpenAI API Key</Text>
+            <ScrollView contentContainerStyle={sharedStyles.scroll}>
+                <View style={sharedStyles.section}>
+                    <Text style={sharedStyles.sectionTitle}>OpenAI API Key</Text>
                     <TextInput
                         value={apiKey}
                         onChangeText={setApiKey}
                         placeholder="sk-..."
                         secureTextEntry
                         editable={editable}
-                        style={[styles.input, !editable && styles.disabledInput]}
+                        style={[sharedStyles.input, !editable && sharedStyles.disabledInput]}
                     />
-                    <View style={styles.keyActionsRow}>
-                        <TouchableOpacity style={styles.actionButton} onPress={handleEditOrSave}>
-                            <Text style={styles.actionButtonText}>{editable ? 'Save' : 'Edit'}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.actionButtonSecondary} onPress={handleTestKey}>
-                            <Text style={styles.actionButtonText}>Test</Text>
-                        </TouchableOpacity>
+                    <View style={sharedStyles.keyActionsRow}>
+                        <View style={styles.leftButtonRow}>
+                            <TouchableOpacity style={sharedStyles.actionButton} onPress={handleEditOrSave}>
+                                <Text style={sharedStyles.actionButtonText}>{editable ? 'Save' : 'Edit'}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={sharedStyles.actionButton} onPress={handleTestKey}>
+                                <Text style={sharedStyles.actionButtonText}>Test</Text>
+                            </TouchableOpacity>
+                        </View>
+
                         <TouchableOpacity style={styles.clearButton} onPress={confirmClearKey}>
-                            <Text style={styles.clearButtonText}>Clear Key</Text>
+                            <Text style={sharedStyles.clearButtonText}>Clear Key</Text>
                         </TouchableOpacity>
                     </View>
 
 
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Default Tap Action</Text>
-                    <View style={styles.toggleRow}>
+                <View style={sharedStyles.section}>
+                    <Text style={sharedStyles.sectionTitle}>Default Tap Action</Text>
+                    <View style={sharedStyles.toggleRow}>
                         <TouchableOpacity
                             style={[
-                                styles.toggleButton,
-                                tapBehavior === 'preview' && styles.toggleButtonSelected,
+                                sharedStyles.toggleButton,
+                                tapBehavior === 'preview' && sharedStyles.toggleButtonSelected,
                             ]}
                             onPress={() => saveTapBehavior('preview')}
                         >
                             <Text
                                 style={[
-                                    styles.toggleButtonText,
-                                    tapBehavior === 'preview' && styles.toggleButtonTextSelected,
+                                    sharedStyles.toggleButtonText,
+                                    tapBehavior === 'preview' && sharedStyles.toggleButtonTextSelected,
                                 ]}
                             >
                                 Preview
@@ -192,15 +197,15 @@ export default function Settings() {
 
                         <TouchableOpacity
                             style={[
-                                styles.toggleButton,
-                                tapBehavior === 'run' && styles.toggleButtonSelected,
+                                sharedStyles.toggleButton,
+                                tapBehavior === 'run' && sharedStyles.toggleButtonSelected,
                             ]}
                             onPress={() => saveTapBehavior('run')}
                         >
                             <Text
                                 style={[
-                                    styles.toggleButtonText,
-                                    tapBehavior === 'run' && styles.toggleButtonTextSelected,
+                                    sharedStyles.toggleButtonText,
+                                    tapBehavior === 'run' && sharedStyles.toggleButtonTextSelected,
                                 ]}
                             >
                                 Run
@@ -210,20 +215,20 @@ export default function Settings() {
 
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Appearance</Text>
-                    <View style={styles.toggleRow}>
+                <View style={sharedStyles.section}>
+                    <Text style={sharedStyles.sectionTitle}>Appearance</Text>
+                    <View style={sharedStyles.toggleRow}>
                         <TouchableOpacity
                             style={[
-                                styles.toggleButton,
-                                mode === 'light' && styles.toggleButtonSelected,
+                                sharedStyles.toggleButton,
+                                mode === 'light' && sharedStyles.toggleButtonSelected,
                             ]}
                             onPress={() => setMode('light')}
                         >
                             <Text
                                 style={[
-                                    styles.toggleButtonText,
-                                    mode === 'light' && styles.toggleButtonTextSelected,
+                                    sharedStyles.toggleButtonText,
+                                    mode === 'light' && sharedStyles.toggleButtonTextSelected,
                                 ]}
                             >
                                 Light
@@ -232,42 +237,25 @@ export default function Settings() {
 
                         <TouchableOpacity
                             style={[
-                                styles.toggleButton,
-                                mode === 'dark' && styles.toggleButtonSelected,
+                                sharedStyles.toggleButton,
+                                mode === 'dark' && sharedStyles.toggleButtonSelected,
                             ]}
                             onPress={() => setMode('dark')}
                         >
                             <Text
                                 style={[
-                                    styles.toggleButtonText,
-                                    mode === 'dark' && styles.toggleButtonTextSelected,
+                                    sharedStyles.toggleButtonText,
+                                    mode === 'dark' && sharedStyles.toggleButtonTextSelected,
                                 ]}
                             >
                                 Dark
                             </Text>
                         </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[
-                                styles.toggleButton,
-                                mode === 'system' && styles.toggleButtonSelected,
-                            ]}
-                            onPress={() => setMode('system')}
-                        >
-                            <Text
-                                style={[
-                                    styles.toggleButtonText,
-                                    mode === 'system' && styles.toggleButtonTextSelected,
-                                ]}
-                            >
-                                System
-                            </Text>
-                        </TouchableOpacity>
                     </View>
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Prompt Behavior</Text>
+                <View style={sharedStyles.section}>
+                    <Text style={sharedStyles.sectionTitle}>Prompt Behavior</Text>
                     <View style={styles.settingRow}>
                         <Text style={styles.settingLabel}>Confirm before deleting prompts</Text>
                         <Switch
@@ -286,101 +274,8 @@ export default function Settings() {
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
-        scroll: {
-            flexGrow: 1,
-            paddingVertical: 32,
-            paddingHorizontal: 20,
-        },
-        section: {
-            backgroundColor: colors.card, // use your theme's card color
-            padding: 16,
-            borderRadius: 10,
-            marginBottom: 24,
-            shadowColor: colors.cardShadow ?? '#000',
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.05,
-            shadowRadius: 3,
-            elevation: 1,
-        },
-        sectionTitle: {
-            fontSize: 16,
-            fontWeight: '600',
-            marginBottom: 12,
-            color: colors.text,
-        },
-        input: {
-            borderColor: colors.border,
-            borderWidth: 1,
-            padding: 10,
-            borderRadius: 6,
-            fontSize: 16,
-            backgroundColor: colors.inputBackground ?? '#f9f9f9',
-            color: colors.text,
-        },
-        disabledInput: {
-            backgroundColor: colors.disabledBackground ?? '#eee',
-            color: colors.secondaryText,
-        },
-        keyActionsRow: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginTop: 12,
-        },
-        actionButton: {
-            backgroundColor: colors.accent,
-            paddingVertical: 10,
-            paddingHorizontal: 16,
-            borderRadius: 8,
-        },
-        actionButtonSecondary: {
-            borderColor: colors.accent,
-            borderWidth: 3,
-            paddingVertical: 8,
-            paddingHorizontal: 16,
-            borderRadius: 8,
-        },
-        actionButtonText: {
-            color: colors.onPrimary,
-            fontWeight: '600',
-            fontSize: 14,
-        },
-        clearButton: {
-            marginTop: 12,
-            alignSelf: 'center',
-        },
-        clearButtonText: {
-            color: colors.warning ?? 'red',
-            fontSize: 14,
-            fontWeight: '600',
-        },
-        toggleRow: {
-            flexDirection: 'row',
-            backgroundColor: colors.toggleBackground ?? colors.inputBackground,
-            borderRadius: 8,
-            overflow: 'hidden',
-            marginTop: 10,
-        },
-        toggleButton: {
-            flex: 1,
-            paddingVertical: 12,
-            alignItems: 'center',
-        },
-        toggleButtonSelected: {
-            backgroundColor: colors.primary,
-        },
-        toggleButtonText: {
-            color: colors.text,
-            fontWeight: '500',
-        },
-        toggleButtonTextSelected: {
-            color: colors.onPrimary,
-            fontWeight: '700',
-        },
         settingRow: {
             backgroundColor: colors.card,
-            borderTopWidth: 1,
-            borderBottomWidth: 1,
-            borderColor: colors.border,
             paddingVertical: 14,
             paddingHorizontal: 16,
             flexDirection: 'row',
@@ -389,14 +284,21 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             marginBottom: 24,
             borderRadius: 10,
         },
-
         settingLabel: {
             fontSize: 15,
             color: colors.text,
             flexShrink: 1,
             paddingRight: 12,
         },
-
+        leftButtonRow: {
+            flexDirection: 'row',
+            gap: 12,
+        },
+        clearButton: {
+            marginLeft: 12,
+            alignSelf: 'center',
+            paddingRight: 4
+        },
     });
 
 Settings.options = {

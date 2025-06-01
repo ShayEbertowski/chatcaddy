@@ -1,44 +1,56 @@
 import React from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { Modal, StyleSheet, View, TouchableWithoutFeedback } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useColors } from '../../hooks/useColors';
+import { useThemeStore } from '../../stores/useThemeStore';
 
 type BaseModalProps = {
     visible: boolean;
     onRequestClose: () => void;
     children: React.ReactNode;
     blur?: boolean;
+    dismissOnBackdropPress?: boolean;
 };
 
 export default function BaseModal({
     visible,
     onRequestClose,
     children,
-    blur = true, // default to true for modal feel
+    blur = true,
+    dismissOnBackdropPress = false,
 }: BaseModalProps) {
     const colors = useColors();
-    const styles = getStyles(colors);
+    const mode = useThemeStore((state) => state.mode);
+    const styles = getStyles(colors, mode);
+
+    const handleBackdropPress = () => {
+        if (dismissOnBackdropPress) {
+            onRequestClose();
+        }
+    };
 
     return (
-        <Modal
-            transparent
-            animationType="fade"
-            visible={visible}
-            onRequestClose={onRequestClose}
-        >
-            <View style={styles.overlay}>
-                {blur && (
-                    <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />
-                )}
-                <View style={styles.modalCard}>
-                    {children}
+        <Modal transparent animationType="fade" visible={visible} onRequestClose={onRequestClose}>
+            <TouchableWithoutFeedback onPress={handleBackdropPress}>
+                <View style={styles.overlay}>
+                    {blur && (
+                        <>
+                            <BlurView intensity={40} tint={mode === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+                            <View style={[StyleSheet.absoluteFill, {
+                                backgroundColor: mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.15)'
+                            }]} />
+                        </>
+                    )}
+                    <TouchableWithoutFeedback>{/* Prevent closing when tapping inside modal */}
+                        <View style={styles.modalCard}>{children}</View>
+                    </TouchableWithoutFeedback>
                 </View>
-            </View>
+            </TouchableWithoutFeedback>
         </Modal>
     );
 }
 
-const getStyles = (colors: ReturnType<typeof useColors>) =>
+const getStyles = (colors: ReturnType<typeof useColors>, mode: 'light' | 'dark') =>
     StyleSheet.create({
         overlay: {
             flex: 1,
@@ -48,7 +60,13 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             position: 'relative',
         },
         modalCard: {
-            backgroundColor: colors.card,
+            backgroundColor: mode === 'dark'
+                ? 'rgba(40,40,40,0.85)'
+                : 'rgba(255,255,255,0.9)',
+            borderWidth: 1,
+            borderColor: mode === 'dark'
+                ? 'rgba(255,255,255,0.07)'
+                : 'rgba(0,0,0,0.1)',
             borderRadius: 20,
             padding: 24,
             width: '100%',
@@ -58,6 +76,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             shadowOffset: { width: 0, height: 10 },
             shadowOpacity: 0.25,
             shadowRadius: 20,
-            zIndex: 10,
+            zIndex: 100,
         },
     });

@@ -18,7 +18,7 @@ import CollapsibleSection from '../../../src/components/shared/CollapsibleSectio
 
 import { useColors } from '../../../src/hooks/useColors';
 import { useVariableStore } from '../../../src/stores/useVariableStore';
-import { getSharedStyles, placeholderText } from '../../../src/styles/shared';
+import { getSharedStyles } from '../../../src/styles/shared';
 import { Prompt, VariableValue } from '../../../src/types/prompt';
 import { runPrompt } from '../../../src/utils/prompt/runPrompt';
 import { resolveVariableDisplayValue } from '../../../src/utils/variables/variables';
@@ -239,7 +239,7 @@ export default function Sandbox() {
                                 <Text style={sharedStyles.loadingText}>Running...</Text>
                             </View>
                         ) : response === '' ? (
-                            <Text style={placeholderText}>Response will appear here after you run the prompt.</Text>
+                            <Text style={sharedStyles.placeholderText}>Response will appear here after you run the prompt.</Text>
                         ) : (
                             <>
                                 <Text style={sharedStyles.response}>{response}</Text>

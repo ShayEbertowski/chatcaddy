@@ -21,7 +21,7 @@ export default function PromptCard({
     const colors = useColors();
     const sharedStyles = getSharedStyles(colors);
     const styles = getStyles(colors);
-
+ 
     const renderPreviewChunks = (raw: string) => {
         const parts = raw.split(/({{.*?}})/g);
 
@@ -55,10 +55,10 @@ export default function PromptCard({
 
             <View style={styles.actions}>
                 <TouchableOpacity onPress={onEdit} style={styles.iconButton}>
-                    <MaterialIcons name="edit" size={20} color={colors.primary} />
+                    <MaterialIcons name="edit" size={20} color={colors.accent} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={onDelete} style={styles.iconButton}>
-                    <MaterialIcons name="delete" size={20} color={colors.error} />
+                    <MaterialIcons name="delete" size={20} color={colors.softError} />
                 </TouchableOpacity>
             </View>
         </View>

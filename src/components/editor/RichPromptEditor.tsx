@@ -15,7 +15,7 @@ import { useVariableStore } from '../../stores/useVariableStore';
 import { useFunctionStore } from '../../stores/useFunctionStore';
 import { useSnippetStore } from '../../stores/useSnippetStore';
 import { getEntityForEdit } from '../../utils/prompt/generateEntityForEdit';
-import { getSharedStyles, placeholderText } from '../../styles/shared';
+import { getSharedStyles } from '../../styles/shared';
 import { useColors } from '../../hooks/useColors';
 import { createStringValue, resolveVariableDisplayValue } from '../../utils/variables/variables';
 import { parsePromptParts } from '../../utils/prompt/promptManager';
@@ -178,7 +178,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
             >
                 <View style={styles.section}>
                     {text.trim() === '' ? (
-                        <Text style={placeholderText}>
+                        <Text style={sharedStyles.placeholderText}>
                             Preview will appear here as you type your prompt.
                         </Text>
                     ) : (

@@ -20,7 +20,7 @@ export function DrawerScreenLayout({ title, showBack = true }: Options) {
                 headerShown: true,
                 headerTitle: title,
                 headerTitleStyle: {
-                    color: colors.text, // ← uses your theme's text color
+                    color: colors.accent, // ← uses your theme's text color
                 },
                 headerStyle: {
                     backgroundColor: colors.background, // ← uses your theme's background
@@ -31,7 +31,7 @@ export function DrawerScreenLayout({ title, showBack = true }: Options) {
                             style={{ marginLeft: 12 }}
                             onPress={() => navigation.goBack()}
                         >
-                            <Ionicons name="arrow-back" size={24} color={colors.text} />
+                            <Ionicons name="arrow-back" size={24} color={colors.accent} />
                         </TouchableOpacity>
                     )
                     : undefined,
