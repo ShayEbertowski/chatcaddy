@@ -10,6 +10,7 @@ import {
 import { Prompt } from '../../types/prompt';
 import { usePromptStore } from '../../stores/usePromptsStore';
 import { useColors } from '../../hooks/useColors';
+import { RenderPreviewChunks } from './RenderPreviewChunks';  // ✅ assuming same folder
 
 type Props = {
     onSelect: (prompt: Prompt) => void;
@@ -21,6 +22,7 @@ export default function PromptSearch({ onSelect }: Props) {
     const [isFocused, setIsFocused] = useState(false);
     const colors = useColors();
     const styles = getStyles(colors);
+
     const filtered = !isFocused
         ? []
         : prompts.filter((p) => {
@@ -29,7 +31,6 @@ export default function PromptSearch({ onSelect }: Props) {
 
             const titleMatch = p.title.toLowerCase().includes(query);
             const contentMatch = p.content.toLowerCase().includes(query);
-
             const variableText = Object.values(p.variables ?? {})
                 .map((v) => {
                     if (v.type === 'string') return v.value.toLowerCase();
@@ -37,9 +38,7 @@ export default function PromptSearch({ onSelect }: Props) {
                     return '';
                 })
                 .join(' ');
-
             const variableMatch = variableText.includes(query);
-
             return titleMatch || contentMatch || variableMatch;
         });
 
@@ -52,9 +51,7 @@ export default function PromptSearch({ onSelect }: Props) {
                 value={search}
                 onChangeText={setSearch}
                 onFocus={() => setIsFocused(true)}
-                onBlur={() => {
-                    if (search.trim() === '') setIsFocused(false);
-                }}
+                onBlur={() => { if (search.trim() === '') setIsFocused(false); }}
                 style={styles.searchInput}
                 placeholderTextColor={colors.placeholder}
             />
@@ -67,12 +64,10 @@ export default function PromptSearch({ onSelect }: Props) {
                             onPress={() => onSelect(prompt)}
                             style={styles.promptItem}
                         >
-                            <Text style={styles.promptTitle}>
-                                {String(prompt.title || '(Untitled)')}
-                            </Text>
-                            <Text style={styles.promptContent} numberOfLines={1}>
-                                {String(prompt.content || '')}
-                            </Text>
+                            <Text style={styles.promptTitle}>{prompt.title || '(Untitled)'}</Text>
+                            <View style={styles.previewRow}>
+                                <RenderPreviewChunks content={prompt.content} />
+                            </View>
                         </TouchableOpacity>
                     ))
                 ) : (
@@ -113,11 +108,13 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
         promptTitle: {
             fontWeight: '500',
             fontSize: 16,
-            color: colors.onPrimary
+            color: colors.text,
+            marginBottom: 6,
         },
-        promptContent: {
-            fontSize: 14,
-            color: colors.secondaryText,
+        previewRow: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            alignItems: 'center',
         },
         scrollContent: {
             paddingBottom: 100,

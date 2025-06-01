@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, TouchableOpacity } from 'react-native';
-import { StyleSheet } from 'react-native';
+import { View, Text, Button, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Prompt } from '../../../src/types/prompt';
 import { useColors } from '../../../src/hooks/useColors';
@@ -40,7 +39,6 @@ export default function Composer() {
         setCurrentPrompt(next);
     };
 
-
     const zoomOut = () => {
         const newHistory = [...history];
         const prev = newHistory.pop();
@@ -54,9 +52,8 @@ export default function Composer() {
         return (
             <ThemedSafeArea>
                 <View style={{ flex: 1 }}>
-                    {/* 🧭 This toggle block stays here, inside the screen */}
                     <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, {color: colors.accent}]}>Start With</Text>
+                        <Text style={[styles.sectionTitle, { color: colors.accent }]}>Start With</Text>
                         <View style={styles.toggleRow}>
                             <TouchableOpacity
                                 style={[
@@ -65,12 +62,7 @@ export default function Composer() {
                                 ]}
                                 onPress={() => setMode('search')}
                             >
-                                <Text
-                                    style={[
-                                        styles.toggleButtonText,
-                                        mode === 'search' && styles.toggleButtonTextSelected,
-                                    ]}
-                                >
+                                <Text style={[styles.toggleButtonText, mode === 'search' && styles.toggleButtonTextSelected]}>
                                     Search
                                 </Text>
                             </TouchableOpacity>
@@ -82,19 +74,13 @@ export default function Composer() {
                                 ]}
                                 onPress={() => setMode('create')}
                             >
-                                <Text
-                                    style={[
-                                        styles.toggleButtonText,
-                                        mode === 'create' && styles.toggleButtonTextSelected,
-                                    ]}
-                                >
+                                <Text style={[styles.toggleButtonText, mode === 'create' && styles.toggleButtonTextSelected]}>
                                     Create New
                                 </Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    {/* 👇 Then conditional render based on mode */}
                     {mode === 'search' && (
                         <PromptSearch onSelect={(prompt) => {
                             setCurrentPrompt(prompt);
@@ -103,7 +89,7 @@ export default function Composer() {
                         }} />
                     )}
 
-                    {mode === 'create' && ( 
+                    {mode === 'create' && (
                         <View style={{ flex: 1, padding: 16 }}>
                             <RichPromptEditor
                                 text={newText}
@@ -121,7 +107,6 @@ export default function Composer() {
                                         folder: 'default',
                                         type: newType,
                                         variables: useVariableStore.getState().values,
-
                                     };
                                     setCurrentPrompt(prompt);
                                     setIsPicking(false);
@@ -136,12 +121,12 @@ export default function Composer() {
         );
     }
 
-
     if (!currentPrompt) {
-        return
-        <ThemedSafeArea>
-            <Text style={{ padding: 20, fontSize: 16 }}>Loading...</Text>
-        </ThemedSafeArea>;
+        return (
+            <ThemedSafeArea>
+                <Text style={{ padding: 20, fontSize: 16 }}>Loading...</Text>
+            </ThemedSafeArea>
+        );
     }
 
     return (
@@ -155,22 +140,18 @@ export default function Composer() {
 
                 <Button
                     title="Pick a different prompt"
-                    onPress={() => router.push('/pick-prompt?mode=root')}
-                />        </View>
+                    onPress={() => setIsPicking(true)}  // ✅ THIS IS THE FIX
+                />
+            </View>
         </ThemedSafeArea>
     );
 }
 
-
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
-        scroll: {
-            flexGrow: 1,
-            paddingVertical: 32,
-            paddingHorizontal: 20,
-        },
+        scroll: { flexGrow: 1, paddingVertical: 32, paddingHorizontal: 20 },
         section: {
-            backgroundColor: colors.card, // use your theme's card color
+            backgroundColor: colors.card,
             padding: 16,
             borderRadius: 10,
             marginBottom: 24,
@@ -180,12 +161,7 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             shadowRadius: 3,
             elevation: 1,
         },
-        sectionTitle: {
-            fontSize: 16,
-            fontWeight: '600',
-            marginBottom: 12,
-            color: colors.text,
-        },
+        sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 12, color: colors.text },
         input: {
             borderColor: colors.border,
             borderWidth: 1,
@@ -194,35 +170,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             fontSize: 16,
             backgroundColor: colors.inputBackground ?? '#f9f9f9',
             color: colors.text,
-        },
-        disabledInput: {
-            backgroundColor: colors.disabledBackground ?? '#eee',
-            color: colors.secondaryText,
-        },
-        keyActionsRow: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginTop: 12,
-        },
-        actionButton: {
-            backgroundColor: colors.primary,
-            paddingVertical: 8,
-            paddingHorizontal: 16,
-            borderRadius: 8,
-        },
-        actionButtonText: {
-            color: colors.onPrimary,
-            fontWeight: '600',
-            fontSize: 14,
-        },
-        clearButton: {
-            marginTop: 12,
-            alignSelf: 'center',
-        },
-        clearButtonText: {
-            color: colors.error ?? 'red',
-            fontSize: 14,
-            fontWeight: '600',
         },
         toggleRow: {
             flexDirection: 'row',
@@ -236,37 +183,7 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             paddingVertical: 12,
             alignItems: 'center',
         },
-        toggleButtonSelected: {
-            backgroundColor: colors.primary,
-        },
-        toggleButtonText: {
-            color: colors.text,
-            fontWeight: '500',
-        },
-        toggleButtonTextSelected: {
-            color: colors.onPrimary,
-            fontWeight: '700',
-        },
-        settingRow: {
-            backgroundColor: colors.card,
-            borderTopWidth: 1,
-            borderBottomWidth: 1,
-            borderColor: colors.border,
-            paddingVertical: 14,
-            paddingHorizontal: 16,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 24,
-            borderRadius: 10,
-        },
-
-        settingLabel: {
-            fontSize: 15,
-            color: colors.text,
-            flexShrink: 1,
-            paddingRight: 12,
-        },
-
+        toggleButtonSelected: { backgroundColor: colors.primary },
+        toggleButtonText: { color: colors.text, fontWeight: '500' },
+        toggleButtonTextSelected: { color: colors.onPrimary, fontWeight: '700' },
     });
-

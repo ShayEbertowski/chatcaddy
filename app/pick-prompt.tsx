@@ -5,6 +5,7 @@ import { useColors } from '../src/hooks/useColors';
 import { useAuthStore } from '../src/stores/useAuthStore';
 import { Prompt } from '../src/types/prompt';
 import { usePromptStore } from '../src/stores/usePromptsStore';
+import { ThemedSafeArea } from '../src/components/shared/ThemedSafeArea';
 
 export default function PickPromptScreen() {
     const router = useRouter();
@@ -33,21 +34,23 @@ export default function PickPromptScreen() {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <FlatList
-                data={prompts}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <TouchableOpacity style={[styles.item, { borderColor: colors.border }]} onPress={() => handleSelect(item)}>
-                        <Text style={[styles.title, { color: colors.text }]}>{item.title}</Text>
-                        <Text style={[styles.content, { color: colors.secondaryText }]} numberOfLines={1}>
-                            {item.content}
-                        </Text>
-                    </TouchableOpacity>
-                )}
-                ListEmptyComponent={<Text style={{ color: colors.secondaryText }}>No prompts found</Text>}
-            />
-        </View>
+        <ThemedSafeArea>
+            <View style={[styles.container, { backgroundColor: colors.background }]}>
+                <FlatList
+                    data={prompts}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity style={[styles.item, { borderColor: colors.border }]} onPress={() => handleSelect(item)}>
+                            <Text style={[styles.title, { color: colors.text }]}>{item.title}</Text>
+                            <Text style={[styles.content, { color: colors.secondaryText }]} numberOfLines={1}>
+                                {item.content}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                    ListEmptyComponent={<Text style={{ color: colors.secondaryText }}>No prompts found</Text>}
+                />
+            </View>
+        </ThemedSafeArea>
     );
 }
 
