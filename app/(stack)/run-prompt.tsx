@@ -39,6 +39,9 @@ export default function RunPrompt() {
     const navigation = useNavigation();
     const functions = useFunctionStore((s) => s.functions);
 
+
+
+
     useEffect(() => {
         navigation.setOptions({
             title: 'Run Prompt',
@@ -148,6 +151,34 @@ export default function RunPrompt() {
                     <Text style={styles.runButtonText}>Run</Text>
                 </TouchableOpacity>
             </View>
+
+            {showInsertModal && insertTarget && (
+                <BaseModal
+                    visible
+                    blur
+                    onRequestClose={() => {
+                        setShowInsertModal(false);
+                        setInsertTarget(null);
+                    }}
+                >
+                    <InsertModalV2
+                        visible
+                        onRequestClose={() => {
+                            setShowInsertModal(false);
+                            setInsertTarget(null);
+                        }}
+                        insertTarget={insertTarget}
+                        onInsert={(value) => {
+                            setInputs((prev) => ({
+                                ...prev,
+                                [insertTarget]: value,
+                            }));
+                        }}
+                        entityType="Function"
+                    />
+                </BaseModal>
+            )}
+
         </ThemedSafeArea>
 
     );

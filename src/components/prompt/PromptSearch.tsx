@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Prompt } from '../../types/prompt';
 import { usePromptStore } from '../../stores/usePromptsStore';
+import { useColors } from '../../hooks/useColors';
 
 type Props = {
     onSelect: (prompt: Prompt) => void;
@@ -18,7 +19,8 @@ export default function PromptSearch({ onSelect }: Props) {
     const prompts = usePromptStore((state) => state.prompts);
     const [search, setSearch] = useState('');
     const [isFocused, setIsFocused] = useState(false);
-
+    const colors = useColors();
+    const styles = getStyles(colors);
     const filtered = !isFocused
         ? []
         : prompts.filter((p) => {
@@ -54,6 +56,7 @@ export default function PromptSearch({ onSelect }: Props) {
                     if (search.trim() === '') setIsFocused(false);
                 }}
                 style={styles.searchInput}
+                placeholderTextColor={colors.placeholder}
             />
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -67,7 +70,7 @@ export default function PromptSearch({ onSelect }: Props) {
                             <Text style={styles.promptTitle}>
                                 {String(prompt.title || '(Untitled)')}
                             </Text>
-                            <Text style={styles.promptSnippet} numberOfLines={1}>
+                            <Text style={styles.promptContent} numberOfLines={1}>
                                 {String(prompt.content || '')}
                             </Text>
                         </TouchableOpacity>
@@ -84,44 +87,46 @@ export default function PromptSearch({ onSelect }: Props) {
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-    },
-    heading: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 12,
-    },
-    searchInput: {
-        borderWidth: 1,
-        borderRadius: 8,
-        padding: 10,
-        borderColor: '#ccc',
-        marginBottom: 12,
-    },
-    promptItem: {
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderColor: '#e5e5e5',
-    },
-    promptTitle: {
-        fontWeight: '500',
-        fontSize: 16,
-    },
-    promptSnippet: {
-        fontSize: 14,
-        color: '#666',
-    },
-    scrollContent: {
-        paddingBottom: 100,
-    },
-    emptyState: {
-        textAlign: 'center',
-        color: '#999',
-        fontStyle: 'italic',
-        marginTop: 20,
-        fontSize: 15,
-    },
-});
+const getStyles = (colors: ReturnType<typeof useColors>) =>
+    StyleSheet.create({
+        container: {
+            flex: 1,
+            padding: 20,
+        },
+        heading: {
+            fontSize: 18,
+            fontWeight: '600',
+            marginBottom: 12,
+        },
+        searchInput: {
+            borderWidth: 1,
+            borderRadius: 8,
+            padding: 10,
+            borderColor: '#ccc',
+            marginBottom: 12,
+        },
+        promptItem: {
+            paddingVertical: 16,
+            borderBottomWidth: 1,
+            borderColor: colors.borderThin,
+        },
+        promptTitle: {
+            fontWeight: '500',
+            fontSize: 16,
+            color: colors.onPrimary
+        },
+        promptContent: {
+            fontSize: 14,
+            color: colors.secondaryText,
+        },
+        scrollContent: {
+            paddingBottom: 100,
+        },
+        emptyState: {
+            textAlign: 'center',
+            color: '#999',
+            fontStyle: 'italic',
+            marginTop: 20,
+            fontSize: 15,
+        },
+    });

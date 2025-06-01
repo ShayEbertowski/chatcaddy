@@ -56,7 +56,7 @@ export default function Composer() {
                 <View style={{ flex: 1 }}>
                     {/* 🧭 This toggle block stays here, inside the screen */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Start With</Text>
+                        <Text style={[styles.sectionTitle, {color: colors.accent}]}>Start With</Text>
                         <View style={styles.toggleRow}>
                             <TouchableOpacity
                                 style={[
@@ -103,7 +103,7 @@ export default function Composer() {
                         }} />
                     )}
 
-                    {mode === 'create' && (
+                    {mode === 'create' && ( 
                         <View style={{ flex: 1, padding: 16 }}>
                             <RichPromptEditor
                                 text={newText}
