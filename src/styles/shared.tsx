@@ -33,9 +33,6 @@ export const getSharedStyles = ({ isDark, ...colors }: Theme) =>
     response: {
       color: colors.text,
       backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.borderThin,
-      borderRadius: 12,
       padding: 16,
       shadowOpacity: 0.05,
       shadowRadius: 8,

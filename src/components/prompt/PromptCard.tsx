@@ -2,6 +2,7 @@ import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getSharedStyles } from '../../styles/shared';
 import { useColors } from '../../hooks/useColors';
+import { RenderPreviewChunks } from './renderPreviewChunks';
 
 type PromptCardProps = {
     title: string;
@@ -19,30 +20,7 @@ export default function PromptCard({
     onDelete,
 }: PromptCardProps) {
     const colors = useColors();
-    const sharedStyles = getSharedStyles(colors);
     const styles = getStyles(colors);
- 
-    const renderPreviewChunks = (raw: string) => {
-        const parts = raw.split(/({{.*?}})/g);
-
-        return parts.map((part, index) => {
-            const match = part.match(/{{(.*?)}}/);
-            if (match) {
-                const variableName = match[1].split('=')[0].trim();
-                return (
-                    <View key={index} style={sharedStyles.chip}>
-                        <Text style={sharedStyles.chipText}>{variableName}</Text>
-                    </View>
-                );
-            }
-
-            return (
-                <Text key={index} style={styles.previewText}>
-                    {part}
-                </Text>
-            );
-        });
-    };
 
     return (
         <View style={styles.card}>
@@ -50,7 +28,7 @@ export default function PromptCard({
                 <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
                     {title}
                 </Text>
-                <View style={styles.previewRow}>{renderPreviewChunks(content)}</View>
+                <RenderPreviewChunks content={content} />
             </TouchableOpacity>
 
             <View style={styles.actions}>

@@ -17,6 +17,8 @@ import { usePromptEditorStore } from '../../src/stores/usePromptEditorStore';
 import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
 import { PromptVariableEditor } from '../../src/components/prompt/PromptVariableEditor';
 import { useFunctionStore } from '../../src/stores/useFunctionStore';
+import { RenderPreviewChunks } from '../../src/components/prompt/renderPreviewChunks';
+import { PromptResult } from '../../src/components/prompt/PromptResult';
 
 export default function RunPrompt() {
     const prompt = usePromptEditorStore((s) => s.editingPrompt);
@@ -85,29 +87,23 @@ export default function RunPrompt() {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <Text style={[styles.title, { color: colors.accent }]}>{prompt.title}</Text>
 
+                <View >
+                    <RenderPreviewChunks content={prompt.content} />
+                </View>
+
+                <View style={sharedStyles.divider} />
+
                 <PromptVariableEditor
                     prompt={prompt}
                     initialValues={inputs}
                     onChange={setInputs}
                 />
 
-                <View style={sharedStyles.section}>
-                    {isLoading ? (
-                        <View style={sharedStyles.loadingContainer}>
-                            <ActivityIndicator size="small" color={colors.primary} />
-                            <Text style={sharedStyles.loadingText}>Running...</Text>
-                        </View>
-                    ) : response ? (
-                        <>
-                            <Text style={sharedStyles.response}>{response}</Text>
-                            <TouchableOpacity onPress={() => setResponse('')}>
-                                <Text style={sharedStyles.clearButton}>Clear</Text>
-                            </TouchableOpacity>
-                        </>
-                    ) : (
-                        <Text style={sharedStyles.placeholderText}>Response will appear here after you run the prompt.</Text>
-                    )}
-                </View>
+                <PromptResult
+                    response={response}
+                    isLoading={isLoading}
+                    onClear={() => setResponse('')}
+                />
             </ScrollView>
 
             <View style={styles.buttonContainer}>

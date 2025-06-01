@@ -4,6 +4,7 @@ import { Prompt } from '../../types/prompt';
 import { useColors } from '../../hooks/useColors';
 import { PromptVariableEditor } from '../prompt/PromptVariableEditor';
 import { useFunctionStore } from '../../stores/useFunctionStore';
+import { RenderPreviewChunks } from '../prompt/renderPreviewChunks';
 
 type PromptComposerProps = {
     prompt: Prompt;
@@ -35,8 +36,7 @@ export default function PromptComposer({ prompt, onZoomIntoPrompt }: PromptCompo
             <Text style={styles.title}>{prompt.title}</Text>
 
             <View style={styles.contentContainer}>
-                <Text style={styles.label}>Prompt Content:</Text>
-                <Text style={styles.contentText}>{prompt.content}</Text>
+                    <RenderPreviewChunks content={prompt.content} />
             </View>
 
             <View style={styles.variablesContainer}>
