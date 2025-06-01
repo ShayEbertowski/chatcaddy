@@ -2,53 +2,37 @@ import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
     ScrollView,
     ActivityIndicator,
-    Alert,
+    TouchableOpacity,
+    StyleSheet,
+    Alert
 } from 'react-native';
-import BaseModal from '../../src/components/modals/BaseModal';
+import { useNavigation } from 'expo-router';
 import { useColors } from '../../src/hooks/useColors';
-import { useFunctionStore } from '../../src/stores/useFunctionStore';
 import { useVariableStore } from '../../src/stores/useVariableStore';
 import { getSharedStyles } from '../../src/styles/shared';
 import { runPrompt } from '../../src/utils/prompt/runPrompt';
 import { usePromptEditorStore } from '../../src/stores/usePromptEditorStore';
 import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
-import { useNavigation } from 'expo-router';
-import InsertModalV2 from '../../src/components/modals/InsertModalV2';
-import { MaterialIcons } from '@expo/vector-icons';
-
+import { PromptVariableEditor } from '../../src/components/prompt/PromptVariableEditor';
+import { useFunctionStore } from '../../src/stores/useFunctionStore';
 
 export default function RunPrompt() {
     const prompt = usePromptEditorStore((s) => s.editingPrompt);
-
     const colors = useColors();
     const styles = getStyles(colors);
     const sharedStyles = getSharedStyles(colors);
+    const navigation = useNavigation();
 
     const [inputs, setInputs] = useState<Record<string, string>>({});
     const [response, setResponse] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const [insertTarget, setInsertTarget] = useState<string | null>(null);
-    const [showInsertModal, setShowInsertModal] = useState(false);
-
-    const navigation = useNavigation();
-    const functions = useFunctionStore((s) => s.functions);
-
-
-
-
     useEffect(() => {
-        navigation.setOptions({
-            title: 'Run Prompt',
-        });
+        navigation.setOptions({ title: 'Run Prompt' });
     }, [navigation]);
 
-    // This must come before any references to prompt, else prompt could be null
     if (!prompt) {
         return (
             <View style={styles.container}>
@@ -58,16 +42,18 @@ export default function RunPrompt() {
     }
 
     useEffect(() => {
-        const matches = prompt.content.match(/{{(.*?)}}/g) || [];
-        const vars = matches.map((m) => m.replace(/[{}]/g, '').split('=')[0].trim());
         const initial: Record<string, string> = {};
         Object.entries(prompt.variables ?? {}).forEach(([k, v]) => {
             if (v.type === 'string') {
-                initial[k] = v.value;
+                initial[k] = v.value ?? '';
             }
         });
         setInputs(initial);
     }, [prompt]);
+
+    useEffect(() => {
+        useFunctionStore.getState().loadFunctions();
+    }, []);
 
     const handleRun = async () => {
         setIsLoading(true);
@@ -94,38 +80,16 @@ export default function RunPrompt() {
         setIsLoading(false);
     };
 
-
     return (
         <ThemedSafeArea style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <Text style={[styles.title, { color: colors.accent }]}>{prompt.title}</Text>
 
-                {(prompt.content.match(/{{(.*?)}}/g) || []).map((match, index) => {
-                    const variableName = match.replace(/[{}]/g, '').split('=')[0].trim();
-                    return (
-                        <View key={index} style={styles.inputGroup}>
-                            <View style={styles.inputLabelRow}>
-                                <Text style={styles.label}>{variableName}</Text>
-                                <TouchableOpacity activeOpacity={0.7}
-                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => {
-                                        setInsertTarget(variableName);
-                                        setShowInsertModal(true);
-                                    }}>
-                                    <MaterialIcons name="add-circle" size={28} color={colors.accent} />
-                                </TouchableOpacity>
-                            </View>
-                            <TextInput
-                                style={styles.input}
-                                value={inputs[variableName]}
-                                onChangeText={(text) =>
-                                    setInputs((prev) => ({ ...prev, [variableName]: text }))
-                                }
-                                placeholder={`Enter ${variableName}`}
-                                placeholderTextColor={colors.placeholder}
-                            />
-                        </View>
-                    );
-                })}
+                <PromptVariableEditor
+                    prompt={prompt}
+                    initialValues={inputs}
+                    onChange={setInputs}
+                />
 
                 <View style={sharedStyles.section}>
                     {isLoading ? (
@@ -151,36 +115,7 @@ export default function RunPrompt() {
                     <Text style={styles.runButtonText}>Run</Text>
                 </TouchableOpacity>
             </View>
-
-            {showInsertModal && insertTarget && (
-                <BaseModal
-                    visible
-                    blur
-                    onRequestClose={() => {
-                        setShowInsertModal(false);
-                        setInsertTarget(null);
-                    }}
-                >
-                    <InsertModalV2
-                        visible
-                        onRequestClose={() => {
-                            setShowInsertModal(false);
-                            setInsertTarget(null);
-                        }}
-                        insertTarget={insertTarget}
-                        onInsert={(value) => {
-                            setInputs((prev) => ({
-                                ...prev,
-                                [insertTarget]: value,
-                            }));
-                        }}
-                        entityType="Function"
-                    />
-                </BaseModal>
-            )}
-
         </ThemedSafeArea>
-
     );
 }
 
@@ -192,40 +127,9 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             color: colors.text,
             marginBottom: 20,
         },
-        inputGroup: {
-            marginBottom: 16,
-        },
-        label: {
-            fontSize: 14,
-            color: colors.accent,
-            marginBottom: 4,
-        },
-        input: {
-            borderWidth: 1,
-            borderColor: colors.border,
-            backgroundColor: colors.inputBackground,
-            color: colors.text,
-            padding: 10,
-            borderRadius: 8,
-        },
-        runButtonText: {
-            color: colors.background,
-            fontWeight: '600',
-            fontSize: 16,
-        },
-        inputLabelRow: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 4,
-        },
-        button: {},
-        cancelText: {
-            color: colors.text
-        },
         scrollContent: {
             padding: 20,
-            paddingBottom: 100,  // extra bottom padding so content never gets hidden behind button
+            paddingBottom: 100,
         },
         container: {
             flex: 1,
@@ -235,7 +139,7 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             padding: 20,
             borderTopWidth: 1,
             borderColor: colors.border,
-            backgroundColor: colors.card,  // optional: makes button bar stand out
+            backgroundColor: colors.card,
         },
         runButton: {
             backgroundColor: colors.primary,
@@ -243,5 +147,9 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             borderRadius: 10,
             alignItems: 'center',
         },
-
+        runButtonText: {
+            color: colors.background,
+            fontWeight: '600',
+            fontSize: 16,
+        },
     });

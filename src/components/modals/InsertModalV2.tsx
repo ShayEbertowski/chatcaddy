@@ -1,60 +1,86 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import BaseModal from './BaseModal';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useColors } from '../../hooks/useColors';
-import { useLibraryItems } from '../../stores/useLibraryItems';
+import { useFunctionStore } from '../../stores/useFunctionStore';
 
-type InsertModalProps = {
+type InsertModalV2Props = {
     visible: boolean;
-    onRequestClose: () => void;
     insertTarget: string;
     onInsert: (value: string) => void;
-    entityType: 'Prompt' | 'Function' | 'Snippet';
+    onRequestClose: () => void;
+    entityType: 'Function';
 };
 
-export default function InsertModalV2({ visible, onRequestClose, insertTarget, onInsert, entityType }: InsertModalProps) {
+export default function InsertModalV2({ visible, insertTarget, onInsert, onRequestClose, entityType }: InsertModalV2Props) {
     const colors = useColors();
     const styles = getStyles(colors);
-    const items = useLibraryItems(entityType);
+
+    const functions = useFunctionStore((s) => s.functions);
+
+    if (!visible) return null;
+
+    const handleInsert = (functionId: string, functionTitle: string) => {
+        // This could be more advanced later, for now just pass title as value
+        onInsert(functionTitle);
+        onRequestClose();
+    };
 
     return (
-        <BaseModal visible={visible} blur onRequestClose={onRequestClose}>
-            <Text style={styles.title}>Insert {entityType}</Text>
+        <View style={styles.modalContainer}>
+            <Text style={styles.header}>Insert {entityType}</Text>
 
-            {items.length === 0 ? (
-                <Text>No {entityType}s available</Text>
+            {functions.length === 0 ? (
+                <Text style={styles.noFunctions}>No Functions available</Text>
             ) : (
-                items.map((item) => (
-                    <TouchableOpacity
-                        key={item.id}
-                        style={{ paddingVertical: 10 }}
-                        onPress={() => {
-                            onInsert(item.content);
-                            onRequestClose();
-                        }}
-                    >
-                        <Text style={{ color: colors.primary }}>{item.title}</Text>
-                    </TouchableOpacity>
-                ))
+                <ScrollView>
+                    {functions.map((func) => (
+                        <TouchableOpacity
+                            key={func.id}
+                            onPress={() => handleInsert(func.id, func.title)}
+                            style={styles.functionItem}
+                        >
+                            <Text style={styles.functionText}>{func.title}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
             )}
 
-            <TouchableOpacity onPress={onRequestClose} style={[styles.button, { marginTop: 16 }]}>
+            <TouchableOpacity onPress={onRequestClose} style={styles.cancelButton}>
                 <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
-        </BaseModal>
+        </View>
     );
 }
 
-const getStyles = (colors: ReturnType<typeof useColors>) =>
-    StyleSheet.create({
-        title: {
-            fontSize: 20,
-            fontWeight: '700',
-            color: colors.text,
-            marginBottom: 20,
-        },
-        button: {},
-        cancelText: {
-            color: colors.text,
-        },
-    });
+const getStyles = (colors: ReturnType<typeof useColors>) => StyleSheet.create({
+    modalContainer: {
+        padding: 20,
+        borderRadius: 16,
+    },
+    header: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 16,
+        color: colors.accent,
+    },
+    noFunctions: {
+        textAlign: 'center',
+        marginVertical: 20,
+        color: colors.text,
+    },
+    functionItem: {
+        paddingVertical: 10,
+    },
+    functionText: {
+        fontSize: 16,
+        color: colors.text,
+    },
+    cancelButton: {
+        marginTop: 20,
+    },
+    cancelText: {
+        color: colors.warning,
+        textAlign: 'center',
+        fontWeight: '500',
+    },
+});

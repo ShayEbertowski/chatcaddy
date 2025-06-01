@@ -53,3 +53,8 @@ export type PromptRow = {
     created_at: string;
 };
 
+export type PromptVariableEditorProps = {
+    prompt: Prompt;
+    initialValues?: Record<string, string>;
+    onChange: (values: Record<string, string>) => void;
+};
