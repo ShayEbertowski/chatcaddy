@@ -8,6 +8,7 @@ type IdeaStore = {
     loadIdeas: () => Promise<void>;
     addIdea: (content: string) => Promise<void>;
     deleteIdea: (id: string) => Promise<void>;
+    updateIdea: (id: string, newContent: string) => Promise<void>;
 };
 
 export const useIdeaStore = create<IdeaStore>((set, get) => ({
@@ -50,6 +51,23 @@ export const useIdeaStore = create<IdeaStore>((set, get) => ({
 
         if (error) {
             console.error('Error adding idea:', error);
+            return;
+        }
+
+        await get().loadIdeas();
+    },
+
+    updateIdea: async (id, newContent) => {
+        const token = useAuthStore.getState().accessToken;
+        const client = createSupabaseClient(token ?? undefined);
+
+        const { error } = await client
+            .from('ideas')
+            .update({ content: newContent })
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error updating idea:', error);
             return;
         }
 

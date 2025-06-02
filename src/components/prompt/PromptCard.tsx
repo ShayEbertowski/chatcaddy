@@ -1,8 +1,8 @@
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { getSharedStyles } from '../../styles/shared';
 import { useColors } from '../../hooks/useColors';
-import { RenderPreviewChunks } from './RenderPreviewChunks';
+import { RenderPreviewChunks } from './renderPreviewChunks';
+import EditOrDeleteActions from '../shared/EditOrDeleteActions';
 
 type PromptCardProps = {
     title: string;
@@ -31,13 +31,8 @@ export default function PromptCard({
                 <RenderPreviewChunks content={content} />
             </TouchableOpacity>
 
-            <View style={styles.actions}>
-                <TouchableOpacity onPress={onEdit} style={styles.iconButton}>
-                    <MaterialIcons name="edit" size={20} color={colors.accent} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={onDelete} style={styles.iconButton}>
-                    <MaterialIcons name="delete" size={20} color={colors.softError} />
-                </TouchableOpacity>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 }}>
+                <EditOrDeleteActions onEdit={onEdit} onDelete={onDelete} size={20} />
             </View>
         </View>
     );
