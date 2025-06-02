@@ -21,11 +21,13 @@
     "@supabase/gotrue-js": "^2.70.0",
     "@supabase/postgrest-js": "^1.19.4",
     "@supabase/storage-js": "^2.7.3",
+    "dotenv": "^16.5.0",
     "expo": "~53.0.9",
     "expo-blur": "~14.1.4",
     "expo-router": "~5.0.7",
     "expo-secure-store": "~14.2.3",
     "expo-status-bar": "~2.2.3",
+    "expo-updates": "~0.28.13",
     "lottie-react-native": "7.2.2",
     "react": "19.0.0",
     "react-native": "0.79.2",
@@ -44,6 +46,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@expo/cli": "^0.24.13",
     "@types/react": "~19.0.10",
     "typescript": "~5.8.3"
   },
