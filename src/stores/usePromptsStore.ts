@@ -1,11 +1,9 @@
 import { create } from 'zustand';
 import { useAuthStore } from './useAuthStore';
-import { normalizeVariables } from '../utils/prompt/promptManager';
-import { Prompt } from '../types/prompt';
+import { Prompt, PromptRow } from '../types/prompt';
 import Constants from 'expo-constants';
 import { createSupabaseClient } from '../lib/supabaseDataClient';
-
-const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.SUPABASE_ANON_KEY;
+import { normalizePromptRow } from '../utils/prompt/normalizePrompt';
 
 type PromptStore = {
     prompts: Prompt[];
@@ -25,7 +23,7 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
         const { data, error } = await client
             .from('prompts')
             .select('*')
-            .eq('type', 'Prompt');
+            .eq('type', 'Prompt');  // ✅ filter only real prompts
 
         if (error) {
             console.error('Error loading prompts:', error);
@@ -33,10 +31,7 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
         }
 
         set({
-            prompts: data.map((p) => ({
-                ...p,
-                variables: normalizeVariables(p.variables),
-            })),
+            prompts: data.map((p: PromptRow) => normalizePromptRow(p)),
         });
     },
 
@@ -52,9 +47,11 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
 
         const client = createSupabaseClient(token);
 
-        const { error } = await client
-            .from('prompts')
-            .upsert({ ...prompt, user_id: user.id });
+        const { error } = await client.from('prompts').upsert({
+            ...prompt,
+            type: prompt.entityType,  // convert entityType back into `type` for DB
+            user_id: user.id,
+        });
 
         if (error) {
             console.error('Supabase error on upsert:', error);
@@ -70,10 +67,7 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
         const token = state.accessToken ?? undefined;
         const client = createSupabaseClient(token);
 
-        const { error } = await client
-            .from('prompts')
-            .delete()
-            .eq('id', id);
+        const { error } = await client.from('prompts').delete().eq('id', id);
 
         if (error) {
             console.error('Error deleting prompt:', error);

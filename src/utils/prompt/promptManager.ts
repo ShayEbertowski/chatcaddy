@@ -14,7 +14,7 @@ export function normalizeVariables(variables: Record<string, any> | null): Recor
             result[key] = {
                 type: 'string',
                 value: value.value ?? '',
-                richCapable: value.richCapable ?? true, // defaults to true if missing
+                richCapable: value.richCapable ?? true,
             };
         } else if (value.type === 'prompt') {
             result[key] = {
@@ -28,32 +28,34 @@ export function normalizeVariables(variables: Record<string, any> | null): Recor
     return result;
 }
 
-// still useful for preparing prompts before save
 export function preparePromptToSave({
     id,
     inputText,
     title,
     folder,
-    type,
+    entityType,
 }: {
     id?: string;
     inputText: string;
     title: string;
     folder: string;
-    type: 'Prompt' | 'Function' | 'Snippet';
+    entityType: 'Prompt';
 }): Prompt {
     const cleaned = cleanPromptVariables(inputText);
     const currentVariables = useVariableStore.getState().values;
 
     return {
         id: id ?? uuidv4(),
+        entityType,
         title: title.trim() || 'Untitled',
         content: cleaned,
         folder,
-        type,
-        variables: currentVariables
+        variables: currentVariables,
+        createdAt: '',  // optional — DB can assign
+        updatedAt: '',
     };
 }
+
 
 // Generate title from content
 export async function getSmartTitle(inputText: string): Promise<string> {
