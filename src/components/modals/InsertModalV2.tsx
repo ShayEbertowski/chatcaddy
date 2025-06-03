@@ -8,7 +8,7 @@ type InsertModalV2Props = {
     insertTarget: string;
     onInsert: (value: string) => void;
     onRequestClose: () => void;
-    entityType: 'Function';
+    entityType: 'Function' | 'Variable';
 };
 
 export default function InsertModalV2({ visible, insertTarget, onInsert, onRequestClose, entityType }: InsertModalV2Props) {

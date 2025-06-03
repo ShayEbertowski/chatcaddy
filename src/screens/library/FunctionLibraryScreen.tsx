@@ -50,7 +50,7 @@ export default function FunctionLibraryScreen({ category }: LibraryProps) {
             title={item.title}
             content={item.content}
             onPress={() => { }}  // <-- your handleFunctionTap logic
-            onEdit={() => navigateToEditor('Function')}
+            onEdit={() => navigateToEditor('Function', item)}
             onDelete={() => handleDeleteFunction(item.id)}
         />
     );

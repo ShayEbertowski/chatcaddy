@@ -19,6 +19,10 @@ import { getSharedStyles } from '../../styles/shared';
 import { useColors } from '../../hooks/useColors';
 import { createStringValue, resolveVariableDisplayValue } from '../../utils/variables/variables';
 import { parsePromptParts } from '../../utils/prompt/promptManager';
+import { useEditorStore } from '../../stores/useEditorStore';
+import { Prompt } from '../../types/prompt';
+import { PromptFunction } from '../../types/functions';
+
 
 type Props = {
     text: string;
@@ -26,8 +30,10 @@ type Props = {
     entityType: 'Prompt' | 'Function' | 'Snippet';
     onChangeEntityType: (newType: 'Prompt' | 'Function' | 'Snippet') => void;
 };
+type Entity = Prompt | PromptFunction | null;
 
-export default function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType }: Props) {
+
+export default function RichPromptEditor({ entityType, onChangeEntityType }: Props) {
     const [selection, setSelection] = useState({ start: 0, end: 0 });
     const [showInsertModal, setShowInsertModal] = useState(false);
     const [isEditingVariable, setIsEditingVariable] = useState(false);
@@ -43,6 +49,16 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
     const { setSnippet, removeSnippet } = useSnippetStore();
     const [showVariables, setShowVariables] = useState(true);
     const [showPreview, setShowPreview] = useState(true);
+    
+    const editingEntity = useEditorStore((state) => state.editingEntity);
+    const [text, setText] = useState<string>(() => {
+        if (!editingEntity) return '';
+        if ('content' in editingEntity) return editingEntity.content as string;
+        if ('functionBody' in editingEntity) return editingEntity.functionBody as string;
+        return '';
+    });
+
+
 
     const parts = useMemo(() => parsePromptParts(text), [text]);
 
@@ -65,6 +81,20 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
         });
     }, [parts]);
 
+    useEffect(() => {
+        setText(extractEntityText(editingEntity));
+    }, [editingEntity]);
+
+    function extractEntityText(entity: Entity): string {
+        if (!entity) return '';
+        if ('content' in entity) return (entity as Prompt).content;
+        if ('functionBody' in entity) return (entity as PromptFunction).functionBody;
+        return '';
+    }
+
+
+
+
     const handleInsert = async (mode: 'Function' | 'Snippet' | 'Variable', name: string, value: string) => {
         if (mode === 'Function') {
             if (isEditingVariable) {
@@ -84,7 +114,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
             const after = text.slice(selection.end);
             const insert = `{{${name}}}`;
             const newText = before + insert + after;
-            onChangeText(newText);
+            setText(newText)
             setSelection({ start: before.length + insert.length, end: before.length + insert.length });
         }
 
@@ -136,13 +166,13 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
 
             <TextInput
                 value={text}
-                onChangeText={onChangeText}
+                onChangeText={setText}
                 onSelectionChange={(e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) =>
                     setSelection(e.nativeEvent.selection)
                 }
                 selection={selection}
                 multiline
-                style={[styles.input, {borderColor: colors.borderThin}]}
+                style={[styles.input, { borderColor: colors.borderThin }]}
                 placeholder="Try anything here..."
                 placeholderTextColor={colors.secondaryText}
             />
@@ -298,3 +328,5 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             paddingHorizontal: 8,
         },
     });
+
+

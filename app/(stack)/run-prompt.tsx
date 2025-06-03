@@ -3,7 +3,6 @@ import {
     View,
     Text,
     ScrollView,
-    ActivityIndicator,
     TouchableOpacity,
     StyleSheet,
     Alert
@@ -18,7 +17,7 @@ import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
 import { PromptVariableEditor } from '../../src/components/prompt/PromptVariableEditor';
 import { useFunctionStore } from '../../src/stores/useFunctionStore';
 import { PromptResult } from '../../src/components/prompt/PromptResult';
-import { RenderPreviewChunks } from '../../src/components/prompt/RenderPreviewChunks';
+import { RenderPreviewChunks } from '../../src/components/prompt/renderPreviewChunks';
 
 export default function RunPrompt() {
     const prompt = usePromptEditorStore((s) => s.editingPrompt);
@@ -97,7 +96,7 @@ export default function RunPrompt() {
                     prompt={prompt}
                     initialValues={inputs}
                     onChange={setInputs}
-                />
+                /> 
 
                 <PromptResult
                     response={response}

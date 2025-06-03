@@ -1,14 +1,16 @@
 import { useRouter } from 'expo-router';
-import { usePromptEditorStore } from './usePromptEditorStore';
+import { useEditorStore } from '../stores/useEditorStore';
 
 export function useNavigateToEditor() {
     const router = useRouter();
-    const setEntityType = usePromptEditorStore((s) => s.setEntityType);
-    const resetEditor = usePromptEditorStore((s) => s.resetEditor);
+    const setEditingEntity = useEditorStore((s) => s.setEditingEntity);
+    const resetEditor = useEditorStore((s) => s.resetEditor);
 
-    return (entityType: 'Prompt' | 'Function' | 'Snippet') => {
+    return (entityType: 'Prompt' | 'Function' | 'Snippet', entity?: any, autoRun?: boolean) => {
         resetEditor();
-        setEntityType(entityType);
+        if (entity) {
+            setEditingEntity(entityType, entity, { autoRun });
+        }
         router.push('/2-sandbox');
     };
 }

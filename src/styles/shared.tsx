@@ -83,12 +83,13 @@ export const getSharedStyles = ({ isDark, ...colors }: Theme) =>
     input: {
       borderColor: colors.border,
       borderWidth: 1,
-      paddingVertical: 8,   // smaller vertical padding
+      paddingVertical: 10,   // smaller vertical padding
       paddingHorizontal: 12,  // keep healthy side padding
       borderRadius: 6,
       fontSize: 15,
       backgroundColor: colors.inputBackground ?? '#f9f9f9',
       color: colors.text,
+      padding: 10,
     },
     disabledInput: {
       backgroundColor: colors.disabledBackground ?? '#eee',

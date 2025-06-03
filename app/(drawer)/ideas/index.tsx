@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, TextInput, FlatList, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { getSharedStyles } from '../../../src/styles/shared';
 import { useColors } from '../../../src/hooks/useColors';
@@ -10,6 +10,7 @@ import EditOrDeleteActions from '../../../src/components/shared/EditOrDeleteActi
 export default function IdeasScreen() {
     const [input, setInput] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [matches, setMatches] = useState<string[]>([]);
 
     const inputRef = useRef<TextInput>(null);
 
@@ -23,6 +24,21 @@ export default function IdeasScreen() {
     const sharedStyle = getSharedStyles(colors);
     const styles = getStyles(colors);
 
+    const handleInputChange = (text: string) => {
+        setInput(text);
+        const trimmed = text.trim().toLowerCase();
+
+        if (trimmed === '') {
+            setMatches([]);
+            return;
+        }
+
+        const found = ideas
+            .filter((idea) => idea.content.toLowerCase().includes(trimmed))
+            .map((idea) => idea.content);
+        setMatches(found);
+    };
+
     const handleSubmit = async () => {
         const trimmed = input.trim();
         if (trimmed === '') return;
@@ -34,23 +50,35 @@ export default function IdeasScreen() {
             await addIdea(trimmed);
         }
         setInput('');
+        setMatches([]);
     };
 
     const handleEdit = (id: string, content: string) => {
         setEditingId(id);
         setInput(content);
-        // Focus input when editing
         setTimeout(() => {
             inputRef.current?.focus();
         }, 100);
     };
 
-    const handleDeleteIdea = async (id: string) => {
-        await deleteIdea(id);
-        if (id === editingId) {
-            setEditingId(null);
-            setInput('');
-        }
+    const handleDeleteIdea = (id: string) => {
+        Alert.alert(
+            'Delete Idea',
+            'Are you sure you want to delete this idea?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete', style: 'destructive', onPress: async () => {
+                        await deleteIdea(id);
+                        if (id === editingId) {
+                            setEditingId(null);
+                            setInput('');
+                        }
+                    }
+                },
+            ],
+            { cancelable: true }
+        );
     };
 
     useEffect(() => {
@@ -81,7 +109,7 @@ export default function IdeasScreen() {
                         placeholder={editingId ? "Edit your idea..." : "Add a new idea..."}
                         placeholderTextColor={colors.placeholder}
                         value={input}
-                        onChangeText={setInput}
+                        onChangeText={handleInputChange}
                         returnKeyType="done"
                         onSubmitEditing={handleSubmit}
                     />
@@ -99,6 +127,16 @@ export default function IdeasScreen() {
                     )}
                 </View>
 
+                {matches.length > 0 && (
+                    <View style={{ marginTop: 12 }}>
+                        <Text style={{ color: colors.accent, marginBottom: 4 }}>Possible Duplicates:</Text>
+                        {matches.map((match, index) => (
+                            <Text key={index} style={{ color: colors.text }}>
+                                {match}
+                            </Text>
+                        ))}
+                    </View>
+                )}
 
                 <FlatList
                     data={ideas}
@@ -107,7 +145,6 @@ export default function IdeasScreen() {
                     renderItem={({ item }) => (
                         <View style={[styles.ideaCard, { backgroundColor: colors.card }]}>
                             <Text style={[styles.ideaText, { color: colors.text }]}>{item.content}</Text>
-
                             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 }}>
                                 <EditOrDeleteActions
                                     onEdit={() => handleEdit(item.id, item.content)}
@@ -116,7 +153,6 @@ export default function IdeasScreen() {
                                 />
                             </View>
                         </View>
-
                     )}
                     ListEmptyComponent={
                         <Text style={{ textAlign: 'center', color: colors.placeholder, marginTop: 32 }}>
@@ -146,7 +182,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             elevation: 3,
             backgroundColor: colors.card,
         },
-
         ideaText: { flex: 1, fontSize: 16 },
         actionsRow: { flexDirection: 'row', alignItems: 'center' },
     });
