@@ -1,10 +1,10 @@
 import { create } from 'zustand';
-import { VariableValue } from '../types/prompt';
+import { Variable } from '../types/prompt';  // ✅ use Variable (not VariableValue anymore)
 
 type VariableState = {
-    values: Record<string, VariableValue>;
-    setVariable: (key: string, value: VariableValue) => void;
-    getVariable: (key: string) => VariableValue | undefined;
+    values: Record<string, Variable>;
+    setVariable: (key: string, value: Variable) => void;
+    getVariable: (key: string) => Variable | undefined;
     removeVariable: (key: string) => void;
     clearAll: () => void;
 };

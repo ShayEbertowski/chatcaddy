@@ -6,6 +6,7 @@ import {
     TextInput,
     TouchableOpacity,
     StyleSheet,
+    Switch,
 } from 'react-native';
 import { useColors } from '../../hooks/useColors';
 
@@ -15,8 +16,14 @@ type Props = {
     isEdit: boolean;
     initialName: string;
     initialValue: string;
+    initialRichCapable?: boolean;
     onClose: () => void;
-    onInsert: (mode: 'Variable' | 'Function' | 'Snippet', name: string, value: string) => void;
+    onInsert: (
+        mode: 'Variable' | 'Function' | 'Snippet',
+        name: string,
+        value: string,
+        richCapable?: boolean
+    ) => void;
 };
 
 export default function InsertModal({
@@ -25,27 +32,31 @@ export default function InsertModal({
     onInsert,
     initialName,
     initialValue,
+    initialRichCapable = false,
 }: Props) {
     const colors = useColors();
     const [mode, setMode] = useState<'Variable' | 'Function' | 'Snippet'>('Variable');
     const [name, setName] = useState(initialName);
     const [value, setValue] = useState(initialValue);
+    const [richCapable, setRichCapable] = useState(initialRichCapable);
 
     const styles = getStyles(colors);
 
     const handleInsert = () => {
         const trimmedName = name.trim();
         const trimmedValue = value.trim();
-        onInsert(mode, trimmedName, trimmedValue);
+        onInsert(mode, trimmedName, trimmedValue, richCapable);
         setName('');
         setValue('');
+        setRichCapable(false);
         onClose();
     };
 
     useEffect(() => {
         setName(initialName);
         setValue(initialValue);
-    }, [initialName, initialValue, visible]);
+        setRichCapable(initialRichCapable);
+    }, [initialName, initialValue, initialRichCapable, visible]);
 
     return (
         <Modal visible={visible} transparent animationType="slide">
@@ -84,6 +95,14 @@ export default function InsertModal({
                         style={[styles.input, { height: 100 }]}
                         multiline
                     />
+
+                    {/* ✅ Add richCapable toggle if mode === 'Variable' */}
+                    {mode === 'Variable' && (
+                        <View style={styles.toggleRow}>
+                            <Text style={styles.toggleText}>Allow Chips</Text>
+                            <Switch value={richCapable} onValueChange={setRichCapable} />
+                        </View>
+                    )}
 
                     <TouchableOpacity onPress={handleInsert} style={styles.insertButton}>
                         <Text style={styles.insertText}>Insert {mode}</Text>
@@ -141,6 +160,16 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             padding: 10,
             borderRadius: 6,
             marginBottom: 12,
+        },
+        toggleRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 12,
+        },
+        toggleText: {
+            fontSize: 14,
+            color: colors.text,
         },
         insertButton: {
             backgroundColor: colors.primary,

@@ -61,9 +61,25 @@ export default function RunPrompt() {
         setResponse('');
 
         // Save to variable store
-        Object.entries(inputs).forEach(([key, value]) =>
-            useVariableStore.getState().setVariable(key, { type: 'string', value })
-        );
+        Object.entries(inputs).forEach(([key, value]) => {
+            const variableDef = prompt.variables?.[key];
+            if (!variableDef) return;  // defensive: variable doesn't exist
+
+            if (variableDef.type === 'string') {
+                useVariableStore.getState().setVariable(key, {
+                    type: 'string',
+                    value,
+                    richCapable: variableDef.richCapable,
+                });
+            } else if (variableDef.type === 'prompt') {
+                useVariableStore.getState().setVariable(key, {
+                    type: 'prompt',
+                    promptTitle: value,  // depending how you're editing promptTitle
+                    richCapable: variableDef.richCapable,
+                });
+            }
+        });
+
 
         const filledPrompt = prompt.content.replace(/{{(.*?)}}/g, (_, rawVar) => {
             const key = rawVar.split('=')[0].trim();
@@ -96,7 +112,7 @@ export default function RunPrompt() {
                     prompt={prompt}
                     initialValues={inputs}
                     onChange={setInputs}
-                /> 
+                />
 
                 <PromptResult
                     response={response}

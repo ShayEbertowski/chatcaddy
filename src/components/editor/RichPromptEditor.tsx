@@ -49,7 +49,7 @@ export default function RichPromptEditor({ entityType, onChangeEntityType }: Pro
     const { setSnippet, removeSnippet } = useSnippetStore();
     const [showVariables, setShowVariables] = useState(true);
     const [showPreview, setShowPreview] = useState(true);
-    
+
     const editingEntity = useEditorStore((state) => state.editingEntity);
     const [text, setText] = useState<string>(() => {
         if (!editingEntity) return '';
@@ -75,7 +75,7 @@ export default function RichPromptEditor({ entityType, onChangeEntityType }: Pro
             if (part.type === 'variable') {
                 const key = part.name;
                 if (!getVariable(key)) {
-                    setVariable(key, createStringValue(""));
+                    setVariable(key, { type: 'string', value: '', richCapable: true });
                 }
             }
         });
@@ -106,7 +106,12 @@ export default function RichPromptEditor({ entityType, onChangeEntityType }: Pro
             setSnippet(name, value);
         } else {
             if (isEditingVariable) removeVariable(name);
-            setVariable(name, createStringValue(value));
+            setVariable(name, {
+                type: 'string',
+                value,
+                richCapable: false  // or true, depending on your UI logic
+            });
+
         }
 
         if (!isEditingVariable) {
@@ -215,11 +220,14 @@ export default function RichPromptEditor({ entityType, onChangeEntityType }: Pro
                         <View style={styles.previewContainer}>
                             <Text style={sharedStyles.previewVariable}>
                                 {previewChunks.map((chunk, i) => {
-                                    return chunk.type === 'variable'
-                                        ? resolveVariableDisplayValue(getVariable(chunk.name))
-                                        : chunk.value;
+                                    if (chunk.type === 'variable') {
+                                        const variable = getVariable(chunk.name) ?? { type: 'string', value: '', richCapable: false };
+                                        return resolveVariableDisplayValue(variable);
+                                    }
+                                    return chunk.value;
                                 }).join('')}
                             </Text>
+
                         </View>
                     )}
                 </View>

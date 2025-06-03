@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Prompt, PromptPart, VariableValue } from '../../types/prompt';
+import { Prompt, PromptPart, Variable, VariableValue } from '../../types/prompt';
 import { cleanPromptVariables } from './cleanPrompt';
 import { useVariableStore } from '../../stores/useVariableStore';
 import { generateSmartTitle } from './generateSmartTitle';
@@ -63,4 +63,24 @@ export function parsePromptParts(raw: string): PromptPart[] {
         }
         return { type: 'text', value: part };
     });
+}
+
+
+export function loadVariablesIntoStore(variables: Record<string, Variable>) {
+    const setVariable = useVariableStore.getState().setVariable;
+    Object.entries(variables).forEach(([name, variable]) => {
+        setVariable(name, variable);
+    });
+}
+
+export function extractInitialValues(variables: Record<string, Variable>): Record<string, string> {
+    const result: Record<string, string> = {};
+    Object.entries(variables).forEach(([name, variable]) => {
+        if (variable.type === 'string') {
+            result[name] = variable.value ?? '';
+        } else if (variable.type === 'prompt') {
+            result[name] = variable.promptTitle ?? '';
+        }
+    });
+    return result;
 }

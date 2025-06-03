@@ -1,25 +1,24 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator,
+    View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import uuid from 'react-native-uuid';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
 import SavePromptModal from '../../../src/components/modals/SavePromptModal';
 import CollapsibleSection from '../../../src/components/shared/CollapsibleSection';
 import { PromptResult } from '../../../src/components/prompt/PromptResult';
-
 import { useColors } from '../../../src/hooks/useColors';
 import { useVariableStore } from '../../../src/stores/useVariableStore';
 import { getSharedStyles } from '../../../src/styles/shared';
-import { Prompt, VariableValue } from '../../../src/types/prompt';
+import { Prompt, Variable } from '../../../src/types/prompt';
 import { runPrompt } from '../../../src/utils/prompt/runPrompt';
 import { resolveVariableDisplayValue } from '../../../src/utils/variables/variables';
 import { useEditorStore } from '../../../src/stores/useEditorStore';
 import { usePromptStore } from '../../../src/stores/usePromptsStore';
-import { getSmartTitle } from '../../../src/utils/prompt/promptManager';
+import { getSmartTitle, loadVariablesIntoStore } from '../../../src/utils/prompt/promptManager';
 import { extractEntityText } from '../../../src/utils/prompt/extractEntityText';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 
@@ -28,9 +27,7 @@ export default function Sandbox() {
     const colors = useColors();
     const styles = getStyles(colors);
     const sharedStyles = getSharedStyles(colors);
-    const currentVariables = useVariableStore.getState().values;
 
-    // Unified store
     const entityType = useEditorStore((s) => s.entityType);
     const editingEntity = useEditorStore((s) => s.editingEntity);
     const editId = useEditorStore((s) => s.editId);
@@ -39,47 +36,27 @@ export default function Sandbox() {
 
     const prompts = usePromptStore((state) => state.prompts);
     const addOrUpdatePrompt = usePromptStore((state) => state.addOrUpdatePrompt);
+    const variableStore = useVariableStore();
 
     const [inputText, setInputText] = useState('');
     const [response, setResponse] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [hasRun, setHasRun] = useState(false);
-    const [showResponse, setShowResponse] = useState(true);
     const [promptTitle, setPromptTitle] = useState('');
-    const [autoSuggestTitle, setAutoSuggestTitle] = useState(true);
     const [selectedFolder, setSelectedFolder] = useState('Uncategorized');
     const [showConfirmSaveModal, setShowConfirmSaveModal] = useState(false);
+    const [showResponse, setShowResponse] = useState(true);
 
-    // Load content when entity changes
+
     useEffect(() => {
         const extracted = extractEntityText(editingEntity);
         setInputText(extracted);
+
+        if (editingEntity && 'variables' in editingEntity && editingEntity.variables) {
+            loadVariablesIntoStore(editingEntity.variables);
+        }
     }, [editingEntity]);
 
-    // Auto run logic
-    useEffect(() => {
-        if (autoRun && editingEntity) {
-            handleRun();
-        }
-    }, [autoRun, editingEntity]);
-
-    useEffect(() => {
-        if (autoSuggestTitle) {
-            const suggested = inputText.trim().split(/\s+/).slice(0, 5).join(' ');
-            setPromptTitle((prev) => {
-                const wasAuto = prev === '' || prev === suggested;
-                return wasAuto ? suggested : prev;
-            });
-        }
-    }, [inputText, autoSuggestTitle]);
-
-    const isDup = prompts.some(
-        (p) => p.content.trim() === inputText.trim() && p.folder === selectedFolder
-    );
-
     const handleRun = async () => {
-        setHasRun(true);
-        setShowResponse(true);
         setIsLoading(true);
         setResponse('');
 
@@ -98,16 +75,6 @@ export default function Sandbox() {
         setIsLoading(false);
     };
 
-    const handleSavePrompt = async () => {
-        if (isDup) {
-            Alert.alert('Duplicate', 'This prompt already exists.');
-            return;
-        }
-        const title = await getSmartTitle(inputText);
-        setPromptTitle(title);
-        setShowConfirmSaveModal(true);
-    };
-
     const preparePromptToSave = ({
         id,
         inputText,
@@ -121,7 +88,7 @@ export default function Sandbox() {
         title: string;
         folder: string;
         type: 'Prompt' | 'Function' | 'Snippet';
-        variables: Record<string, VariableValue>;
+        variables: Record<string, Variable>;
     }): Prompt => ({
         id: id ?? (uuid.v4() as string),
         content: inputText,
@@ -153,8 +120,6 @@ export default function Sandbox() {
         useVariableStore.getState().clearAll();
     };
 
-    const saveButtonDisabled = inputText.trim() === '';
-
     return (
         <ThemedSafeArea>
             <ScrollView contentContainerStyle={styles.scroll} keyboardDismissMode="on-drag">
@@ -164,24 +129,20 @@ export default function Sandbox() {
                     entityType={entityType}
                     onChangeEntityType={setEntityType}
                 />
-                <CollapsibleSection title="response" isOpen={showResponse} onToggle={() => setShowResponse(!showResponse)}>
+                <CollapsibleSection
+                    title="response"
+                    isOpen={showResponse}
+                    onToggle={() => setShowResponse(prev => !prev)}
+                >
                     <PromptResult response={response} isLoading={isLoading} onClear={() => setResponse('')} />
                 </CollapsibleSection>
+
             </ScrollView>
 
             <View style={styles.buttonRow}>
                 <TouchableOpacity
-                    style={[
-                        styles.button,
-                        {
-                            opacity: saveButtonDisabled ? 0.4 : 1,
-                            backgroundColor: colors.card,
-                            borderWidth: 1,
-                            borderColor: colors.accent,
-                        },
-                    ]}
-                    onPress={handleSavePrompt}
-                    disabled={saveButtonDisabled}
+                    style={[styles.button, { backgroundColor: colors.card, borderColor: colors.accent, borderWidth: 1 }]}
+                    onPress={handleConfirmSave}
                 >
                     <MaterialIcons name="save-alt" size={18} color={colors.accent} />
                     <Text style={[styles.buttonText, { color: colors.accent }]}>Save</Text>
