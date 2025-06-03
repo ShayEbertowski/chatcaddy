@@ -1,37 +1,29 @@
 import { create } from 'zustand';
-import { Prompt } from '../types/prompt';
-import { PromptFunction } from '../types/functions';
-
-// Entity is either a Prompt or a PromptFunction
-type Entity = Prompt | PromptFunction;
-type EntityType = 'Prompt' | 'Function' | 'Snippet';
+import type { Entity, EntityType } from '../types/prompt';
 
 type EditorState = {
     entityType: EntityType;
     editingEntity: Entity | null;
     editId: string | null;
-    setEditId: (id: string | null) => void;
     autoRun: boolean;
 
     setEditingEntity: (entityType: EntityType, entity: Entity, options?: { autoRun?: boolean }) => void;
     clearEditingEntity: () => void;
     resetEditor: () => void;
-    setEntityType: (type: EntityType) => void; // <-- 🚨 THIS LINE 🚨
+    setEntityType: (type: EntityType) => void;
 };
 
 export const useEditorStore = create<EditorState>((set) => ({
     entityType: 'Prompt',
     editingEntity: null,
     editId: null,
-    setEditId: (id) => set({ editId: id }),
     autoRun: false,
 
     setEditingEntity: (entityType, entity, options = {}) =>
         set({
             entityType,
             editingEntity: entity,
-            editId: (entity as any).id, // we trust entity has an id
-
+            editId: (entity as any).id,
             autoRun: options.autoRun ?? false,
         }),
 
@@ -51,5 +43,5 @@ export const useEditorStore = create<EditorState>((set) => ({
             autoRun: false,
         }),
 
-    setEntityType: (type) => set({ entityType: type }), // <-- 🚨 HERE TOO
+    setEntityType: (type) => set({ entityType: type }),
 }));

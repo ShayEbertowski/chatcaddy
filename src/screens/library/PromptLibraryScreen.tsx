@@ -15,10 +15,10 @@ import { useSettingsStore } from '../../stores/useSettingsStore';
 import ConfirmModal from '../../components/modals/ConfirmModal';
 import { filterByFolder } from '../../utils/storage/libraryFilter';
 import { useRouter } from 'expo-router';
-import { usePromptEditorStore } from '../../stores/usePromptEditorStore';
 import { usePromptStore } from '../../stores/usePromptsStore';
 import { useNavigateToEditor } from '../../stores/useNavigateToEditor';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useEditorStore } from '../../stores/useEditorStore';
 
 export default function PromptLibraryScreen({ category }: LibraryProps) {
 
@@ -38,15 +38,14 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
   const initialized = useAuthStore((state) => state.initialized);
   const loadPrompts = usePromptStore((state) => state.loadPrompts);
 
-
-  const handlePromptTap = (prompt: Prompt) => {
-    usePromptEditorStore.getState().setEditingPrompt(prompt, { autoRun: true });
-    router.push('run-prompt');
+  const handleEditPrompt = (prompt: Prompt) => {
+    useEditorStore.getState().setEditingEntity('Prompt', prompt, { autoRun: false });
+    router.push('/2-sandbox');
   };
 
-  const handleEditPrompt = (prompt: Prompt) => {
-    usePromptEditorStore.getState().setEditingPrompt(prompt, { autoRun: false });
-    router.push('/2-sandbox');
+  const handlePromptTap = (prompt: Prompt) => {
+    useEditorStore.getState().setEditingEntity('Prompt', prompt, { autoRun: true });
+    router.push('run-prompt');
   };
 
   const handleDeletePrompt = (id: string) => {

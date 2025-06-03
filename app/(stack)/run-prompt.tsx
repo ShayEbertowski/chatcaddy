@@ -5,22 +5,23 @@ import {
     ScrollView,
     TouchableOpacity,
     StyleSheet,
-    Alert
+    Alert,
 } from 'react-native';
 import { useNavigation } from 'expo-router';
 import { useColors } from '../../src/hooks/useColors';
 import { useVariableStore } from '../../src/stores/useVariableStore';
 import { getSharedStyles } from '../../src/styles/shared';
 import { runPrompt } from '../../src/utils/prompt/runPrompt';
-import { usePromptEditorStore } from '../../src/stores/usePromptEditorStore';
 import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
 import { PromptVariableEditor } from '../../src/components/prompt/PromptVariableEditor';
 import { useFunctionStore } from '../../src/stores/useFunctionStore';
 import { PromptResult } from '../../src/components/prompt/PromptResult';
 import { RenderPreviewChunks } from '../../src/components/prompt/renderPreviewChunks';
+import { useEditorStore } from '../../src/stores/useEditorStore';
+import type { Prompt, Entity } from '../../src/types/prompt';
 
 export default function RunPrompt() {
-    const prompt = usePromptEditorStore((s) => s.editingPrompt);
+    const editingEntity = useEditorStore((s) => s.editingEntity);
     const colors = useColors();
     const styles = getStyles(colors);
     const sharedStyles = getSharedStyles(colors);
@@ -34,13 +35,15 @@ export default function RunPrompt() {
         navigation.setOptions({ title: 'Run Prompt' });
     }, [navigation]);
 
-    if (!prompt) {
+    if (!editingEntity || editingEntity.entityType !== 'Prompt') {
         return (
             <View style={styles.container}>
                 <Text style={styles.title}>No prompt loaded.</Text>
             </View>
         );
     }
+
+    const prompt = editingEntity as Prompt;
 
     useEffect(() => {
         const initial: Record<string, string> = {};
@@ -60,23 +63,17 @@ export default function RunPrompt() {
         setIsLoading(true);
         setResponse('');
 
-        // Save to variable store
         Object.entries(inputs).forEach(([key, value]) => {
             const variableDef = prompt.variables?.[key];
-            if (!variableDef) return;  // defensive: variable doesn't exist
-
+            if (!variableDef) return;
             if (variableDef.type === 'string') {
-                const stringDef = variableDef as { type: 'string'; value: string; richCapable: boolean };
-
                 useVariableStore.getState().setVariable(key, {
                     type: 'string',
                     value,
-                    richCapable: stringDef.richCapable,
+                    richCapable: variableDef.richCapable,
                 });
             }
-
         });
-
 
         const filledPrompt = prompt.content.replace(/{{(.*?)}}/g, (_, rawVar) => {
             const key = rawVar.split('=')[0].trim();
@@ -84,13 +81,11 @@ export default function RunPrompt() {
         });
 
         const result = await runPrompt(filledPrompt, inputs);
-
         if ('error' in result) {
             Alert.alert('Error', result.error);
         } else {
             setResponse(result.response);
         }
-
         setIsLoading(false);
     };
 
@@ -98,26 +93,15 @@ export default function RunPrompt() {
         <ThemedSafeArea style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <Text style={[styles.title, { color: colors.accent }]}>{prompt.title}</Text>
-
-                <View >
-                    <RenderPreviewChunks content={prompt.content} />
-                </View>
-
+                <View><RenderPreviewChunks content={prompt.content} /></View>
                 <View style={sharedStyles.divider} />
-
                 <PromptVariableEditor
                     prompt={prompt}
                     initialValues={inputs}
                     onChange={setInputs}
                 />
-
-                <PromptResult
-                    response={response}
-                    isLoading={isLoading}
-                    onClear={() => setResponse('')}
-                />
+                <PromptResult response={response} isLoading={isLoading} onClear={() => setResponse('')} />
             </ScrollView>
-
             <View style={styles.buttonContainer}>
                 <TouchableOpacity style={styles.runButton} onPress={handleRun}>
                     <Text style={styles.runButtonText}>Run</Text>
