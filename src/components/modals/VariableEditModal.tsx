@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useColors } from '../../hooks/useColors';
-import { ThemedSafeArea } from '../shared/ThemedSafeArea';
 
-type VariableEditModalProps = {
+type Props = {
     visible: boolean;
     variableName: string;
     currentValue: string;
@@ -17,44 +16,38 @@ export default function VariableEditModal({
     currentValue,
     onCancel,
     onSave,
-}: VariableEditModalProps) {
+}: Props) {
     const colors = useColors();
-    const [value, setValue] = useState(currentValue || '');
-
+    const [value, setValue] = useState(currentValue);
     const styles = getStyles(colors);
 
+    useEffect(() => {
+        setValue(currentValue);
+    }, [currentValue, visible]);
+
     return (
-        <Modal
-            visible={visible}
-            transparent
-            animationType="fade"
-            onRequestClose={onCancel}
-        >
-            <ThemedSafeArea style={styles.overlay}>
-                <View style={styles.container}>
+        <Modal visible={visible} transparent animationType="slide">
+            <View style={styles.overlay}>
+                <View style={styles.modal}>
                     <Text style={styles.title}>Editing {`{{${variableName}}}`}</Text>
+
                     <TextInput
-                        style={styles.input}
                         value={value}
                         onChangeText={setValue}
                         placeholder="Enter value"
-                        placeholderTextColor={colors.accent}
+                        placeholderTextColor={colors.secondaryText}
+                        style={styles.input}
                     />
 
-                    <View style={styles.buttonRow}>
-                        <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-                            <Text style={styles.cancelText}>Cancel</Text>
-                        </TouchableOpacity>
+                    <TouchableOpacity onPress={() => onSave(value)} style={styles.saveButton}>
+                        <Text style={styles.saveText}>Save</Text>
+                    </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={styles.saveButton}
-                            onPress={() => onSave(value)}
-                        >
-                            <Text style={styles.saveText}>Save</Text>
-                        </TouchableOpacity>
-                    </View>
+                    <TouchableOpacity onPress={onCancel}>
+                        <Text style={styles.cancelText}>Cancel</Text>
+                    </TouchableOpacity>
                 </View>
-            </ThemedSafeArea>
+            </View>
         </Modal>
     );
 }
@@ -65,47 +58,44 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             flex: 1,
             backgroundColor: 'rgba(0,0,0,0.4)',
             justifyContent: 'center',
-            alignItems: 'center',
+            padding: 24,
         },
-        container: {
-            width: '85%',
+        modal: {
             backgroundColor: colors.card,
-            borderRadius: 12,
+            borderRadius: 10,
             padding: 20,
         },
         title: {
-            fontSize: 18,
-            fontWeight: 'bold',
+            fontSize: 16,
+            fontWeight: '600',
             marginBottom: 16,
             color: colors.text,
         },
         input: {
             borderWidth: 1,
             borderColor: colors.border,
-            borderRadius: 8,
-            padding: 12,
+            backgroundColor: colors.inputBackground,
             color: colors.text,
-            backgroundColor: colors.background,
-        },
-        buttonRow: {
-            flexDirection: 'row',
-            justifyContent: 'flex-end',
-            marginTop: 20,
-        },
-        cancelButton: {
-            marginRight: 12,
-        },
-        cancelText: {
-            color: colors.text,
+            padding: 10,
+            borderRadius: 6,
+            marginBottom: 12,
+            fontSize: 16,
         },
         saveButton: {
             backgroundColor: colors.primary,
-            paddingHorizontal: 20,
-            paddingVertical: 10,
-            borderRadius: 8,
+            padding: 12,
+            borderRadius: 6,
+            marginBottom: 12,
         },
         saveText: {
-            color: 'white',
-            fontWeight: 'bold',
+            color: colors.onPrimary,
+            fontWeight: '600',
+            textAlign: 'center',
+            fontSize: 16,
+        },
+        cancelText: {
+            color: colors.primary,
+            textAlign: 'center',
+            fontSize: 16,
         },
     });

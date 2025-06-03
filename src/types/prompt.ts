@@ -21,31 +21,6 @@ export type Props = {
     onPress: (event: GestureResponderEvent) => void;
 };
 
-// ✅ 🔧 UNIFIED — VariableValue stays as your actual storage type
-export type VariableValue =
-    | { type: 'string'; value: string }
-    | { type: 'prompt'; promptId: string; promptTitle?: string };
-
-// ✅ 🔧 NEW: Full variable definition (used by editor config/UI logic)
-export type Variable = {
-    type: 'string' | 'prompt';
-    richCapable: boolean;  // controls if the Use Chips toggle is available for this variable
-    value?: string;        // optional default value
-    promptTitle?: string;  // used only if type === 'prompt'
-};
-
-// ✅ 🔧 MAIN: Full Prompt model
-export type Prompt = {
-    id: string;
-    title: string;
-    content: string;
-    folder: string;
-    type?: 'Prompt' | 'Function' | 'Snippet';
-    variables?: Record<string, Variable>;
-};
-
-// ✅ 🔧 Clean new prompt creation model
-export type NewPrompt = Omit<Prompt, 'id'>;
 
 // ✅ 🔧 Your prompt filtering views stay as-is
 export type LibraryProps = {
@@ -75,3 +50,33 @@ export type PromptVariableEditorProps = {
     initialValues?: Record<string, string>;  // only holds assigned raw string values at runtime
     onChange: (values: Record<string, string>) => void;
 };
+
+export type VariableValue = Variable;
+
+export type StringVariable = {
+    type: 'string';
+    value: string;
+    richCapable: boolean;
+};
+
+export type PromptVariable = {
+    type: 'prompt';
+    promptId: string;
+    promptTitle?: string;
+};
+
+export type Variable = StringVariable | PromptVariable;
+
+export type Prompt = {
+    id: string;
+    title: string;
+    content: string;
+    folder: string;
+    type: 'Prompt' | 'Function' | 'Snippet';
+    variables?: Record<string, Variable>;
+    user_id?: string;
+    created_at?: string;
+    updated_at?: string;
+};
+
+export type NewPrompt = Omit<Prompt, 'id'>;

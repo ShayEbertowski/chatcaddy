@@ -17,12 +17,11 @@ import { useSnippetStore } from '../../stores/useSnippetStore';
 import { getEntityForEdit } from '../../utils/prompt/generateEntityForEdit';
 import { getSharedStyles } from '../../styles/shared';
 import { useColors } from '../../hooks/useColors';
-import { createStringValue, resolveVariableDisplayValue } from '../../utils/variables/variables';
+import { resolveVariableDisplayValue } from '../../utils/variables/variables';
 import { parsePromptParts } from '../../utils/prompt/promptManager';
 import { useEditorStore } from '../../stores/useEditorStore';
 import { Prompt } from '../../types/prompt';
 import { PromptFunction } from '../../types/functions';
-
 
 type Props = {
     text: string;
@@ -30,10 +29,8 @@ type Props = {
     entityType: 'Prompt' | 'Function' | 'Snippet';
     onChangeEntityType: (newType: 'Prompt' | 'Function' | 'Snippet') => void;
 };
-type Entity = Prompt | PromptFunction | null;
 
-
-export default function RichPromptEditor({ entityType, onChangeEntityType }: Props) {
+export default function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType }: Props) {
     const [selection, setSelection] = useState({ start: 0, end: 0 });
     const [showInsertModal, setShowInsertModal] = useState(false);
     const [isEditingVariable, setIsEditingVariable] = useState(false);
@@ -50,50 +47,11 @@ export default function RichPromptEditor({ entityType, onChangeEntityType }: Pro
     const [showVariables, setShowVariables] = useState(true);
     const [showPreview, setShowPreview] = useState(true);
 
-    const editingEntity = useEditorStore((state) => state.editingEntity);
-    const [text, setText] = useState<string>(() => {
-        if (!editingEntity) return '';
-        if ('content' in editingEntity) return editingEntity.content as string;
-        if ('functionBody' in editingEntity) return editingEntity.functionBody as string;
-        return '';
-    });
-
-
-
     const parts = useMemo(() => parsePromptParts(text), [text]);
-
-    const previewChunks = useMemo(() => {
-        return parsePromptParts(text);
-    }, [text]);
 
     const usedVars = useMemo(() => {
         return Array.from(new Set(parts.filter(p => p.type === 'variable').map(p => p.name)));
     }, [parts]);
-
-    useEffect(() => {
-        parts.forEach(part => {
-            if (part.type === 'variable') {
-                const key = part.name;
-                if (!getVariable(key)) {
-                    setVariable(key, { type: 'string', value: '', richCapable: true });
-                }
-            }
-        });
-    }, [parts]);
-
-    useEffect(() => {
-        setText(extractEntityText(editingEntity));
-    }, [editingEntity]);
-
-    function extractEntityText(entity: Entity): string {
-        if (!entity) return '';
-        if ('content' in entity) return (entity as Prompt).content;
-        if ('functionBody' in entity) return (entity as PromptFunction).functionBody;
-        return '';
-    }
-
-
-
 
     const handleInsert = async (mode: 'Function' | 'Snippet' | 'Variable', name: string, value: string) => {
         if (mode === 'Function') {
@@ -109,9 +67,8 @@ export default function RichPromptEditor({ entityType, onChangeEntityType }: Pro
             setVariable(name, {
                 type: 'string',
                 value,
-                richCapable: false  // or true, depending on your UI logic
+                richCapable: false  // or true depending on your logic
             });
-
         }
 
         if (!isEditingVariable) {
@@ -119,7 +76,7 @@ export default function RichPromptEditor({ entityType, onChangeEntityType }: Pro
             const after = text.slice(selection.end);
             const insert = `{{${name}}}`;
             const newText = before + insert + after;
-            setText(newText)
+            onChangeText(newText);
             setSelection({ start: before.length + insert.length, end: before.length + insert.length });
         }
 
@@ -171,7 +128,7 @@ export default function RichPromptEditor({ entityType, onChangeEntityType }: Pro
 
             <TextInput
                 value={text}
-                onChangeText={setText}
+                onChangeText={onChangeText}
                 onSelectionChange={(e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) =>
                     setSelection(e.nativeEvent.selection)
                 }
@@ -186,7 +143,6 @@ export default function RichPromptEditor({ entityType, onChangeEntityType }: Pro
                 title="Variables"
                 isOpen={showVariables}
                 onToggle={() => setShowVariables(!showVariables)}
-
             >
                 <View style={styles.chipContainer}>
                     {usedVars.length === 0 ? (
@@ -205,7 +161,6 @@ export default function RichPromptEditor({ entityType, onChangeEntityType }: Pro
 
             <View style={sharedStyles.divider} />
 
-
             <CollapsibleSection
                 title="Preview"
                 isOpen={showPreview}
@@ -219,7 +174,7 @@ export default function RichPromptEditor({ entityType, onChangeEntityType }: Pro
                     ) : (
                         <View style={styles.previewContainer}>
                             <Text style={sharedStyles.previewVariable}>
-                                {previewChunks.map((chunk, i) => {
+                                {parts.map((chunk, i) => {
                                     if (chunk.type === 'variable') {
                                         const variable = getVariable(chunk.name) ?? { type: 'string', value: '', richCapable: false };
                                         return resolveVariableDisplayValue(variable);
@@ -227,14 +182,12 @@ export default function RichPromptEditor({ entityType, onChangeEntityType }: Pro
                                     return chunk.value;
                                 }).join('')}
                             </Text>
-
                         </View>
                     )}
                 </View>
             </CollapsibleSection>
 
             <View style={sharedStyles.divider} />
-
 
             <InsertModal
                 visible={showInsertModal}
@@ -257,31 +210,26 @@ export default function RichPromptEditor({ entityType, onChangeEntityType }: Pro
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
         container: { padding: 4 },
-
         headerRow: {
             flexDirection: 'row',
             justifyContent: 'flex-end',
             marginBottom: 8,
         },
-
         addButton: {
             backgroundColor: colors.primary,
             paddingHorizontal: 12,
             paddingVertical: 6,
             borderRadius: 6,
         },
-
         addButtonText: {
             color: colors.onPrimary,
             fontWeight: '600',
         },
-
         typeSelector: {
             flexDirection: 'row',
             marginBottom: 12,
             gap: 8,
         },
-
         typeButton: {
             borderWidth: 1,
             borderColor: colors.border,
@@ -290,21 +238,17 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             paddingVertical: 4,
             backgroundColor: colors.card,
         },
-
         typeButtonActive: {
             backgroundColor: colors.primary,
         },
-
         typeButtonText: {
             fontSize: 14,
             color: colors.text,
         },
-
         typeButtonTextActive: {
             color: colors.onPrimary,
             fontWeight: '600',
         },
-
         input: {
             fontSize: 16,
             borderWidth: 1,
@@ -315,14 +259,12 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             color: colors.text,
             backgroundColor: colors.inputBackground,
         },
-
         chipContainer: {
             flexDirection: 'row',
             flexWrap: 'wrap',
             gap: 8,
             marginTop: 10,
         },
-
         section: {
             backgroundColor: colors.card,
             borderRadius: 12,
@@ -330,11 +272,8 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             paddingHorizontal: 16,
             marginBottom: 12,
         },
-
         previewContainer: {
             paddingVertical: 12,
             paddingHorizontal: 8,
         },
     });
-
-

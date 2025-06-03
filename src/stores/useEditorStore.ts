@@ -10,6 +10,7 @@ type EditorState = {
     entityType: EntityType;
     editingEntity: Entity | null;
     editId: string | null;
+    setEditId: (id: string | null) => void;
     autoRun: boolean;
 
     setEditingEntity: (entityType: EntityType, entity: Entity, options?: { autoRun?: boolean }) => void;
@@ -22,6 +23,7 @@ export const useEditorStore = create<EditorState>((set) => ({
     entityType: 'Prompt',
     editingEntity: null,
     editId: null,
+    setEditId: (id) => set({ editId: id }),
     autoRun: false,
 
     setEditingEntity: (entityType, entity, options = {}) =>
@@ -29,6 +31,7 @@ export const useEditorStore = create<EditorState>((set) => ({
             entityType,
             editingEntity: entity,
             editId: (entity as any).id, // we trust entity has an id
+
             autoRun: options.autoRun ?? false,
         }),
 

@@ -4,18 +4,27 @@ import { cleanPromptVariables } from './cleanPrompt';
 import { useVariableStore } from '../../stores/useVariableStore';
 import { generateSmartTitle } from './generateSmartTitle';
 
-// still useful for variable normalization
-export function normalizeVariables(input: any): Record<string, VariableValue> {
-    if (!input || typeof input !== 'object') return {};
+export function normalizeVariables(variables: Record<string, any> | null): Record<string, Variable> {
+    if (!variables) return {};
 
-    const result: Record<string, VariableValue> = {};
-    for (const [key, value] of Object.entries(input)) {
-        if (value !== null && typeof value === 'object' && 'type' in value) {
-            result[key] = value as VariableValue;
-        } else {
-            result[key] = { type: 'string', value: String(value) };
+    const result: Record<string, Variable> = {};
+
+    for (const [key, value] of Object.entries(variables)) {
+        if (value.type === 'string') {
+            result[key] = {
+                type: 'string',
+                value: value.value ?? '',
+                richCapable: value.richCapable ?? true, // defaults to true if missing
+            };
+        } else if (value.type === 'prompt') {
+            result[key] = {
+                type: 'prompt',
+                promptId: value.promptId,
+                promptTitle: value.promptTitle,
+            };
         }
     }
+
     return result;
 }
 
@@ -66,13 +75,6 @@ export function parsePromptParts(raw: string): PromptPart[] {
 }
 
 
-export function loadVariablesIntoStore(variables: Record<string, Variable>) {
-    const setVariable = useVariableStore.getState().setVariable;
-    Object.entries(variables).forEach(([name, variable]) => {
-        setVariable(name, variable);
-    });
-}
-
 export function extractInitialValues(variables: Record<string, Variable>): Record<string, string> {
     const result: Record<string, string> = {};
     Object.entries(variables).forEach(([name, variable]) => {
@@ -81,6 +83,46 @@ export function extractInitialValues(variables: Record<string, Variable>): Recor
         } else if (variable.type === 'prompt') {
             result[name] = variable.promptTitle ?? '';
         }
+    });
+    return result;
+}
+
+export function createVariable(
+    value: string = '',
+    richCapable: boolean = true
+): Variable {
+    return {
+        type: 'string',
+        value,
+        richCapable,
+    };
+}
+
+
+// Utility: load variables into store for editing
+export function loadVariablesIntoStore(variables: Record<string, Variable> | undefined) {
+    if (!variables) return;
+
+    const setVariable = useVariableStore.getState().setVariable;
+    Object.entries(variables).forEach(([name, variable]) => {
+        setVariable(name, variable);
+    });
+}
+
+// Utility: pull variables from store for saving
+export function extractVariablesFromStore(): Record<string, Variable> {
+    return useVariableStore.getState().values;
+}
+
+// Utility: normalize variables for new prompts (if needed)
+export function createDefaultVariables(variableNames: string[]): Record<string, Variable> {
+    const result: Record<string, Variable> = {};
+    variableNames.forEach((name) => {
+        result[name] = {
+            type: 'string',
+            value: '',
+            richCapable: true,
+        };
     });
     return result;
 }

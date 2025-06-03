@@ -1,13 +1,11 @@
 import { create } from 'zustand';
 import { useAuthStore } from './useAuthStore';
 import { normalizeVariables } from '../utils/prompt/promptManager';
-import { Prompt, PromptRow } from '../types/prompt';
-
+import { Prompt } from '../types/prompt';
 import Constants from 'expo-constants';
 import { createSupabaseClient } from '../lib/supabaseDataClient';
 
 const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.SUPABASE_ANON_KEY;
-
 
 type PromptStore = {
     prompts: Prompt[];
@@ -84,5 +82,4 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
 
         await get().loadPrompts();
     },
-
 }));

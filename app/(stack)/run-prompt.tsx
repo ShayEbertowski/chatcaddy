@@ -66,18 +66,15 @@ export default function RunPrompt() {
             if (!variableDef) return;  // defensive: variable doesn't exist
 
             if (variableDef.type === 'string') {
+                const stringDef = variableDef as { type: 'string'; value: string; richCapable: boolean };
+
                 useVariableStore.getState().setVariable(key, {
                     type: 'string',
                     value,
-                    richCapable: variableDef.richCapable,
-                });
-            } else if (variableDef.type === 'prompt') {
-                useVariableStore.getState().setVariable(key, {
-                    type: 'prompt',
-                    promptTitle: value,  // depending how you're editing promptTitle
-                    richCapable: variableDef.richCapable,
+                    richCapable: stringDef.richCapable,
                 });
             }
+
         });
 
 
