@@ -1,17 +1,14 @@
 import { useFunctionStore } from "../../stores/useFunctionStore";
 import { useSnippetStore } from "../../stores/useSnippetStore";
 import { useVariableStore } from "../../stores/useVariableStore";
+import { EntityForEditType } from "../../types/entity";
 import { isStringValue } from "../variables/variables";
 
-
-export type EntityType = 'Variable' | 'Snippet' | 'Function';
-
-export function getEntityForEdit(name: string): { type: EntityType; value: string } {
+export function getEntityForEdit(name: string): EntityForEditType {
     const variable = useVariableStore.getState().getVariable(name);
     if (isStringValue(variable)) {
         return { type: 'Variable', value: variable.value };
     }
-
 
     const getSnippet = useSnippetStore.getState().getSnippet(name);
     if (getSnippet !== undefined) {
@@ -23,7 +20,6 @@ export function getEntityForEdit(name: string): { type: EntityType; value: strin
     if (foundFunction) {
         return { type: 'Function', value: foundFunction.content };
     }
-
 
     // Fallback
     return { type: 'Variable', value: '' };

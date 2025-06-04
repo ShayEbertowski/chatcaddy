@@ -44,8 +44,10 @@ export default function PromptLibraryScreen({ category }: LibraryProps) {
   };
 
   const handlePromptTap = (prompt: Prompt) => {
-    useEditorStore.getState().setEditingEntity('Prompt', prompt, { autoRun: true });
-    router.push('run-prompt');
+    router.push({
+      pathname: '/run-prompt',
+      params: { promptId: prompt.id },
+    });
   };
 
   const handleDeletePrompt = (id: string) => {

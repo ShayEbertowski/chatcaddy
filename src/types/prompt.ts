@@ -27,8 +27,8 @@ export type Prompt = {
     content: string;
     folder: string;
     variables: Record<string, Variable>;
-    createdAt: string;
-    updatedAt: string;
+    createdAt?: string;
+    updatedAt?: string;
 };
 
 // DB shape exactly matching Supabase
@@ -65,5 +65,7 @@ export type LibraryProps = {
 
 // For parsing prompt text chunks
 export type PromptPart =
-  | { type: 'text'; value: string }
-  | { type: 'variable'; name: string };
+    | { type: 'text'; value: string }
+    | { type: 'variable'; name: string };
+
+    

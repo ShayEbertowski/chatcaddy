@@ -7,7 +7,7 @@ import {
     StyleSheet,
     Alert,
 } from 'react-native';
-import { useNavigation } from 'expo-router';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useColors } from '../../src/hooks/useColors';
 import { useVariableStore } from '../../src/stores/useVariableStore';
 import { getSharedStyles } from '../../src/styles/shared';
@@ -18,10 +18,11 @@ import { useFunctionStore } from '../../src/stores/useFunctionStore';
 import { PromptResult } from '../../src/components/prompt/PromptResult';
 import { RenderPreviewChunks } from '../../src/components/prompt/renderPreviewChunks';
 import { useEditorStore } from '../../src/stores/useEditorStore';
-import type { Prompt, Entity } from '../../src/types/prompt';
+import type { Prompt } from '../../src/types/prompt';
+import { Variable } from '../../src/types/prompt';
+import { usePromptStore } from '../../src/stores/usePromptsStore';
 
 export default function RunPrompt() {
-    const editingEntity = useEditorStore((s) => s.editingEntity);
     const colors = useColors();
     const styles = getStyles(colors);
     const sharedStyles = getSharedStyles(colors);
@@ -31,11 +32,14 @@ export default function RunPrompt() {
     const [response, setResponse] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    const { promptId } = useLocalSearchParams();
+    const prompt = usePromptStore().prompts.find(p => p.id === promptId);
+
     useEffect(() => {
         navigation.setOptions({ title: 'Run Prompt' });
     }, [navigation]);
 
-    if (!editingEntity || editingEntity.entityType !== 'Prompt') {
+    if (!prompt) {
         return (
             <View style={styles.container}>
                 <Text style={styles.title}>No prompt loaded.</Text>
@@ -43,14 +47,11 @@ export default function RunPrompt() {
         );
     }
 
-    const prompt = editingEntity as Prompt;
-
+    // Populate inputs from variables when prompt loads
     useEffect(() => {
         const initial: Record<string, string> = {};
         Object.entries(prompt.variables ?? {}).forEach(([k, v]) => {
-            if (v.type === 'string') {
-                initial[k] = v.value ?? '';
-            }
+            initial[k] = resolveInitialValue(v);
         });
         setInputs(initial);
     }, [prompt]);
@@ -63,14 +64,24 @@ export default function RunPrompt() {
         setIsLoading(true);
         setResponse('');
 
+        // Save all current inputs into variable store before running
         Object.entries(inputs).forEach(([key, value]) => {
             const variableDef = prompt.variables?.[key];
             if (!variableDef) return;
+
             if (variableDef.type === 'string') {
                 useVariableStore.getState().setVariable(key, {
                     type: 'string',
                     value,
                     richCapable: variableDef.richCapable,
+                });
+            }
+
+            if (variableDef.type === 'prompt') {
+                useVariableStore.getState().setVariable(key, {
+                    type: 'prompt',
+                    promptId: variableDef.promptId,
+                    promptTitle: value,
                 });
             }
         });
@@ -109,6 +120,17 @@ export default function RunPrompt() {
             </View>
         </ThemedSafeArea>
     );
+}
+
+// Helper to safely resolve initial values from variable definitions
+function resolveInitialValue(variable: Variable): string {
+    if (variable.type === 'string') {
+        return variable.value ?? '';
+    }
+    if (variable.type === 'prompt') {
+        return variable.promptTitle ?? '';
+    }
+    return '';
 }
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
