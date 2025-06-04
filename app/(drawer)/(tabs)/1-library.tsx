@@ -1,44 +1,43 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColors } from '../../../src/hooks/useColors';
-import FunctionLibraryScreen from '../../../src/screens/library/FunctionLibraryScreen';
-import PromptLibraryScreen from '../../../src/screens/library/PromptLibraryScreen';
 import { getSharedStyles } from '../../../src/styles/shared';
 import BaseModal from '../../../src/components/modals/BaseModal';
+import { useEntityStore } from '../../../src/stores/useEntityStore';
+import { Entity, EntityType } from '../../../src/types/entity';
+import { useRouter } from 'expo-router';
 
-type LibraryType = 'prompts' | 'functions';
-
-const options: { label: string; value: LibraryType }[] = [
-    { label: 'Prompts', value: 'prompts' },
-    { label: 'Functions', value: 'functions' },
+const options: { label: string; value: EntityType }[] = [
+    { label: 'Prompts', value: 'Prompt' },
+    { label: 'Functions', value: 'Function' },
+    { label: 'Snippets', value: 'Snippet' },  // You can easily add more entity types here
 ];
 
-const UnknownCategory: React.FC = () => (
-    <Text style={{ padding: 16 }}>Unknown category</Text>
-);
-
-export default function Library() {
+export default function EntityLibraryScreen() {
     const colors = useColors();
-    const [category, setCategory] = useState<LibraryType>('prompts');
+    const router = useRouter();
+    const [category, setCategory] = useState<EntityType>('Prompt');
     const [modalVisible, setModalVisible] = useState(false);
+    const entities = useEntityStore((state) => state.entities);
 
-    const ScreenComponent = useMemo(() => {
-        switch (category) {
-            case 'prompts':
-                return () => <PromptLibraryScreen category={category} />;
-            case 'functions':
-                return () => <FunctionLibraryScreen category={category} />;
-            default:
-                return UnknownCategory;
-        }
-    }, [category]);
+    const filteredEntities = useMemo(
+        () => entities.filter((e) => e.entityType === category),
+        [entities, category]
+    );
 
     const styles = getStyles(colors);
     const sharedStyles = getSharedStyles(colors);
 
-    const onClose = () => {
-        setModalVisible(false);
+    const onClose = () => setModalVisible(false);
+
+    const handleEdit = (entity: Entity) => {
+        router.push({
+            pathname: '/2-sandbox',
+            params: {
+                editId: entity.id,
+            },
+        });
     };
 
     return (
@@ -54,7 +53,28 @@ export default function Library() {
 
             <View style={{ height: 24 }} />
 
-            <ScreenComponent />
+            {filteredEntities.length === 0 ? (
+                <Text style={{ textAlign: 'center', marginTop: 40, color: colors.secondaryText }}>
+                    No {category}s found.
+                </Text>
+            ) : (
+                <FlatList
+                    data={filteredEntities}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            onPress={() => handleEdit(item)}
+                            style={{
+                                padding: 16,
+                                borderBottomWidth: 1,
+                                borderBottomColor: colors.border,
+                            }}
+                        >
+                            <Text style={{ fontSize: 16, color: colors.text }}>{item.title || '(Untitled)'}</Text>
+                        </TouchableOpacity>
+                    )}
+                />
+            )}
 
             <BaseModal visible={modalVisible} blur dismissOnBackdropPress onRequestClose={onClose}>
                 {options.map((opt) => (
@@ -76,16 +96,8 @@ export default function Library() {
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
-
-
-        modalItem: {
-            padding: 16,
-        },
-        modalText: {
-            fontSize: 16,
-            textAlign: 'center',
-            color: colors.accent,
-        },
+        modalItem: { padding: 16 },
+        modalText: { fontSize: 16, textAlign: 'center', color: colors.accent },
         dropdownWrapper: {
             paddingTop: 16,
             paddingBottom: 12,
@@ -101,9 +113,5 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             paddingHorizontal: 16,
             borderRadius: 10,
         },
-        dropdownText: {
-            fontSize: 16,
-            fontWeight: '500',
-            color: colors.accent,
-        },
+        dropdownText: { fontSize: 16, fontWeight: '500', color: colors.accent },
     });

@@ -1,3 +1,5 @@
+import 'react-native-get-random-values';
+
 import { Stack } from 'expo-router';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
 import { SafeAreaProvider } from 'react-native-safe-area-context';

@@ -1,12 +1,6 @@
-import { Prompt } from '../../types/prompt';
-import { PromptFunction } from '../../types/functions';
+import { Entity } from '../../types/entity';
 
-// Expand as you add more entity types
-type Entity = Prompt | PromptFunction | null;
-
-export function extractEntityText(entity: Entity): string {
+export function extractEntityText(entity: Entity | null): string {
     if (!entity) return '';
-    if ('content' in entity) return entity.content ?? '';
-    if ('functionBody' in entity) return entity.functionBody ?? '';
-    return '';
+    return entity.content ?? entity.functionBody ?? '';
 }

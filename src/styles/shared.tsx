@@ -92,7 +92,7 @@ export const getSharedStyles = ({ isDark, ...colors }: Theme) =>
       padding: 10,
     },
     disabledInput: {
-      backgroundColor: colors.disabledBackground ?? '#eee',
+      backgroundColor: colors.disabled ?? '#eee',
       color: colors.secondaryText,
     },
     actionButton: {

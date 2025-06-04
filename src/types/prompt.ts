@@ -1,5 +1,7 @@
 // src/types/prompt.ts
 
+import { EntityType } from "./entity";
+
 // Variables
 export type StringVariable = {
     type: 'string';
@@ -15,9 +17,6 @@ export type PromptVariable = {
 
 export type Variable = StringVariable | PromptVariable;
 export type VariableValue = Variable;
-
-// Entity type (discriminator)
-export type EntityType = 'Prompt' | 'Function' | 'Snippet';
 
 // App-level canonical prompt
 export type Prompt = {
@@ -53,9 +52,6 @@ export type PromptFunction = {
     createdAt: string;
     updatedAt: string;
 };
-
-// Unified union
-export type Entity = Prompt | PromptFunction;
 
 export type NewPrompt = Omit<Prompt, 'id'>;
 

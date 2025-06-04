@@ -6,6 +6,7 @@ import {
     TextInput,
     TouchableOpacity,
     StyleSheet,
+    ActivityIndicator,
 } from 'react-native';
 import { useColors } from '../hooks/../../hooks/useColors';
 
@@ -17,6 +18,7 @@ type SavePromptModalProps = {
     onCancel: () => void;
     onConfirm: () => void;
     selectedFolder: string;
+    loading: boolean;
 };
 
 export default function SavePromptModal({
@@ -27,8 +29,9 @@ export default function SavePromptModal({
     onCancel,
     onConfirm,
     selectedFolder,
+    loading,
 }: SavePromptModalProps) {
-    const colors = useColors(); 
+    const colors = useColors();
     const styles = getStyles(colors);
 
     return (
@@ -37,28 +40,48 @@ export default function SavePromptModal({
                 <View style={styles.container}>
                     <Text style={styles.title}>Save this prompt?</Text>
 
-                    <View style={styles.box}>
-                        <Text style={styles.label}>Title:</Text>
-                        <TextInput
-                            value={title}
-                            onChangeText={onChangeTitle}
-                            style={styles.input}
-                            placeholder="Give your prompt a short title"
-                            placeholderTextColor={colors.secondaryText}
-                        />
+                    {loading ? (
+                        <View style={{ paddingVertical: 20 }}>
+                            <Text style={{ color: colors.text, marginBottom: 10 }}>Generating smart title...</Text>
+                            <ActivityIndicator size="large" color={colors.accent} />
+                        </View>
+                    ) : (
+                        <>
+                            <View style={styles.box}>
+                                <Text style={styles.label}>Title:</Text>
+                                <TextInput
+                                    value={title}
+                                    onChangeText={onChangeTitle}
+                                    style={styles.input}
+                                    placeholder="Give your prompt a short title"
+                                    placeholderTextColor={colors.secondaryText}
+                                />
 
-                        <Text style={[styles.label, { marginTop: 12 }]}>Prompt:</Text>
-                        <Text style={styles.prompt}>{prompt}</Text>
-                    </View>
+                                <Text style={[styles.label, { marginTop: 12 }]}>Prompt:</Text>
+                                <Text style={styles.prompt}>{prompt}</Text>
+                            </View>
 
-                    <View style={styles.buttonRow}>
-                        <TouchableOpacity style={[styles.button, styles.cancel]} onPress={onCancel}>
-                            <Text style={[styles.buttonText, styles.cancelText]}>Cancel</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.button} onPress={onConfirm}>
-                            <Text style={styles.buttonText}>OK</Text>
-                        </TouchableOpacity>
-                    </View>
+                            <View style={styles.buttonRow}>
+                                <TouchableOpacity style={[styles.button, styles.cancel]} onPress={onCancel}>
+                                    <Text style={[styles.buttonText, styles.cancelText]}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={styles.button}
+                                    onPress={async () => {
+                                        try {
+                                            await onConfirm();
+                                        } catch (e) {
+                                            console.error('Error inside modal confirm:', e);
+                                        }
+                                    }}
+                                >
+                                    <Text style={styles.buttonText}>OK</Text>
+                                </TouchableOpacity>
+
+
+                            </View>
+                        </>
+                    )}
                 </View>
             </View>
         </Modal>

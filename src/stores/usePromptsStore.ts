@@ -34,7 +34,6 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
             prompts: data.map((p: PromptRow) => normalizePromptRow(p)),
         });
     },
-
     addOrUpdatePrompt: async (prompt) => {
         const state = useAuthStore.getState();
         const user = state.user;
@@ -47,9 +46,16 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
 
         const client = createSupabaseClient(token);
 
+        console.log("🌯Preparing upsert payload:", {
+            ...prompt,
+            type: prompt.entityType,
+            user_id: user.id,
+        });
+
+
         const { error } = await client.from('prompts').upsert({
             ...prompt,
-            type: prompt.entityType,  // convert entityType back into `type` for DB
+            type: prompt.entityType,
             user_id: user.id,
         });
 
@@ -57,10 +63,24 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
             console.error('Supabase error on upsert:', error);
         } else {
             console.log('Supabase upsert success');
-        }
 
-        await get().loadPrompts();
+            // Immediately update Zustand store locally
+            set((state) => {
+                const existingIndex = state.prompts.findIndex(p => p.id === prompt.id);
+                if (existingIndex !== -1) {
+                    const updatedPrompts = [...state.prompts];
+                    updatedPrompts[existingIndex] = prompt;
+                    return { prompts: updatedPrompts };
+                } else {
+                    return { prompts: [...state.prompts, prompt] };
+                }
+            });
+
+            // Optionally refresh from DB later if you want hard consistency:
+            await get().loadPrompts();
+        }
     },
+
 
     deletePrompt: async (id) => {
         const state = useAuthStore.getState();

@@ -1,14 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { EventArg, useNavigation, usePreventRemove } from '@react-navigation/native';
-
+import { Stack, useRouter } from 'expo-router';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
-import { useRootNavigationState } from 'expo-router';
-
 import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
 import SavePromptModal from '../../../src/components/modals/SavePromptModal';
 import CollapsibleSection from '../../../src/components/shared/CollapsibleSection';
@@ -19,27 +13,25 @@ import { runPrompt } from '../../../src/utils/prompt/runPrompt';
 import { resolveVariableDisplayValue } from '../../../src/utils/variables/variables';
 import { useVariableStore } from '../../../src/stores/useVariableStore';
 import { useEditorStore } from '../../../src/stores/useEditorStore';
-import { usePromptStore } from '../../../src/stores/usePromptsStore';
-import { getSmartTitle, loadVariablesIntoStore } from '../../../src/utils/prompt/promptManager';
+import { useEntityStore } from '../../../src/stores/useEntityStore';
+import { loadVariablesIntoStore } from '../../../src/utils/prompt/promptManager';
 import { extractEntityText } from '../../../src/utils/prompt/extractEntityText';
-import { EntityType, Prompt, Variable } from '../../../src/types/prompt';
+import { Entity } from '../../../src/types/entity';
 import { v4 as uuidv4 } from 'uuid';
-import { useSegments } from 'expo-router';
+import { generateSmartTitle } from '../../../src/utils/prompt/generateSmartTitle';
 import { useIsCurrentRoute } from '../../../src/utils/router/isCurrentRoute';
 
-
 export default function Sandbox() {
-    const router = useRouter();
     const colors = useColors();
     const styles = getStyles(colors);
     const sharedStyles = getSharedStyles(colors);
+    const router = useRouter();
 
     const entityType = useEditorStore((s) => s.entityType);
     const editingEntity = useEditorStore((s) => s.editingEntity);
     const editId = useEditorStore((s) => s.editId);
     const setEntityType = useEditorStore((s) => s.setEntityType);
     const clearEditingEntity = useEditorStore((s) => s.clearEditingEntity);
-    const addOrUpdatePrompt = usePromptStore((state) => state.addOrUpdatePrompt);
 
     const [inputText, setInputText] = useState('');
     const [promptTitle, setPromptTitle] = useState('');
@@ -47,39 +39,81 @@ export default function Sandbox() {
     const [response, setResponse] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showConfirmSaveModal, setShowConfirmSaveModal] = useState(false);
+    const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
     const [showResponse, setShowResponse] = useState(true);
-    const [isDirty, setIsDirty] = useState(false);  // <-- Dirty state tracking
-    const navigation = useNavigation();
+    const [isDirty, setIsDirty] = useState(false);
+    const [confirmHandler, setConfirmHandler] = useState<() => void>(() => () => { });
 
-
-    const segments = useSegments();
     const isFocused = useIsCurrentRoute(['(tabs)', '2-sandbox']);
 
-    // Whenever text changes, mark as dirty
     useEffect(() => {
-        if (editingEntity) setIsDirty(true);
-    }, [inputText, promptTitle, selectedFolder]);
+        if (isFocused && !editingEntity) {
+            resetEditor();
+        }
+    }, [isFocused, editingEntity]);
 
     useEffect(() => {
-        if (editingEntity?.entityType === 'Prompt') {
+        if (editingEntity) {
             const extracted = extractEntityText(editingEntity);
             setInputText(extracted);
             loadVariablesIntoStore(editingEntity.variables);
-        } else {
-            resetEditor();
+            setPromptTitle(editingEntity.title || '');
+            setSelectedFolder(editingEntity.folder || 'Uncategorized');
         }
     }, [editingEntity]);
 
+    useEffect(() => {
+        setIsDirty(true);
+    }, [inputText, promptTitle, selectedFolder, entityType]);
 
     const resetEditor = () => {
         setInputText('');
         setPromptTitle('');
         setResponse('');
         setSelectedFolder('Uncategorized');
+        setEntityType('Prompt');
         useVariableStore.getState().clearAll();
+        clearEditingEntity();
+        setIsDirty(false);
     };
 
+    const prepareEntityToSave = (): Entity => {
+        return {
+            id: editId ?? uuidv4(),
+            title: promptTitle,
+            folder: selectedFolder,
+            entityType: entityType,
+            variables: useVariableStore.getState().values,
+            ...(entityType === 'Prompt' ? { content: inputText } : { functionBody: inputText }),
+        };
+    };
 
+    const handleSave = async () => {
+        try {
+            setIsGeneratingTitle(true);
+            const smartTitle = await generateSmartTitle(inputText);
+            setPromptTitle(smartTitle);
+
+            setConfirmHandler(() => async () => {
+                console.log('🌯');
+
+                const entityToSave = prepareEntityToSave();
+                console.log('🌯🌯');
+
+                console.log('Saving entity:', entityToSave);
+                await useEntityStore.getState().addOrUpdateEntity(entityToSave);
+
+                setShowConfirmSaveModal(false);
+                resetEditor();
+            });
+
+            setShowConfirmSaveModal(true);
+        } catch (error: any) {
+            Alert.alert('Error generating smart title', error?.message || 'Unknown error');
+        } finally {
+            setIsGeneratingTitle(false);
+        }
+    };
 
     const handleRun = async () => {
         setIsLoading(true);
@@ -97,37 +131,19 @@ export default function Sandbox() {
         setIsLoading(false);
     };
 
-    const preparePromptToSave = ({
-        id, inputText, title, folder, type, variables,
-    }: {
-        id?: string;
-        inputText: string;
-        title: string;
-        folder: string;
-        type: EntityType;
-        variables: Record<string, Variable>;
-    }): Prompt => ({
-        id: id ?? uuidv4(),
-        content: inputText,
-        title: title ?? '',
-        folder: folder ?? '',
-        entityType: type as 'Prompt',
-        variables
-    });
+    const saveDisabled = () => {
+        if (!inputText.trim()) return true;
+        if (!editingEntity) return false;
 
-    const handleConfirmSave = useCallback(async () => {
-        setShowConfirmSaveModal(false);
-        const updatedPrompt = preparePromptToSave({
-            id: editId ?? undefined,
-            inputText,
-            title: promptTitle,
-            folder: selectedFolder,
-            type: entityType,
-            variables: useVariableStore.getState().values,
-        });
-        await addOrUpdatePrompt(updatedPrompt);
-        setIsDirty(false); // clear dirty after save
-    }, [editId, inputText, promptTitle, selectedFolder, entityType]);
+        const extracted = extractEntityText(editingEntity);
+        const entityChanged = (
+            inputText !== extracted ||
+            promptTitle !== (editingEntity?.title || '') ||
+            entityType !== editingEntity?.entityType
+        );
+
+        return !entityChanged;
+    };
 
     return (
         <ThemedSafeArea>
@@ -135,10 +151,7 @@ export default function Sandbox() {
             <ScrollView contentContainerStyle={styles.scroll} keyboardDismissMode="on-drag">
                 <RichPromptEditor
                     text={inputText}
-                    onChangeText={(text) => {
-                        setInputText(text);
-                        setIsDirty(true);
-                    }}
+                    onChangeText={setInputText}
                     entityType={entityType}
                     onChangeEntityType={setEntityType}
                 />
@@ -153,8 +166,13 @@ export default function Sandbox() {
 
             <View style={styles.buttonRow}>
                 <TouchableOpacity
-                    style={[styles.button, { backgroundColor: colors.card, borderColor: colors.accent, borderWidth: 1 }]}
-                    onPress={handleConfirmSave}
+                    style={[styles.button, {
+                        backgroundColor: saveDisabled() ? colors.disabled : colors.card,
+                        borderColor: colors.accent,
+                        borderWidth: 1
+                    }]}
+                    onPress={handleSave}
+                    disabled={saveDisabled()}
                 >
                     <MaterialIcons name="save-alt" size={18} color={colors.accent} />
                     <Text style={[styles.buttonText, { color: colors.accent }]}>Save</Text>
@@ -172,8 +190,9 @@ export default function Sandbox() {
                 prompt={inputText}
                 onChangeTitle={setPromptTitle}
                 onCancel={() => setShowConfirmSaveModal(false)}
-                onConfirm={handleConfirmSave}
+                onConfirm={confirmHandler}
                 selectedFolder={selectedFolder}
+                loading={isGeneratingTitle}
             />
         </ThemedSafeArea>
     );
