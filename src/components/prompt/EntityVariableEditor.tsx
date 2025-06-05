@@ -15,17 +15,17 @@ import type { Variable, StringVariable } from '../../types/prompt';
 import { RichVariableRenderer } from '../shared/RichVariableRenderer';
 import VariableEditModal from '../modals/VariableEditModal';
 
-type PromptVariableEditorProps = {
+type EntityVariableEditorProps = {
     prompt: PromptEntity;
     initialValues?: Record<string, string>;
     onChange: (values: Record<string, string>) => void;
 };
 
-export function PromptVariableEditor({
+export function EntityVariableEditor({
     prompt,
     initialValues = {},
     onChange,
-}: PromptVariableEditorProps) {
+}: EntityVariableEditorProps) {
     const colors = useColors();
     const styles = getStyles(colors);
 
@@ -38,19 +38,21 @@ export function PromptVariableEditor({
 
     useEffect(() => {
         onChange(inputs);
-    }, [inputs]);
+    }, [inputs, onChange]);
 
     useEffect(() => {
         const initial: Record<string, string> = {};
-        Object.entries(prompt.variables ?? {}).forEach(([k, v]) => {
-            if (v.type === 'string') {
-                initial[k] = initialValues[k] ?? v.value ?? '';
-            } else if (v.type === 'prompt') {
-                initial[k] = initialValues[k] ?? v.promptTitle ?? '';
+
+        Object.entries(prompt.variables ?? {}).forEach(([name, variable]) => {
+            if (variable.type === 'string') {
+                initial[name] = initialValues[name] ?? variable.value ?? '';
+            } else if (variable.type === 'prompt') {
+                initial[name] = initialValues[name] ?? variable.promptTitle ?? '';
             }
         });
+
         setInputs((prev) => ({ ...initial, ...prev }));
-    }, [prompt]);
+    }, [prompt, initialValues]);
 
     const handleChipPress = (name: string) => {
         setEditingVariable({ name, value: inputs[name] ?? '' });
@@ -58,10 +60,12 @@ export function PromptVariableEditor({
 
     const handleInsert = (value: string) => {
         if (!insertTarget) return;
+
         setInputs((prev) => ({
             ...prev,
             [insertTarget]: editingMode === 'Function' ? `{{${value}}}` : value,
         }));
+
         setShowInsertModal(false);
         setInsertTarget(null);
         setTempVariable('');
@@ -71,9 +75,9 @@ export function PromptVariableEditor({
 
     return (
         <View>
-            {Object.entries(prompt.variables).map(([name, val]) => {
-                if (val.type === 'string') {
-                    const { richCapable } = val as StringVariable;
+            {Object.entries(prompt.variables).map(([name, variable]) => {
+                if (variable.type === 'string') {
+                    const { richCapable = true } = variable as StringVariable;
 
                     return (
                         <View key={name} style={styles.inputGroup}>
@@ -104,7 +108,9 @@ export function PromptVariableEditor({
                             ) : (
                                 <TextInput
                                     value={inputs[name] || ''}
-                                    onChangeText={(t) => setInputs((prev) => ({ ...prev, [name]: t }))}
+                                    onChangeText={(text) =>
+                                        setInputs((prev) => ({ ...prev, [name]: text }))
+                                    }
                                     placeholder="Enter value"
                                     placeholderTextColor={colors.secondaryText}
                                     style={styles.inputBox}
@@ -114,13 +120,15 @@ export function PromptVariableEditor({
                     );
                 }
 
-                // Handle prompt type variables
+                // prompt-type variable (for nested prompt refs)
                 return (
                     <View key={name} style={styles.inputGroup}>
                         <Text style={styles.label}>{name}</Text>
                         <TextInput
                             value={inputs[name] || ''}
-                            onChangeText={(t) => setInputs((prev) => ({ ...prev, [name]: t }))}
+                            onChangeText={(text) =>
+                                setInputs((prev) => ({ ...prev, [name]: text }))
+                            }
                             placeholder="Enter value"
                             placeholderTextColor={colors.secondaryText}
                             style={styles.inputBox}
@@ -157,7 +165,7 @@ export function PromptVariableEditor({
             {/* Inline edit modal for chips */}
             {editingVariable && (
                 <VariableEditModal
-                    visible={!!editingVariable}
+                    visible
                     variableName={editingVariable.name}
                     currentValue={editingVariable.value}
                     onCancel={() => setEditingVariable(null)}

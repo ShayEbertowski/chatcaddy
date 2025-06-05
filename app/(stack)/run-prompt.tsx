@@ -13,12 +13,12 @@ import { useVariableStore } from '../../src/stores/useVariableStore';
 import { getSharedStyles } from '../../src/styles/shared';
 import { runPrompt } from '../../src/utils/prompt/runPrompt';
 import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
-import { PromptVariableEditor } from '../../src/components/prompt/PromptVariableEditor';
 import { useFunctionStore } from '../../src/stores/useFunctionStore';
 import { useEntityStore } from '../../src/stores/useEntityStore';
 import type { Variable } from '../../src/types/prompt';
 import { isPrompt } from '../../src/utils/entity/entityGuards';
 import { PromptEntity } from '../../src/types/entity';
+import { EntityVariableEditor } from '../../src/components/prompt/EntityVariableEditor';
 
 export default function RunPrompt() {
     const colors = useColors();
@@ -107,7 +107,7 @@ export default function RunPrompt() {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <Text style={[styles.title, { color: colors.accent }]}>{prompt.title}</Text>
 
-                <PromptVariableEditor
+                <EntityVariableEditor
                     prompt={prompt}
                     initialValues={inputs}
                     onChange={setInputs}

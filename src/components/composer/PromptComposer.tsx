@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Prompt } from '../../types/prompt';
 import { useColors } from '../../hooks/useColors';
-import { PromptVariableEditor } from '../prompt/PromptVariableEditor';
+import { PromptVariableEditor } from '../prompt/EntityVariableEditor';
 import { useFunctionStore } from '../../stores/useFunctionStore';
 import { RenderPreviewChunks } from '../prompt/RenderPreviewChunks';
 
