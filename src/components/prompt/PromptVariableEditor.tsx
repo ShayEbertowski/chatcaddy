@@ -10,12 +10,13 @@ import { MaterialIcons } from '@expo/vector-icons';
 import InsertModalV2 from '../modals/InsertModalV2';
 import BaseModal from '../modals/BaseModal';
 import { useColors } from '../../hooks/useColors';
-import { Prompt } from '../../types/prompt';
+import type { PromptEntity } from '../../types/entity';
+import type { Variable, StringVariable } from '../../types/prompt';
 import { RichVariableRenderer } from '../shared/RichVariableRenderer';
 import VariableEditModal from '../modals/VariableEditModal';
 
 type PromptVariableEditorProps = {
-    prompt: Prompt;
+    prompt: PromptEntity;
     initialValues?: Record<string, string>;
     onChange: (values: Record<string, string>) => void;
 };
@@ -23,7 +24,7 @@ type PromptVariableEditorProps = {
 export function PromptVariableEditor({
     prompt,
     initialValues = {},
-    onChange
+    onChange,
 }: PromptVariableEditorProps) {
     const colors = useColors();
     const styles = getStyles(colors);
@@ -70,33 +71,53 @@ export function PromptVariableEditor({
 
     return (
         <View>
-            {Object.entries(prompt.variables).map(([name, val]) => (
-                <View key={name} style={styles.inputGroup}>
-                    <View style={styles.inputLabelRow}>
-                        <Text style={styles.label}>{name}</Text>
+            {Object.entries(prompt.variables).map(([name, val]) => {
+                if (val.type === 'string') {
+                    const { richCapable } = val as StringVariable;
 
-                        {val.type === 'string' && val.richCapable && (
-                            <TouchableOpacity
-                                onPress={() => {
-                                    setInsertTarget(name);
-                                    setEditingMode(val.type === 'string' ? 'String' : 'Function');
-                                    setTempVariable(inputs[name] ?? '');
-                                    setShowInsertModal(true);
-                                }}
-                            >
-                                <MaterialIcons name="add-circle-outline" size={28} color={colors.accent} />
-                            </TouchableOpacity>
-                        )}
-                    </View>
+                    return (
+                        <View key={name} style={styles.inputGroup}>
+                            <View style={styles.inputLabelRow}>
+                                <Text style={styles.label}>{name}</Text>
 
-                    {val.type === 'string' && val.richCapable ? (
-                        <View style={styles.inputBox}>
-                            <RichVariableRenderer
-                                value={inputs[name] || ''}
-                                onVariablePress={() => handleChipPress(name)}
-                            />
+                                {richCapable && (
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            setInsertTarget(name);
+                                            setEditingMode('Function');
+                                            setTempVariable(inputs[name] ?? '');
+                                            setShowInsertModal(true);
+                                        }}
+                                    >
+                                        <MaterialIcons name="add-circle-outline" size={28} color={colors.accent} />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+
+                            {richCapable ? (
+                                <View style={styles.inputBox}>
+                                    <RichVariableRenderer
+                                        value={inputs[name] || ''}
+                                        onVariablePress={() => handleChipPress(name)}
+                                    />
+                                </View>
+                            ) : (
+                                <TextInput
+                                    value={inputs[name] || ''}
+                                    onChangeText={(t) => setInputs((prev) => ({ ...prev, [name]: t }))}
+                                    placeholder="Enter value"
+                                    placeholderTextColor={colors.secondaryText}
+                                    style={styles.inputBox}
+                                />
+                            )}
                         </View>
-                    ) : (
+                    );
+                }
+
+                // Handle prompt type variables
+                return (
+                    <View key={name} style={styles.inputGroup}>
+                        <Text style={styles.label}>{name}</Text>
                         <TextInput
                             value={inputs[name] || ''}
                             onChangeText={(t) => setInputs((prev) => ({ ...prev, [name]: t }))}
@@ -104,10 +125,11 @@ export function PromptVariableEditor({
                             placeholderTextColor={colors.secondaryText}
                             style={styles.inputBox}
                         />
-                    )}
-                </View>
-            ))}
+                    </View>
+                );
+            })}
 
+            {/* Insert modal */}
             {showInsertModal && insertTarget && (
                 <BaseModal
                     visible
@@ -127,11 +149,12 @@ export function PromptVariableEditor({
                             setTempVariable('');
                         }}
                         onInsert={handleInsert}
-                        entityType={editingMode === 'Function' ? 'Function' : 'Variable'}
+                        entityType="Function"
                     />
                 </BaseModal>
             )}
 
+            {/* Inline edit modal for chips */}
             {editingVariable && (
                 <VariableEditModal
                     visible={!!editingVariable}
@@ -168,6 +191,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             borderRadius: 8,
             padding: 10,
             fontSize: 16,
-            color: colors.text
+            color: colors.text,
         },
     });
