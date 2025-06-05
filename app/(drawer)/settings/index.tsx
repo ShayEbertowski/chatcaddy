@@ -15,12 +15,8 @@ import { useColors } from '../../../src/hooks/useColors';
 import { useSettingsStore } from '../../../src/stores/useSettingsStore';
 import { getSharedStyles } from '../../../src/styles/shared';
 import { loadUserPreferences, saveUserPreferences } from '../../../src/utils/preferences/preferences';
-import { loadApiKey } from '../../../src/utils/apiKeyStorage';
 import { useThemeStore } from '../../../src/stores/useThemeStore';
-
-
-const API_KEY_STORAGE_KEY = 'openai_api_key';
-const TAP_BEHAVIOR_KEY = '@prompt_tap_behavior';
+import { saveApiKey, getApiKey, clearApiKey } from '../../../src/utils/apiKeyStorage';
 
 export default function Settings() {
     const [apiKey, setApiKey] = useState('');
@@ -34,44 +30,34 @@ export default function Settings() {
     const sharedStyles = getSharedStyles(colors);
     const { mode, setMode } = useThemeStore();
 
+    // Zustand store for settings
     const confirmPromptDelete = useSettingsStore((s) => s.confirmPromptDelete);
     const setConfirmPromptDelete = useSettingsStore((s) => s.setConfirmPromptDelete);
     const navigation = useNavigation();
 
     useEffect(() => {
         const loadAllSettings = async () => {
-            // load API Key locally
-            const storedKey = await loadApiKey();
+            const storedKey = await getApiKey();
             if (storedKey) {
                 setApiKey(storedKey);
                 setHasSavedKey(true);
                 setEditable(false);
             }
 
-            // load preferences from DB
             const prefs = await loadUserPreferences();
             if (!prefs) return;
 
             if (prefs.tap_behavior) {
                 setTapBehavior(prefs.tap_behavior);
             }
-            if (prefs.appearance_mode === 'light' || prefs.appearance_mode === 'dark') {
-                setMode(prefs.appearance_mode);
-            } else {
-                setMode('light');  // fallback default
-            }
-            if (prefs.confirm_prompt_delete !== undefined) {
-                setConfirmPromptDelete(prefs.confirm_prompt_delete);
-            }
         };
 
         loadAllSettings();
     }, []);
 
-
-    const saveApiKey = async (apiKey: string) => {
+    const saveApiKey = async (key: string) => {
         try {
-            await saveApiKey(apiKey);  // ← from utils/apiKeyStorage
+            await saveApiKey(key);
             Alert.alert('Success', 'API key saved.');
             setStatus('');
             setEditable(false);
@@ -84,7 +70,7 @@ export default function Settings() {
 
     const clearApiKey = async () => {
         try {
-            await clearApiKey(); // from utils/apiKeyStorage
+            await clearApiKey();
             setApiKey('');
             setStatus('🔒 Key cleared');
             setEditable(true);
@@ -114,7 +100,7 @@ export default function Settings() {
 
     const handleEditOrSave = () => {
         if (editable) {
-            saveApiKey(apiKey);  // ✅ pass current state value
+            saveApiKey(apiKey);
         } else {
             setEditable(true);
         }
@@ -144,77 +130,86 @@ export default function Settings() {
     };
 
     return (
-
         <ThemedSafeArea>
             <ScrollView contentContainerStyle={sharedStyles.scroll}>
-                <View style={sharedStyles.section}>
-                    <Text style={sharedStyles.sectionTitle}>OpenAI API Key</Text>
-                    <TextInput
-                        value={apiKey}
-                        onChangeText={setApiKey}
-                        placeholder="sk-..."
-                        secureTextEntry
-                        editable={editable}
-                        style={[sharedStyles.input, !editable && sharedStyles.disabledInput]}
-                    />
-                    <View style={sharedStyles.keyActionsRow}>
-                        <View style={styles.leftButtonRow}>
-                            <TouchableOpacity style={sharedStyles.actionButton} onPress={handleEditOrSave}>
-                                <Text style={sharedStyles.actionButtonText}>{editable ? 'Save' : 'Edit'}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={sharedStyles.actionButton} onPress={handleTestKey}>
-                                <Text style={sharedStyles.actionButtonText}>Test</Text>
+                {/* API Key */}
+                <View style={{ opacity: 0.5, pointerEvents: 'none' }}>
+                    <View style={sharedStyles.section}>
+                        <Text style={sharedStyles.sectionTitle}>OpenAI API Key (disabled for beta)</Text>
+                        <Text style={{ color: colors.secondaryText, fontSize: 12, marginBottom: 6 }}>
+                            API Key management will be available in a future release.
+                        </Text>
+
+                        <TextInput
+                            value={apiKey}
+                            onChangeText={setApiKey}
+                            placeholder="sk-..."
+                            secureTextEntry
+                            editable={editable}
+                            style={[sharedStyles.input, !editable && sharedStyles.disabledInput]}
+                        />
+                        <View style={sharedStyles.keyActionsRow}>
+                            <View style={styles.leftButtonRow}>
+                                <TouchableOpacity style={sharedStyles.actionButton} onPress={handleEditOrSave}>
+                                    <Text style={sharedStyles.actionButtonText}>{editable ? 'Save' : 'Edit'}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={sharedStyles.actionButton} onPress={handleTestKey}>
+                                    <Text style={sharedStyles.actionButtonText}>Test</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <TouchableOpacity style={styles.clearButton} onPress={confirmClearKey}>
+                                <Text style={sharedStyles.clearButtonText}>Clear Key</Text>
                             </TouchableOpacity>
                         </View>
-
-                        <TouchableOpacity style={styles.clearButton} onPress={confirmClearKey}>
-                            <Text style={sharedStyles.clearButtonText}>Clear Key</Text>
-                        </TouchableOpacity>
                     </View>
-
-
                 </View>
 
-                <View style={sharedStyles.section}>
-                    <Text style={sharedStyles.sectionTitle}>Default Tap Action</Text>
-                    <View style={sharedStyles.toggleRow}>
-                        <TouchableOpacity
-                            style={[
-                                sharedStyles.toggleButton,
-                                tapBehavior === 'preview' && sharedStyles.toggleButtonSelected,
-                            ]}
-                            onPress={() => saveTapBehavior('preview')}
-                        >
-                            <Text
-                                style={[
-                                    sharedStyles.toggleButtonText,
-                                    tapBehavior === 'preview' && sharedStyles.toggleButtonTextSelected,
-                                ]}
-                            >
-                                Preview
-                            </Text>
-                        </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={[
-                                sharedStyles.toggleButton,
-                                tapBehavior === 'run' && sharedStyles.toggleButtonSelected,
-                            ]}
-                            onPress={() => saveTapBehavior('run')}
-                        >
-                            <Text
+                {/* Tap Behavior */}
+                <View style={{ opacity: 0.5, pointerEvents: 'none' }}>
+                    <View style={sharedStyles.section}>
+                        <Text style={sharedStyles.sectionTitle}>Default Tap Action (coming soon)</Text>
+                        <View style={sharedStyles.toggleRow}>
+                            <TouchableOpacity
                                 style={[
-                                    sharedStyles.toggleButtonText,
-                                    tapBehavior === 'run' && sharedStyles.toggleButtonTextSelected,
+                                    sharedStyles.toggleButton,
+                                    tapBehavior === 'preview' && sharedStyles.toggleButtonSelected,
                                 ]}
+                                onPress={() => saveTapBehavior('preview')}
                             >
-                                Run
-                            </Text>
-                        </TouchableOpacity>
+                                <Text
+                                    style={[
+                                        sharedStyles.toggleButtonText,
+                                        tapBehavior === 'preview' && sharedStyles.toggleButtonTextSelected,
+                                    ]}
+                                >
+                                    Preview
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[
+                                    sharedStyles.toggleButton,
+                                    tapBehavior === 'run' && sharedStyles.toggleButtonSelected,
+                                ]}
+                                onPress={() => saveTapBehavior('run')}
+                            >
+                                <Text
+                                    style={[
+                                        sharedStyles.toggleButtonText,
+                                        tapBehavior === 'run' && sharedStyles.toggleButtonTextSelected,
+                                    ]}
+                                >
+                                    Run
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-
                 </View>
 
+
+                {/* Appearance */}
                 <View style={sharedStyles.section}>
                     <Text style={sharedStyles.sectionTitle}>Appearance</Text>
                     <View style={sharedStyles.toggleRow}>
@@ -225,14 +220,10 @@ export default function Settings() {
                             ]}
                             onPress={() => setMode('light')}
                         >
-                            <Text
-                                style={[
-                                    sharedStyles.toggleButtonText,
-                                    mode === 'light' && sharedStyles.toggleButtonTextSelected,
-                                ]}
-                            >
-                                Light
-                            </Text>
+                            <Text style={[
+                                sharedStyles.toggleButtonText,
+                                mode === 'light' && sharedStyles.toggleButtonTextSelected,
+                            ]}>Light</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -242,18 +233,15 @@ export default function Settings() {
                             ]}
                             onPress={() => setMode('dark')}
                         >
-                            <Text
-                                style={[
-                                    sharedStyles.toggleButtonText,
-                                    mode === 'dark' && sharedStyles.toggleButtonTextSelected,
-                                ]}
-                            >
-                                Dark
-                            </Text>
+                            <Text style={[
+                                sharedStyles.toggleButtonText,
+                                mode === 'dark' && sharedStyles.toggleButtonTextSelected,
+                            ]}>Dark</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
+                {/* Prompt Confirm */}
                 <View style={sharedStyles.section}>
                     <Text style={sharedStyles.sectionTitle}>Prompt Behavior</Text>
                     <View style={styles.settingRow}>
@@ -261,14 +249,15 @@ export default function Settings() {
                         <Switch
                             value={confirmPromptDelete}
                             onValueChange={setConfirmPromptDelete}
+                            trackColor={{
+                                false: colors.switchTrackOff,
+                                true: colors.switchTrackOn
+                            }}
                         />
-                    </View>
+                        </View>
                 </View>
-
-
             </ScrollView>
         </ThemedSafeArea>
-
     );
 }
 
@@ -304,7 +293,3 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
 Settings.options = {
     title: 'Settings',
 };
-function loadPreferences() {
-    throw new Error('Function not implemented.');
-}
-

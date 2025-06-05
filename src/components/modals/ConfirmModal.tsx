@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
 import { useColors } from '../../hooks/useColors';
 import BaseModal from './BaseModal';
+import { useSettingsStore } from '../../stores/useSettingsStore';
 
 type Props = {
     visible: boolean;
     title: string;
     message: string;
-    onConfirm: (dontShowAgain?: boolean) => void; // 👈 update here
+    onConfirm: () => void;
     onCancel: () => void;
     confirmText?: string;
     cancelText?: string;
     showCheckbox?: boolean;
 };
+
 export default function ConfirmModal({
     visible,
     title,
@@ -24,8 +26,14 @@ export default function ConfirmModal({
     showCheckbox
 }: Props) {
     const colors = useColors();
-    const [dontShowAgain, setDontShowAgain] = useState(false);
 
+    const dontShowAgain = !useSettingsStore((s) => s.confirmPromptDelete);
+    const confirmPromptDelete = useSettingsStore((s) => s.confirmPromptDelete);
+    const setConfirmPromptDelete = useSettingsStore((s) => s.setConfirmPromptDelete);
+
+    const handleToggle = () => {
+        setConfirmPromptDelete(!confirmPromptDelete);
+    };
 
     return (
         <BaseModal visible={visible} onRequestClose={onCancel} blur>
@@ -35,7 +43,14 @@ export default function ConfirmModal({
             {showCheckbox && (
                 <>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                        <Switch value={dontShowAgain} onValueChange={setDontShowAgain} />
+                        <Switch
+                            value={confirmPromptDelete}
+                            onValueChange={setConfirmPromptDelete}
+                            trackColor={{
+                                false: colors.switchTrackOff, 
+                                true: colors.switchTrackOn
+                            }}
+                        />
                         <Text style={{ marginLeft: 8, color: colors.secondaryText }}>
                             Don’t show this again
                         </Text>
@@ -46,41 +61,22 @@ export default function ConfirmModal({
                 </>
             )}
 
-
-
             <View style={styles.actions}>
                 <TouchableOpacity onPress={onCancel} style={styles.button}>
                     <Text style={{ color: colors.text }}>{cancelText}</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                    onPress={() => onConfirm(dontShowAgain)}
-                    style={styles.button}
-                >
+                <TouchableOpacity onPress={onConfirm} style={styles.button}>
                     <Text style={{ color: colors.error }}>{confirmText}</Text>
                 </TouchableOpacity>
-
             </View>
         </BaseModal>
     );
 }
 
 const styles = StyleSheet.create({
-    title: {
-        fontSize: 18,
-        fontWeight: '700',
-        marginBottom: 12,
-    },
-    message: {
-        fontSize: 15,
-        marginBottom: 24,
-    },
-    actions: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        gap: 20,
-    },
-    button: {
-        padding: 10,
-    },
+    title: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
+    message: { fontSize: 15, marginBottom: 24 },
+    actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 20 },
+    button: { padding: 10 },
 });

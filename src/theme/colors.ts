@@ -25,6 +25,10 @@ export const light = (() => {
         toggleBackground: '#f5f5f5',
         success: '#4caf50',
         toggle: '#FFD700',
+        switchTrackOn: '#007AFF',
+        switchTrackOff: '#ccc',
+        switchThumbOn: '#fff',
+        switchThumbOff: '#fff',
     };
 })();
 
@@ -53,5 +57,9 @@ export const dark = (() => {
         toggleBackground: '#3a3a3c',
         success: '#4caf50',
         toggle: '#FFD700',
+        switchTrackOn: '#4D90FE',
+        switchTrackOff: '#333',
+        switchThumbOn: '#fff',
+        switchThumbOff: '#fff',
     };
 })();
