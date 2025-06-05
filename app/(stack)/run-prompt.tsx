@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
-    View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert,
+    View,
+    Text,
+    ScrollView,
+    TouchableOpacity,
+    StyleSheet,
+    Alert,
 } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useColors } from '../../src/hooks/useColors';
@@ -10,15 +15,9 @@ import { runPrompt } from '../../src/utils/prompt/runPrompt';
 import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
 import { PromptVariableEditor } from '../../src/components/prompt/PromptVariableEditor';
 import { useFunctionStore } from '../../src/stores/useFunctionStore';
-import { PromptResult } from '../../src/components/prompt/PromptResult';
-import { RenderPreviewChunks } from '../../src/components/prompt/RenderPreviewChunks';
-import { Prompt, Variable } from '../../src/types/prompt';
-import { useEntityStore } from '../../src/stores/useEntityStore';
-import { Entity } from '../../src/types/entity';
-
-function isPrompt(entity: Entity): entity is Prompt {
-    return entity.entityType === 'Prompt';
-}
+import { Prompt } from '../../src/types/prompt';
+import { Variable } from '../../src/types/prompt';
+import { usePromptStore } from '../../src/stores/usePromptsStore';
 
 export default function RunPrompt() {
     const colors = useColors();
@@ -30,29 +29,22 @@ export default function RunPrompt() {
     const [response, setResponse] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const rawParams = useLocalSearchParams();
-    const idParam = Array.isArray(rawParams.id) ? rawParams.id[0] : rawParams.id;
-    const entity = useEntityStore(state => state.entities.find(e => e.id === idParam));
-
-    if (!entity) {
-        return (
-            <ThemedSafeArea>
-                <Text style={{ padding: 20 }}>No entity loaded</Text>
-            </ThemedSafeArea>
-        );
-    }
+    const { promptId } = useLocalSearchParams();
+    const prompt = usePromptStore().prompts.find((p) => p.id === promptId);
 
     useEffect(() => {
         navigation.setOptions({ title: 'Run Prompt' });
     }, [navigation]);
 
     useEffect(() => {
+        if (!prompt) return;
+
         const initial: Record<string, string> = {};
-        Object.entries(entity.variables ?? {}).forEach(([k, v]) => {
+        Object.entries(prompt.variables ?? {}).forEach(([k, v]) => {
             initial[k] = resolveInitialValue(v);
         });
         setInputs(initial);
-    }, [entity]);
+    }, [prompt]);
 
     useEffect(() => {
         useFunctionStore.getState().loadFunctions();
@@ -63,7 +55,7 @@ export default function RunPrompt() {
         setResponse('');
 
         Object.entries(inputs).forEach(([key, value]) => {
-            const variableDef = entity.variables?.[key];
+            const variableDef = prompt?.variables?.[key];
             if (!variableDef) return;
 
             if (variableDef.type === 'string') {
@@ -83,45 +75,51 @@ export default function RunPrompt() {
             }
         });
 
-        let filledPrompt = '';
+        const filledPrompt = (prompt?.content ?? '').replace(/{{(.*?)}}/g, (_, rawVar) => {
+            const key = rawVar.split('=')[0].trim();
+            return inputs[key] || '';
+        });
 
-        if (isPrompt(entity)) {
-            filledPrompt = entity.content.replace(/{{(.*?)}}/g, (_, rawVar) => {
-                const key = rawVar.split('=')[0].trim();
-                return inputs[key] || '';
-            });
-        } else {
-            Alert.alert('Cannot run this entity type');
-            return;
-        }
-
+        // ✅ You were missing this line
         const result = await runPrompt(filledPrompt, inputs);
+
         if ('error' in result) {
             Alert.alert('Error', result.error);
         } else {
             setResponse(result.response);
         }
+
         setIsLoading(false);
     };
+
+
+    if (!prompt) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.title}>No prompt loaded.</Text>
+            </View>
+        );
+    }
 
     return (
         <ThemedSafeArea style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <Text style={[styles.title, { color: colors.accent }]}>{entity.title}</Text>
-                <View>
-                    <RenderPreviewChunks content={entity.content ?? ''} />
-                </View>
-                <View style={sharedStyles.divider} />
-                {isPrompt(entity) && (
-                    <PromptVariableEditor
-                        prompt={entity}
-                        initialValues={inputs}
-                        onChange={setInputs}
-                    />
-                )}
+                <Text style={[styles.title, { color: colors.accent }]}>{prompt.title}</Text>
 
-                <PromptResult response={response} isLoading={isLoading} onClear={() => setResponse('')} />
+                <PromptVariableEditor
+                    prompt={prompt}
+                    initialValues={inputs}
+                    onChange={setInputs}
+                />
+
+                {/* TEMP: You can restore response rendering later here */}
+                {response ? (
+                    <View style={sharedStyles.response}>
+                        <Text style={{ color: colors.text }}>{response}</Text>
+                    </View>
+                ) : null}
             </ScrollView>
+
             <View style={styles.buttonContainer}>
                 <TouchableOpacity style={styles.runButton} onPress={handleRun}>
                     <Text style={styles.runButtonText}>Run</Text>
