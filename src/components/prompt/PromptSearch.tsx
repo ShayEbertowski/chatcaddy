@@ -10,7 +10,7 @@ import {
 import { Prompt } from '../../types/prompt';
 import { usePromptStore } from '../../stores/usePromptsStore';
 import { useColors } from '../../hooks/useColors';
-import { RenderPreviewChunks } from './RenderPreviewChunks';  // ✅ assuming same folder
+import { RenderPreviewChunks } from './RenderPreviewChunks';
 
 type Props = {
     onSelect: (prompt: Prompt) => void;

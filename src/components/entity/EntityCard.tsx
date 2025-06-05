@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { useColors } from '../../hooks/useColors';
-import { RenderPreviewChunks } from '../prompt/renderPreviewChunks';
+import { RenderPreviewChunks } from '../prompt/RenderPreviewChunks';
 import EditOrDeleteActions from '../shared/EditOrDeleteActions';
 import { Entity } from '../../types/entity';
 

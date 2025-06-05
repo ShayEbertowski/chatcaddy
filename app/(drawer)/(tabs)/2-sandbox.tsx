@@ -19,7 +19,6 @@ import { extractEntityText } from '../../../src/utils/prompt/extractEntityText';
 import { Entity, EntityType } from '../../../src/types/entity';
 import { v4 as uuidv4 } from 'uuid';
 import { generateSmartTitle } from '../../../src/utils/prompt/generateSmartTitle';
-import { useIsCurrentRoute } from '../../../src/utils/router/isCurrentRoute';
 
 export default function Sandbox() {
     const colors = useColors();
@@ -45,9 +44,6 @@ export default function Sandbox() {
     const [showResponse, setShowResponse] = useState(true);
     const [isDirty, setIsDirty] = useState(false);
     const [confirmHandler, setConfirmHandler] = useState<() => void>(() => () => { });
-
-    const isFocused = useIsCurrentRoute(['(tabs)', '2-sandbox']);
-
 
     useEffect(() => {
         if (!editId) {

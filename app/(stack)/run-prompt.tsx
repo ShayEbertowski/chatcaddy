@@ -11,7 +11,7 @@ import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
 import { PromptVariableEditor } from '../../src/components/prompt/PromptVariableEditor';
 import { useFunctionStore } from '../../src/stores/useFunctionStore';
 import { PromptResult } from '../../src/components/prompt/PromptResult';
-import { RenderPreviewChunks } from '../../src/components/prompt/renderPreviewChunks';
+import { RenderPreviewChunks } from '../../src/components/prompt/RenderPreviewChunks';
 import { Prompt, Variable } from '../../src/types/prompt';
 import { useEntityStore } from '../../src/stores/useEntityStore';
 import { Entity } from '../../src/types/entity';

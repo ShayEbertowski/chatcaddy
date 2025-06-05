@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Entity, EntityType } from '../types/prompt';
+import { EntityType, Entity } from '../types/entity';
 
 type EditorState = {
     entityType: EntityType;
