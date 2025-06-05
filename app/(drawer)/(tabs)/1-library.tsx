@@ -2,43 +2,63 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColors } from '../../../src/hooks/useColors';
-import { getSharedStyles } from '../../../src/styles/shared';
 import BaseModal from '../../../src/components/modals/BaseModal';
 import { useEntityStore } from '../../../src/stores/useEntityStore';
 import { Entity, EntityType } from '../../../src/types/entity';
 import { useRouter } from 'expo-router';
+import EntityCard from '../../../src/components/entity/EntityCard';
+import ConfirmModal from '../../../src/components/modals/ConfirmModal';
 
 const options: { label: string; value: EntityType }[] = [
     { label: 'Prompts', value: 'Prompt' },
     { label: 'Functions', value: 'Function' },
-    { label: 'Snippets', value: 'Snippet' },  // You can easily add more entity types here
+    { label: 'Snippets', value: 'Snippet' },
 ];
 
 export default function EntityLibraryScreen() {
     const colors = useColors();
     const router = useRouter();
+    const styles = getStyles(colors);
     const [category, setCategory] = useState<EntityType>('Prompt');
     const [modalVisible, setModalVisible] = useState(false);
     const entities = useEntityStore((state) => state.entities);
+    const [deleteTarget, setDeleteTarget] = useState<Entity | null>(null);
 
     const filteredEntities = useMemo(
         () => entities.filter((e) => e.entityType === category),
         [entities, category]
     );
 
-    const styles = getStyles(colors);
-    const sharedStyles = getSharedStyles(colors);
-
-    const onClose = () => setModalVisible(false);
-
     const handleEdit = (entity: Entity) => {
         router.push({
             pathname: '/2-sandbox',
-            params: {
-                editId: entity.id,
-            },
+            params: { editId: entity.id },
         });
     };
+
+
+    const handleRun = (entity: Entity) => {
+        router.push({
+            pathname: '/run-prompt',
+            params: { id: entity.id },
+        });
+    };
+
+    const handleDeleteRequest = (entity: Entity) => {
+        setDeleteTarget(entity);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (deleteTarget) {
+            await useEntityStore.getState().deleteEntity(deleteTarget.id);
+            setDeleteTarget(null);  // close modal after deletion
+        }
+    };
+
+    const handleCancelDelete = () => {
+        setDeleteTarget(null);
+    };
+
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -51,8 +71,6 @@ export default function EntityLibraryScreen() {
                 </TouchableOpacity>
             </View>
 
-            <View style={{ height: 24 }} />
-
             {filteredEntities.length === 0 ? (
                 <Text style={{ textAlign: 'center', marginTop: 40, color: colors.secondaryText }}>
                     No {category}s found.
@@ -62,21 +80,18 @@ export default function EntityLibraryScreen() {
                     data={filteredEntities}
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => (
-                        <TouchableOpacity
-                            onPress={() => handleEdit(item)}
-                            style={{
-                                padding: 16,
-                                borderBottomWidth: 1,
-                                borderBottomColor: colors.border,
-                            }}
-                        >
-                            <Text style={{ fontSize: 16, color: colors.text }}>{item.title || '(Untitled)'}</Text>
-                        </TouchableOpacity>
+                        <EntityCard
+                            entity={item}
+                            onPress={() => handleRun(item)}
+                            onEdit={() => handleEdit(item)}
+                            onDelete={() => handleDeleteRequest(item)}
+                        />
                     )}
                 />
+
             )}
 
-            <BaseModal visible={modalVisible} blur dismissOnBackdropPress onRequestClose={onClose}>
+            <BaseModal visible={modalVisible} blur dismissOnBackdropPress onRequestClose={() => setModalVisible(false)}>
                 {options.map((opt) => (
                     <TouchableOpacity
                         key={opt.value}
@@ -90,6 +105,18 @@ export default function EntityLibraryScreen() {
                     </TouchableOpacity>
                 ))}
             </BaseModal>
+
+            <ConfirmModal
+                visible={!!deleteTarget}
+                title="Delete Entity"
+                message={`Are you sure you want to delete "${deleteTarget?.title || 'Untitled'}"?`}
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+                confirmText="Delete"
+                cancelText="Cancel"
+                showCheckbox={true}
+            />
+
         </View>
     );
 }

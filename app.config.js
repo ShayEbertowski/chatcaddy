@@ -16,6 +16,7 @@ export default {
         updates: {
             url: "https://u.expo.dev/9803f32a-19ab-419b-bf0e-e3a91f7043aa"
         },
-        runtimeVersion: "1.0.0"
+        runtimeVersion: "1.0.0",
+        "scheme": "chatcaddy"
     },
 };

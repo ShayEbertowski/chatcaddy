@@ -1,3 +1,4 @@
+import '../shim';
 import 'react-native-get-random-values';
 
 import { Stack } from 'expo-router';
@@ -9,11 +10,15 @@ import React, { useEffect } from 'react';
 import { useThemeStore } from '../src/stores/useThemeStore';
 import LoadingScreen from '../src/screens/LoadingScreen';
 import { useColors } from '../src/hooks/useColors';
+import { useEntityStore } from '../src/stores/useEntityStore';
 
 export default function RootLayout() {
+
     useEffect(() => {
         useAuthStore.getState().loadSession();
+        useEntityStore.getState().loadEntities();  // <--- this was missing
     }, []);
+
 
     const initialized = useThemeStore((s) => s.initialized);
     const colors = useColors();

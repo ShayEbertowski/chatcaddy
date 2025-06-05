@@ -4,5 +4,5 @@ export type PromptFunction = {
     description: string;
     code: string;
     folder?: string;
-    functionBody: string;
+    content: string;
 };

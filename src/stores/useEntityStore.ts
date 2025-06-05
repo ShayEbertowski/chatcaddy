@@ -26,7 +26,7 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
         }
 
         set({
-            entities: data.map((p) => normalizePromptRow(p)),
+            entities: data.map((row) => normalizePromptRow(row)),
         });
     },
 
@@ -40,26 +40,24 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
         }
 
         const client = createSupabaseClient(token);
-
-        // Destructure to remove entityType before sending to Supabase
         const { entityType, ...rest } = entity;
 
         const { error } = await client.from('prompts').upsert({
             ...rest,
-            type: entityType,  // map entityType to DB column
+            type: entityType,
             user_id: user.id,
         });
 
-        // Directly update Zustand state immediately:
-        set((state) => ({
-            entities: [...state.entities.filter(e => e.id !== entity.id), entity]
-        }));
-
         if (error) {
             console.error('Supabase error on upsert:', error);
-        } else {
-            await get().loadEntities();
+            return;
         }
+
+        // Instant local state update
+        set((state) => {
+            const filtered = state.entities.filter(e => e.id !== entity.id);
+            return { entities: [...filtered, entity] };
+        });
     },
 
     deleteEntity: async (id) => {

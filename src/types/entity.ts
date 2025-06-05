@@ -10,6 +10,5 @@ export type Entity = {
     folder: string;
     entityType: EntityType;
     variables: Record<string, any>;  // you can replace `any` with your Variable type
-    content?: string;                // for Prompts
-    functionBody?: string;           // for Functions
+    content?: string;             
 };

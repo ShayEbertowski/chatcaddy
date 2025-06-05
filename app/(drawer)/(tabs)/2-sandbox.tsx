@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
 import SavePromptModal from '../../../src/components/modals/SavePromptModal';
@@ -16,7 +16,7 @@ import { useEditorStore } from '../../../src/stores/useEditorStore';
 import { useEntityStore } from '../../../src/stores/useEntityStore';
 import { loadVariablesIntoStore } from '../../../src/utils/prompt/promptManager';
 import { extractEntityText } from '../../../src/utils/prompt/extractEntityText';
-import { Entity } from '../../../src/types/entity';
+import { Entity, EntityType } from '../../../src/types/entity';
 import { v4 as uuidv4 } from 'uuid';
 import { generateSmartTitle } from '../../../src/utils/prompt/generateSmartTitle';
 import { useIsCurrentRoute } from '../../../src/utils/router/isCurrentRoute';
@@ -25,11 +25,13 @@ export default function Sandbox() {
     const colors = useColors();
     const styles = getStyles(colors);
     const sharedStyles = getSharedStyles(colors);
+
     const router = useRouter();
 
     const entityType = useEditorStore((s) => s.entityType);
     const editingEntity = useEditorStore((s) => s.editingEntity);
-    const editId = useEditorStore((s) => s.editId);
+    const rawParams = useLocalSearchParams();
+    const editId = Array.isArray(rawParams.editId) ? rawParams.editId[0] : rawParams.editId;
     const setEntityType = useEditorStore((s) => s.setEntityType);
     const clearEditingEntity = useEditorStore((s) => s.clearEditingEntity);
 
@@ -46,11 +48,12 @@ export default function Sandbox() {
 
     const isFocused = useIsCurrentRoute(['(tabs)', '2-sandbox']);
 
+
     useEffect(() => {
-        if (isFocused && !editingEntity) {
+        if (!editId) {
             resetEditor();
         }
-    }, [isFocused, editingEntity]);
+    }, [editId]);
 
     useEffect(() => {
         if (editingEntity) {
@@ -59,6 +62,7 @@ export default function Sandbox() {
             loadVariablesIntoStore(editingEntity.variables);
             setPromptTitle(editingEntity.title || '');
             setSelectedFolder(editingEntity.folder || 'Uncategorized');
+            setEntityType(editingEntity.entityType || 'Prompt');
         }
     }, [editingEntity]);
 
@@ -84,7 +88,7 @@ export default function Sandbox() {
             folder: selectedFolder,
             entityType: entityType,
             variables: useVariableStore.getState().values,
-            ...(entityType === 'Prompt' ? { content: inputText } : { functionBody: inputText }),
+            ...(entityType === 'Prompt' ? { content: inputText } : { content: inputText }),
         };
     };
 
@@ -95,14 +99,8 @@ export default function Sandbox() {
             setPromptTitle(smartTitle);
 
             setConfirmHandler(() => async () => {
-                console.log('🌯');
-
                 const entityToSave = prepareEntityToSave();
-                console.log('🌯🌯');
-
-                console.log('Saving entity:', entityToSave);
                 await useEntityStore.getState().addOrUpdateEntity(entityToSave);
-
                 setShowConfirmSaveModal(false);
                 resetEditor();
             });
@@ -144,6 +142,16 @@ export default function Sandbox() {
 
         return !entityChanged;
     };
+
+    useEffect(() => {
+        if (editId) {
+            const entity = useEntityStore.getState().entities.find(e => e.id === editId);
+            if (entity) {
+                useEditorStore.getState().setEditingEntity(entityType, entity);
+            }
+        }
+    }, [editId]);
+
 
     return (
         <ThemedSafeArea>

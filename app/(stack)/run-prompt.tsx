@@ -1,11 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-    View,
-    Text,
-    ScrollView,
-    TouchableOpacity,
-    StyleSheet,
-    Alert,
+    View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert,
 } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { useColors } from '../../src/hooks/useColors';
@@ -17,10 +12,13 @@ import { PromptVariableEditor } from '../../src/components/prompt/PromptVariable
 import { useFunctionStore } from '../../src/stores/useFunctionStore';
 import { PromptResult } from '../../src/components/prompt/PromptResult';
 import { RenderPreviewChunks } from '../../src/components/prompt/renderPreviewChunks';
-import { useEditorStore } from '../../src/stores/useEditorStore';
-import type { Prompt } from '../../src/types/prompt';
-import { Variable } from '../../src/types/prompt';
-import { usePromptStore } from '../../src/stores/usePromptsStore';
+import { Prompt, Variable } from '../../src/types/prompt';
+import { useEntityStore } from '../../src/stores/useEntityStore';
+import { Entity } from '../../src/types/entity';
+
+function isPrompt(entity: Entity): entity is Prompt {
+    return entity.entityType === 'Prompt';
+}
 
 export default function RunPrompt() {
     const colors = useColors();
@@ -32,29 +30,29 @@ export default function RunPrompt() {
     const [response, setResponse] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const { promptId } = useLocalSearchParams();
-    const prompt = usePromptStore().prompts.find(p => p.id === promptId);
+    const rawParams = useLocalSearchParams();
+    const idParam = Array.isArray(rawParams.id) ? rawParams.id[0] : rawParams.id;
+    const entity = useEntityStore(state => state.entities.find(e => e.id === idParam));
+
+    if (!entity) {
+        return (
+            <ThemedSafeArea>
+                <Text style={{ padding: 20 }}>No entity loaded</Text>
+            </ThemedSafeArea>
+        );
+    }
 
     useEffect(() => {
         navigation.setOptions({ title: 'Run Prompt' });
     }, [navigation]);
 
-    if (!prompt) {
-        return (
-            <View style={styles.container}>
-                <Text style={styles.title}>No prompt loaded.</Text>
-            </View>
-        );
-    }
-
-    // Populate inputs from variables when prompt loads
     useEffect(() => {
         const initial: Record<string, string> = {};
-        Object.entries(prompt.variables ?? {}).forEach(([k, v]) => {
+        Object.entries(entity.variables ?? {}).forEach(([k, v]) => {
             initial[k] = resolveInitialValue(v);
         });
         setInputs(initial);
-    }, [prompt]);
+    }, [entity]);
 
     useEffect(() => {
         useFunctionStore.getState().loadFunctions();
@@ -64,9 +62,8 @@ export default function RunPrompt() {
         setIsLoading(true);
         setResponse('');
 
-        // Save all current inputs into variable store before running
         Object.entries(inputs).forEach(([key, value]) => {
-            const variableDef = prompt.variables?.[key];
+            const variableDef = entity.variables?.[key];
             if (!variableDef) return;
 
             if (variableDef.type === 'string') {
@@ -86,10 +83,17 @@ export default function RunPrompt() {
             }
         });
 
-        const filledPrompt = prompt.content.replace(/{{(.*?)}}/g, (_, rawVar) => {
-            const key = rawVar.split('=')[0].trim();
-            return inputs[key] || '';
-        });
+        let filledPrompt = '';
+
+        if (isPrompt(entity)) {
+            filledPrompt = entity.content.replace(/{{(.*?)}}/g, (_, rawVar) => {
+                const key = rawVar.split('=')[0].trim();
+                return inputs[key] || '';
+            });
+        } else {
+            Alert.alert('Cannot run this entity type');
+            return;
+        }
 
         const result = await runPrompt(filledPrompt, inputs);
         if ('error' in result) {
@@ -103,14 +107,19 @@ export default function RunPrompt() {
     return (
         <ThemedSafeArea style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <Text style={[styles.title, { color: colors.accent }]}>{prompt.title}</Text>
-                <View><RenderPreviewChunks content={prompt.content} /></View>
+                <Text style={[styles.title, { color: colors.accent }]}>{entity.title}</Text>
+                <View>
+                    <RenderPreviewChunks content={entity.content ?? ''} />
+                </View>
                 <View style={sharedStyles.divider} />
-                <PromptVariableEditor
-                    prompt={prompt}
-                    initialValues={inputs}
-                    onChange={setInputs}
-                />
+                {isPrompt(entity) && (
+                    <PromptVariableEditor
+                        prompt={entity}
+                        initialValues={inputs}
+                        onChange={setInputs}
+                    />
+                )}
+
                 <PromptResult response={response} isLoading={isLoading} onClear={() => setResponse('')} />
             </ScrollView>
             <View style={styles.buttonContainer}>
@@ -122,14 +131,9 @@ export default function RunPrompt() {
     );
 }
 
-// Helper to safely resolve initial values from variable definitions
 function resolveInitialValue(variable: Variable): string {
-    if (variable.type === 'string') {
-        return variable.value ?? '';
-    }
-    if (variable.type === 'prompt') {
-        return variable.promptTitle ?? '';
-    }
+    if (variable.type === 'string') return variable.value ?? '';
+    if (variable.type === 'prompt') return variable.promptTitle ?? '';
     return '';
 }
 

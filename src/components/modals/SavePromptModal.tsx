@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
     Modal,
     View,
@@ -8,7 +8,7 @@ import {
     StyleSheet,
     ActivityIndicator,
 } from 'react-native';
-import { useColors } from '../hooks/../../hooks/useColors';
+import { useColors } from '../../hooks/useColors';
 
 type SavePromptModalProps = {
     visible: boolean;
@@ -65,20 +65,9 @@ export default function SavePromptModal({
                                 <TouchableOpacity style={[styles.button, styles.cancel]} onPress={onCancel}>
                                     <Text style={[styles.buttonText, styles.cancelText]}>Cancel</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={styles.button}
-                                    onPress={async () => {
-                                        try {
-                                            await onConfirm();
-                                        } catch (e) {
-                                            console.error('Error inside modal confirm:', e);
-                                        }
-                                    }}
-                                >
+                                <TouchableOpacity style={styles.button} onPress={onConfirm}>
                                     <Text style={styles.buttonText}>OK</Text>
                                 </TouchableOpacity>
-
-
                             </View>
                         </>
                     )}
