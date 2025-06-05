@@ -1,6 +1,6 @@
 
-import { DrawerScreenLayout } from '../../../src/layouts/DrawerScreenLayout';
+import { ScreenLayout } from '../../../src/layouts/ScreenLayout';
 
 export default function SignupLayout() {
-    return DrawerScreenLayout({ title: 'Forgot Password' });
+    return ScreenLayout({ title: 'Forgot Password' });
 }

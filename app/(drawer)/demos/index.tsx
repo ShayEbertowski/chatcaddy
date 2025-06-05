@@ -18,7 +18,7 @@ export default function Demos() {
     return (
         <ThemedSafeArea>
             <ScrollView contentContainerStyle={styles.container}>
-             <Text style={styles.title}>Demos will be here</Text>
+                <Text style={styles.title}>Demos will be here</Text>
             </ScrollView>
         </ThemedSafeArea>
     );

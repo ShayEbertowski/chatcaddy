@@ -42,6 +42,29 @@ export function CustomDrawerContent(props: any) {
                     inactiveTintColor={colors.text}
                 />
 
+                <DrawerItem
+                    label="Toolbox"
+                    onPress={() => props.navigation.navigate('toolbox')}
+                    icon={({ color, size }) => (
+                        <Ionicons name="construct-outline" color={colors.accent} size={size} />
+                    )}
+                    labelStyle={{ color: colors.accent, fontWeight: '500', fontSize: 16 }}
+                    activeTintColor={colors.primary}
+                    inactiveTintColor={colors.text}
+                />
+
+                <DrawerItem
+                    label="Demos"
+                    onPress={() => props.navigation.navigate('demos')}
+                    icon={({ color, size }) => (
+                        <Ionicons name="videocam-outline" color={colors.accent} size={size} />
+                    )}
+                    labelStyle={{ color: colors.accent, fontWeight: '500', fontSize: 16 }}
+                    activeTintColor={colors.primary}
+                    inactiveTintColor={colors.text}
+                />
+
+
                 {!user && (
                     <DrawerItem
                         label="Sign In"

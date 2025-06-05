@@ -1,7 +1,7 @@
 import '../shim';
 import 'react-native-get-random-values';
 
-import { Stack } from 'expo-router';
+import { Slot, Stack } from 'expo-router';
 import { ThemeProvider } from '../src/theme/ThemeProvider';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar, View } from 'react-native';
@@ -40,7 +40,8 @@ export default function RootLayout() {
                         barStyle={isDark ? 'light-content' : 'dark-content'}
                         animated
                     />
-                    <Stack screenOptions={{ headerShown: false }} />
+                    {/* <Stack screenOptions={{ headerShown: false }} /> */}
+                    <Slot />
                 </View>
             </ThemeProvider>
         </SafeAreaProvider>

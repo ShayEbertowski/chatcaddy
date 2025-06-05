@@ -1,5 +1,4 @@
-import { Stack } from 'expo-router';
-import { useNavigation } from '@react-navigation/native';
+import { Stack, useRouter } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
@@ -10,8 +9,8 @@ type Options = {
     showBack?: boolean;
 };
 
-export function DrawerScreenLayout({ title, showBack = true }: Options) {
-    const navigation = useNavigation();
+export function ScreenLayout({ title, showBack = true }: Options) {
+    const router = useRouter();
     const colors = useColors();
 
     return (
@@ -29,7 +28,7 @@ export function DrawerScreenLayout({ title, showBack = true }: Options) {
                     ? () => (
                         <TouchableOpacity
                             style={{ marginLeft: 12 }}
-                            onPress={() => navigation.goBack()}
+                            onPress={() => router.back()}
                         >
                             <Ionicons name="arrow-back" size={24} color={colors.accent} />
                         </TouchableOpacity>

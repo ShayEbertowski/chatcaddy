@@ -1,10 +1,10 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { ComposerNodeView } from '../../../src/components/composer/ComposerNodeView';
-import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
-import { useComposerStore } from '../../../src/stores/useComposerStore';
-import { ComposerNode } from '../../../src/types/composer';
+import { ComposerNodeView } from '../../src/components/composer/ComposerNodeView';
+import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
+import { useComposerStore } from '../../src/stores/useComposerStore';
+import { ComposerNode } from '../../src/types/composer';
 
 export default function ComposerNodeScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();

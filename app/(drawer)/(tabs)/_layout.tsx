@@ -12,28 +12,26 @@ export default function TabLayout() {
     const colors = useColors();
     const toggle = useThemeStore((s) => s.toggle);
 
-    type RouteName = '1-library' | '2-sandbox' | '3-composer' | '4-toolbox' | '5-demos';
+    type RouteName = '1-library' | '2-sandbox' | '3-composer-entry';
 
     const icons: Record<RouteName, keyof typeof Ionicons.glyphMap> = {
         '1-library': 'library-outline',
         '2-sandbox': 'flask-outline',
-        '3-composer': 'code-slash-outline',
-        '4-toolbox': 'construct-outline',
-        '5-demos': 'videocam-outline',
+        '3-composer-entry': 'rocket-outline'
     };
 
     const labels: Record<RouteName, string> = {
         '1-library': 'Library',
         '2-sandbox': 'Sandbox',
-        '3-composer': 'Composer',
-        '4-toolbox': 'Toolbox',
-        '5-demos': 'Demos',
+        '3-composer-entry': 'Composer'
     };
 
     return (
         <Tabs>
             {(Object.keys(icons) as RouteName[]).map((routeName) => {
                 const isSandbox = routeName === '2-sandbox';
+                const isComposer = routeName === '3-composer-entry';
+
                 return (
                     <Tabs.Screen
                         key={routeName}
@@ -64,13 +62,20 @@ export default function TabLayout() {
                             ),
                             headerTitle: labels[routeName],
                         }}
-                        {...(isSandbox && {
+                        {...((isSandbox || isComposer) && {
                             listeners: {
                                 tabPress: (e) => {
                                     e.preventDefault();
-                                    useEditorStore.getState().clearEditingEntity();
-                                    useVariableStore.getState().clearAll();
-                                    router.replace('/2-sandbox');
+
+                                    if (isSandbox) {
+                                        useEditorStore.getState().clearEditingEntity();
+                                        useVariableStore.getState().clearAll();
+                                        router.replace('/2-sandbox');
+                                    }
+
+                                    if (isComposer) {
+                                        router.push('/composer');
+                                    }
                                 },
                             },
                         })}

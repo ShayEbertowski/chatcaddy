@@ -1,5 +1,5 @@
-import { DrawerScreenLayout } from '../../../src/layouts/DrawerScreenLayout';
+import { ScreenLayout } from '../../../src/layouts/ScreenLayout';
 
 export default function DevLayout() {
-    return DrawerScreenLayout({ title: 'Dev Admin Stuff' });
+    return ScreenLayout({ title: 'Dev Admin Stuff' });
 }

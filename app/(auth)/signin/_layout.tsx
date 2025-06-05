@@ -1,5 +1,5 @@
-import { DrawerScreenLayout } from '../../../src/layouts/DrawerScreenLayout';
+import { ScreenLayout } from '../../../src/layouts/ScreenLayout';
 
 export default function SigninLayout() {
-    return DrawerScreenLayout({ title: 'Sign In' });
+    return ScreenLayout({ title: 'Sign In' });
 }
