@@ -16,7 +16,9 @@ import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
 import { PromptVariableEditor } from '../../src/components/prompt/PromptVariableEditor';
 import { useFunctionStore } from '../../src/stores/useFunctionStore';
 import { useEntityStore } from '../../src/stores/useEntityStore';
-import type { Variable, Prompt } from '../../src/types/prompt';
+import type { Variable } from '../../src/types/prompt';
+import { isPrompt } from '../../src/utils/entity/entityGuards';
+import { PromptEntity } from '../../src/types/entity';
 
 export default function RunPrompt() {
     const colors = useColors();
@@ -28,10 +30,10 @@ export default function RunPrompt() {
     const [response, setResponse] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const { promptId } = useLocalSearchParams();
+    const { id } = useLocalSearchParams<{ id?: string | string[] }>();
+    const entityId = Array.isArray(id) ? id[0] : id;
+    const entity = useEntityStore().entities.find(e => e.id === entityId);
 
-    // ✅ Entity store
-    const entity = useEntityStore().entities.find(e => e.id === promptId);
 
     if (!entity || !isPrompt(entity)) {
         return (
@@ -41,7 +43,7 @@ export default function RunPrompt() {
         );
     }
 
-    const prompt: Prompt = entity;
+    const prompt: PromptEntity = entity;
 
     useEffect(() => {
         navigation.setOptions({ title: 'Run Prompt' });
@@ -49,7 +51,7 @@ export default function RunPrompt() {
 
     useEffect(() => {
         const initial: Record<string, string> = {};
-        Object.entries(prompt.variables ?? {}).forEach(([k, v]) => {
+        Object.entries(entity.variables ?? {}).forEach(([k, v]) => {
             initial[k] = resolveInitialValue(v);
         });
         setInputs(initial);

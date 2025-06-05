@@ -1,8 +1,4 @@
-// src/types/prompt.ts
-
-import { EntityType } from "./entity";
-
-// Variables
+// Variables — still fully used across your app
 export type StringVariable = {
     type: 'string';
     value: string;
@@ -18,19 +14,9 @@ export type PromptVariable = {
 export type Variable = StringVariable | PromptVariable;
 export type VariableValue = Variable;
 
-// App-level canonical prompt
-export type Prompt = {
-    id: string;
-    entityType: 'Prompt';
-    title: string;
-    content: string;
-    folder: string;
-    variables: Record<string, Variable>;
-    createdAt?: string;
-    updatedAt?: string;
-};
+// Optional: if you're still mapping DB rows to internal model
+import { EntityType } from "./entity";
 
-// DB shape exactly matching Supabase
 export type PromptRow = {
     id: string;
     type: EntityType;
@@ -43,25 +29,12 @@ export type PromptRow = {
     updatedAt: string;
 };
 
-// Function model (if needed)
-export type PromptFunction = {
-    id: string;
-    entityType: 'Function';
-    name: string;
-    code: string;
-    createdAt: string;
-    updatedAt: string;
-};
-
-export type NewPrompt = Omit<Prompt, 'id'>;
-
-export type LibraryProps = {
-    category: 'prompts' | 'functions';
-};
-
-// For parsing prompt text chunks
+// Still valid for parsing chunks
 export type PromptPart =
     | { type: 'text'; value: string }
     | { type: 'variable'; name: string };
 
-    
+// May still be used by your library screen:
+export type LibraryProps = {
+    category: 'prompts' | 'functions';
+};
