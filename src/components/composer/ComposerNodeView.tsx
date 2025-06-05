@@ -3,9 +3,12 @@ import { View, Text, Button, TouchableOpacity, StyleSheet, Modal, TextInput } fr
 import { ComposerNode } from '../../types/composer';
 import { useComposerStore } from '../../stores/useComposerStore';
 import { useRouter } from 'expo-router';
-import { generateUUID } from '../../utils/uuid/generateUUID';
 import { useColors } from '../../hooks/useColors';
 import { getSharedStyles } from '../../styles/shared';
+import { generateUUID } from '../../utils/uuid/generateUUID';
+import { InsertChildModal } from './modals/InsertChildModal';
+import BaseModal from '../modals/BaseModal';
+import { ThemedButton } from '../ui/ThemedButton';
 
 interface Props {
     node: ComposerNode;
@@ -15,66 +18,71 @@ export function ComposerNodeView({ node }: Props) {
     const { addChild } = useComposerStore();
     const router = useRouter();
 
-    const [editModalVisible, setEditModalVisible] = useState(false);
-    const [tempValue, setTempValue] = useState(node.value || '');
-
     const colors = useColors();
     const styles = getStyles(colors);
     const sharedStyles = getSharedStyles(colors);
 
-    const handleAddString = async () => {
+    const [editModalVisible, setEditModalVisible] = useState(false);
+    const [insertModalVisible, setInsertModalVisible] = useState(false);
+    const [tempValue, setTempValue] = useState(node.value || '');
+
+    const handleInsert = async (type: 'string' | 'prompt' | 'function' | 'snippet') => {
         const id = await generateUUID();
-        addChild(node.id, {
+        const childNode: ComposerNode = {
             id,
-            type: 'string',
-            title: 'New String',
-            value: '',
-        });
+            type,
+            title: `New ${type}`,
+            value: type === 'string' ? '' : undefined,
+            children: [],
+        };
+        addChild(node.id, childNode);
     };
 
     const handleEditValue = () => {
         setEditModalVisible(true);
     };
 
+    const handleSave = () => {
+        useComposerStore.setState((state) => {
+            const updateTree = (n: ComposerNode): ComposerNode => {
+                if (n.id === node.id) return { ...n, value: tempValue };
+                return { ...n, children: n.children?.map(updateTree) };
+            };
+            return { root: updateTree(state.root) };
+        });
+        setEditModalVisible(false);
+    }
+
     return (
         <View style={styles.node}>
             <Text style={styles.title}>{node.title}</Text>
 
-            <Button title="Add String Child" onPress={handleAddString} />
+            <Button title="Add Child" onPress={() => setInsertModalVisible(true)} />
 
-            {/* Value editing */}
             {node.type === 'string' && (
                 <>
                     <TouchableOpacity style={styles.valueBox} onPress={handleEditValue}>
                         <Text>{node.value || 'Tap to edit value'}</Text>
                     </TouchableOpacity>
 
-                    <Modal visible={editModalVisible} transparent animationType="slide">
-                        <View style={styles.modalContainer}>
-                            <View style={styles.modalBox}>
-                                <Text>Edit Value</Text>
-                                <TextInput
-                                    value={tempValue}
-                                    onChangeText={setTempValue}
-                                    placeholder="Enter value"
-                                    style={styles.input}
-                                />
-                                <Button
-                                    title="Save"
-                                    onPress={() => {
-                                        useComposerStore.setState((state) => {
-                                            const updateTree = (n: ComposerNode): ComposerNode => {
-                                                if (n.id === node.id) return { ...n, value: tempValue };
-                                                return { ...n, children: n.children?.map(updateTree) };
-                                            };
-                                            return { root: updateTree(state.root) };
-                                        });
-                                        setEditModalVisible(false);
-                                    }}
-                                />
-                            </View>
-                        </View>
-                    </Modal>
+                    <BaseModal visible={editModalVisible} onRequestClose={() => setEditModalVisible(false)} blur animationType='slide'>
+                        <Text style={styles.title}>Edit Value</Text>
+                        <TextInput
+                            value={tempValue}
+                            onChangeText={setTempValue}
+                            placeholder="Enter value"
+                            style={styles.input}
+                        />
+
+                        <ThemedButton
+                            title="Save"
+                            onPress={handleSave}
+                            style={{ marginTop: 20 }}
+                            textStyle={{ fontSize: 18 }}
+                            colorKey='primary'
+                        />
+
+                    </BaseModal>
                 </>
             )}
 
@@ -83,6 +91,12 @@ export function ComposerNodeView({ node }: Props) {
                     <Text style={styles.child}>{child.title}</Text>
                 </TouchableOpacity>
             ))}
+
+            <InsertChildModal
+                visible={insertModalVisible}
+                onClose={() => setInsertModalVisible(false)}
+                onSelect={handleInsert}
+            />
         </View>
     );
 }
@@ -99,9 +113,5 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             marginVertical: 10,
             borderRadius: 5,
         },
-        modalContainer: {
-            flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)',
-        },
-        modalBox: { backgroundColor: '#fff', padding: 20, borderRadius: 10, width: 300 },
-        input: { borderBottomWidth: 1, padding: 10, marginTop: 10, marginBottom: 20 },
+        input: { borderBottomWidth: 1, padding: 10, marginTop: 10, marginBottom: 20, color: colors.text },
     });

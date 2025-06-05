@@ -29,6 +29,8 @@ export const light = (() => {
         switchTrackOff: '#ccc',
         switchThumbOn: '#fff',
         switchThumbOff: '#fff',
+        buttonText: '#FFFFFF',
+
     };
 })();
 
@@ -61,5 +63,7 @@ export const dark = (() => {
         switchTrackOff: '#333',
         switchThumbOn: '#fff',
         switchThumbOff: '#fff',
+        buttonText: '#FFFFFF',
+
     };
 })();

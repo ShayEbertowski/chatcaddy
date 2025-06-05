@@ -10,6 +10,7 @@ type BaseModalProps = {
     children: React.ReactNode;
     blur?: boolean;
     dismissOnBackdropPress?: boolean;
+    animationType?: 'none' | 'slide' | 'fade';
 };
 
 export default function BaseModal({
