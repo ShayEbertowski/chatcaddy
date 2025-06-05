@@ -15,9 +15,8 @@ import { runPrompt } from '../../src/utils/prompt/runPrompt';
 import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
 import { PromptVariableEditor } from '../../src/components/prompt/PromptVariableEditor';
 import { useFunctionStore } from '../../src/stores/useFunctionStore';
-import { Prompt } from '../../src/types/prompt';
-import { Variable } from '../../src/types/prompt';
-import { usePromptStore } from '../../src/stores/usePromptsStore';
+import { useEntityStore } from '../../src/stores/useEntityStore';
+import type { Variable, Prompt } from '../../src/types/prompt';
 
 export default function RunPrompt() {
     const colors = useColors();
@@ -30,15 +29,25 @@ export default function RunPrompt() {
     const [isLoading, setIsLoading] = useState(false);
 
     const { promptId } = useLocalSearchParams();
-    const prompt = usePromptStore().prompts.find((p) => p.id === promptId);
+
+    // ✅ Entity store
+    const entity = useEntityStore().entities.find(e => e.id === promptId);
+
+    if (!entity || !isPrompt(entity)) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.title}>No prompt loaded.</Text>
+            </View>
+        );
+    }
+
+    const prompt: Prompt = entity;
 
     useEffect(() => {
         navigation.setOptions({ title: 'Run Prompt' });
     }, [navigation]);
 
     useEffect(() => {
-        if (!prompt) return;
-
         const initial: Record<string, string> = {};
         Object.entries(prompt.variables ?? {}).forEach(([k, v]) => {
             initial[k] = resolveInitialValue(v);
@@ -75,12 +84,11 @@ export default function RunPrompt() {
             }
         });
 
-        const filledPrompt = (prompt?.content ?? '').replace(/{{(.*?)}}/g, (_, rawVar) => {
+        const filledPrompt = (prompt.content ?? '').replace(/{{(.*?)}}/g, (_, rawVar) => {
             const key = rawVar.split('=')[0].trim();
             return inputs[key] || '';
         });
 
-        // ✅ You were missing this line
         const result = await runPrompt(filledPrompt, inputs);
 
         if ('error' in result) {
@@ -91,15 +99,6 @@ export default function RunPrompt() {
 
         setIsLoading(false);
     };
-
-
-    if (!prompt) {
-        return (
-            <View style={styles.container}>
-                <Text style={styles.title}>No prompt loaded.</Text>
-            </View>
-        );
-    }
 
     return (
         <ThemedSafeArea style={styles.container}>
@@ -112,7 +111,6 @@ export default function RunPrompt() {
                     onChange={setInputs}
                 />
 
-                {/* TEMP: You can restore response rendering later here */}
                 {response ? (
                     <View style={sharedStyles.response}>
                         <Text style={{ color: colors.text }}>{response}</Text>
