@@ -4,11 +4,13 @@ import { ThemedSafeArea } from '../shared/ThemedSafeArea';
 import { useColors } from '../../hooks/useColors';
 import { composerStore } from '../../core/composer/composerStore';
 import { ComposerTreeRecord } from '../../core/types/composer';
+import { useRouter } from 'expo-router';
 
 export function LogicraftTreeManager() {
     const colors = useColors();
     const [trees, setTrees] = useState<ComposerTreeRecord[]>([]);
     const [newTreeName, setNewTreeName] = useState('');
+    const router = useRouter();
 
     useEffect(() => {
         refresh();
@@ -36,8 +38,9 @@ export function LogicraftTreeManager() {
 
     async function handleLoad(id: string) {
         await composerStore.getState().loadTree(id);
-        // later: navigate into composer editor
+        router.push(`/composer/${composerStore.getState().rootNode?.id}`);
     }
+
 
     async function handleDelete(id: string) {
         await composerStore.getState().clearTree();
