@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { ComposerNode, VariableValue } from '../types/composer';
 import { generateUUID } from '../../utils/uuid/generateUUID';
-import { loadComposerTree, saveComposerTree } from './ComposerPersistence';
+import { loadComposerTree, saveComposerTree } from './services/ComposerPersistence';
 
 interface ComposerStore {
     rootNode: ComposerNode | null;

@@ -5,11 +5,11 @@ import { router } from 'expo-router';
 import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../../../src/components/ui/ThemedButton';
 import { useColors } from '../../../../src/hooks/useColors';
-import { useComposerStore } from '../../../../src/core/composer/composerStore';
+import { composerStore } from '../../../../src/core/composer/composerStore';
 import { ComposerNode } from '../../../../src/core/types/composer';
 
 export default function ComposerTreeExplorer() {
-    const { rootNode } = useComposerStore();
+    const { rootNode } = composerStore();
     const colors = useColors();
 
     if (!rootNode) {

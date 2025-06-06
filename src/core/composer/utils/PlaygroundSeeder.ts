@@ -1,9 +1,9 @@
 import { Alert } from "react-native";
-import { composerStore } from "../composer/composerStore";
-import { useEntityStore } from "../../stores/useEntityStore";
-import { ComposerNode } from "../types/composer";
-import { Entity } from "../../types/entity";
-import { generateUUID } from "../../utils/uuid/generateUUID";
+import { composerStore } from "../composerStore";
+import { useEntityStore } from "../../../stores/useEntityStore";
+import { ComposerNode } from "../../types/composer";
+import { Entity } from "../../../types/entity";
+import { generateUUID } from "../../../utils/uuid/generateUUID";
 
 // Pure recursive tree generator
 export async function generatePlaygroundTree(depth: number = 5): Promise<ComposerNode> {

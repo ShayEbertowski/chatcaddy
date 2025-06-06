@@ -5,8 +5,8 @@ import { ThemedButton } from '../../components/ui/ThemedButton';
 import { composerStore } from '../../core/composer/composerStore';
 import { router } from 'expo-router';
 import { useColors } from '../../hooks/useColors';
-import { expandComposerTree, ExpandedNode } from '../../core/utils/expandComposerTree';
-import { compileExpandedNodesToPrompt } from '../../core/utils/compileExpandedNodesToPrompt';
+import { expandComposerTree, ExpandedNode } from '../../core/composer/utils/expandComposerTree';
+import { compileExpandedNodesToPrompt } from '../../core/composer/utils/compileExpandedNodesToPrompt';
 
 export default function FlattenPreviewScreen() {
     const { rootNode } = composerStore();

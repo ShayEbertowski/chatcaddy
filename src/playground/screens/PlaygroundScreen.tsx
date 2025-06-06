@@ -4,7 +4,7 @@ import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../components/ui/ThemedButton';
 import { router } from 'expo-router';
 import { composerStore } from '../../core/composer/composerStore';
-import { runPlaygroundSeeder } from '../../core/utils/PlaygroundSeeder';
+import { runPlaygroundSeeder } from '../../core/composer/utils/PlaygroundSeeder';
 import { useColors } from '../../hooks/useColors';
 import { PlaygroundModeSelector } from '../components/PlaygroundModeSelector';
 
