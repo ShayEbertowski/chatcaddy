@@ -3,7 +3,6 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-nativ
 import { ComposerNode, VariableValue } from '../../types/composer';
 import { useComposerStore } from '../../stores/useComposerStore';
 import { useColors } from '../../hooks/useColors';
-import { InsertEntityModal } from './modals/InsertEntityModal';
 
 interface Props {
     node: ComposerNode;
@@ -43,17 +42,6 @@ export function ComposerTreeView({ node }: Props) {
                 </View>
             ))}
 
-            {/* Insert Modal */}
-            <InsertEntityModal
-                visible={activeVariable !== null}
-                onClose={() => setActiveVariable(null)}
-                onInsert={(newEntity: any) => {
-                    if (activeVariable) {
-                        updateVariable(node.id, activeVariable, { type: 'entity', entity: newEntity });
-                        setActiveVariable(null);
-                    }
-                }}
-            />
         </View>
     );
 }

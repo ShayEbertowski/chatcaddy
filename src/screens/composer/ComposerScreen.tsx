@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { View, StyleSheet, TextInput, TouchableOpacity, Text } from 'react-native';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { useColors } from '../../hooks/useColors';
 import { useComposerStore } from '../../stores/useComposerStore';
-import { ComposerTreeView } from '../../components/composer/ComposerTreeView';
 import { ComposerNode } from '../../types/composer';
-import { InsertEntityModal } from '../../components/composer/modals/InsertEntityModal';
 import { router } from 'expo-router';
 import RichPromptEditor from '../../components/editor/RichPromptEditor';
 import PromptSearch from '../../components/prompt/PromptSearch';
 import { ThemedButton } from '../../components/ui/ThemedButton';
 import { generateUUID } from '../../utils/uuid/generateUUID';
+import { getSharedStyles } from '../../styles/shared';
 
 export default function ComposerScreen() {
     const colors = useColors();
     const styles = getStyles(colors);
+    const sharedStyles = getSharedStyles(colors);
+
     const { rootNode, setRootNode } = useComposerStore();
 
     const [showInsertModal, setShowInsertModal] = useState(false);
@@ -47,16 +48,38 @@ export default function ComposerScreen() {
     return (
         <ThemedSafeArea>
 
-            <View style={styles.toggleRow}>
-                <ThemedButton
-                    title="Select Existing"
+            <View style={sharedStyles.toggleRow}>
+                <TouchableOpacity
+                    style={[
+                        sharedStyles.toggleButton,
+                        mode === 'Search' && sharedStyles.toggleButtonSelected,
+                    ]}
                     onPress={() => setMode('Search')}
-                />
-                <ThemedButton
-                    title="Create New"
+                >
+                    <Text style={[
+                        sharedStyles.toggleButtonText,
+                        mode === 'Search' && sharedStyles.toggleButtonTextSelected,
+                    ]}>
+                        Select Existing
+                    </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[
+                        sharedStyles.toggleButton,
+                        mode === 'Create' && sharedStyles.toggleButtonSelected,
+                    ]}
                     onPress={() => setMode('Create')}
-                />
+                >
+                    <Text style={[
+                        sharedStyles.toggleButtonText,
+                        mode === 'Create' && sharedStyles.toggleButtonTextSelected,
+                    ]}>
+                        Create New
+                    </Text>
+                </TouchableOpacity>
             </View>
+
 
             {mode === 'Search' ? (
                 <PromptSearch onSelect={handleSelectExisting} />
