@@ -9,10 +9,10 @@ import { useComposerStore } from '../../stores/useComposerStore';
 import { ComposerNode } from '../../types/composer';
 import { generateUUID } from '../../utils/uuid/generateUUID';
 
-
 export default function ComposerScreen() {
     const colors = useColors();
     const styles = getStyles(colors);
+    console.log("🔥 COMPOSER SCREEN RENDERED 🔥");
 
     const { rootNode, addChildToNode } = useComposerStore();
     const [targetParentId, setTargetParentId] = useState<string | null>(null);
