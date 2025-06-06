@@ -45,6 +45,7 @@ export default function ComposerTreeScreen() {
             title: `Child Node ${childId.slice(0, 4)}`,
             content: `Hello from child ${childId.slice(0, 4)}`,
             variables: {},
+            children: [],
         };
 
         updateVariable(newVariableName, { type: 'entity', entity: childNode });

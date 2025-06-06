@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Button, TouchableOpacity, StyleSheet, Modal, TextInput } from 'react-native';
 import { ComposerNode } from '../../core/types/composer';
-import { useComposerStore } from '../../core/composer/composerStore';
+import { composerStore } from '../../core/composer/composerStore';
 import { useRouter } from 'expo-router';
 import { useColors } from '../../hooks/useColors';
 import { getSharedStyles } from '../../styles/shared';
@@ -15,7 +15,7 @@ interface Props {
 }
 
 export function ComposerNodeView({ node }: Props) {
-    const { addChild } = useComposerStore();
+    const { addChild } = composerStore();
     const router = useRouter();
 
     const colors = useColors();
@@ -24,34 +24,39 @@ export function ComposerNodeView({ node }: Props) {
 
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [insertModalVisible, setInsertModalVisible] = useState(false);
-    const [tempValue, setTempValue] = useState(node.value || '');
+    const [tempValue, setTempValue] = useState(node.content || '');
 
-    const handleInsert = async (type: 'string' | 'prompt' | 'function' | 'snippet') => {
+    const handleInsert = async () => {
         const id = await generateUUID();
         const childNode: ComposerNode = {
             id,
-            type,
-            title: `New ${type}`,
-            value: type === 'string' ? '' : undefined,
+            entityType: 'Prompt',  // fixed
+            title: `New child`,
+            content: '',  // this holds your string value
+            variables: {},
             children: [],
         };
         addChild(node.id, childNode);
     };
+
 
     const handleEditValue = () => {
         setEditModalVisible(true);
     };
 
     const handleSave = () => {
-        useComposerStore.setState((state) => {
+        composerStore.setState((state) => {
             const updateTree = (n: ComposerNode): ComposerNode => {
-                if (n.id === node.id) return { ...n, value: tempValue };
-                return { ...n, children: n.children?.map(updateTree) };
+                if (n.id === node.id) return { ...n, content: tempValue };
+                return { ...n, children: n.children.map(updateTree) };
             };
-            return { root: updateTree(state.root) };
+
+            if (!state.rootNode) return state;  // <-- ✅ safe early exit if no tree loaded
+
+            return { rootNode: updateTree(state.rootNode) };
         });
-        setEditModalVisible(false);
-    }
+    };
+
 
     return (
         <View style={styles.node}>
@@ -59,10 +64,10 @@ export function ComposerNodeView({ node }: Props) {
 
             <Button title="Add Child" onPress={() => setInsertModalVisible(true)} />
 
-            {node.type === 'string' && (
+            {node.content === 'string' && (
                 <>
                     <TouchableOpacity style={styles.valueBox} onPress={handleEditValue}>
-                        <Text>{node.value || 'Tap to edit value'}</Text>
+                        <Text>{node.content || 'Tap to edit value'}</Text>
                     </TouchableOpacity>
 
                     <BaseModal visible={editModalVisible} onRequestClose={() => setEditModalVisible(false)} blur animationType='slide'>
@@ -78,7 +83,7 @@ export function ComposerNodeView({ node }: Props) {
                             title="Save"
                             onPress={handleSave}
                             style={{ marginTop: 20 }}
-                            textStyle={{ fontSize: 18 }}
+                            // textStyle={{ fontSize: 18 }}
                             colorKey='primary'
                         />
 
@@ -95,7 +100,7 @@ export function ComposerNodeView({ node }: Props) {
             <InsertChildModal
                 visible={insertModalVisible}
                 onClose={() => setInsertModalVisible(false)}
-                onSelect={handleInsert}
+                onInsert={handleInsert}
             />
         </View>
     );

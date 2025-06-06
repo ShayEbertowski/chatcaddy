@@ -22,14 +22,17 @@ export function InsertChildModal({ visible, onClose, onInsert }: Props) {
         const id = await generateUUID();
         const newNode: ComposerNode = {
             id,
-            type: insertType.toLowerCase() as ComposerNode['type'],
+            entityType: insertType,  // ✅ now fully valid
             title: `New ${insertType}`,
+            content: '',
+            variables: {},
             children: [],
         };
 
         onInsert(newNode);
         onClose();
     };
+
 
     return (
         <Modal visible={visible} transparent animationType="slide">
