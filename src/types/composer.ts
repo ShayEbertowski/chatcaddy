@@ -1,9 +1,16 @@
 export type ComposerNodeType = 'prompt' | 'function' | 'snippet' | 'string';
 
-export interface ComposerNode {
-    id: string;
-    type: ComposerNodeType;
-    title: string;
-    value?: string;
-    children: ComposerNode[];
-}
+export type ComposerNode =
+    | {
+        id: string;
+        type: 'string';
+        value: string;
+        children: ComposerNode[];
+    }
+    | {
+        id: string;
+        type: 'prompt' | 'function' | 'snippet';
+        title: string;
+        children: ComposerNode[];
+    };
+
