@@ -1,3 +1,3 @@
-import SwipeComposerScreen from "../../../../src/playground/swipe/SwipeComposerScreen";
+import SwipeTreeView from "../../../../src/playground/swipe/SwipeTreeView";
 
-export default SwipeComposerScreen;
+export default SwipeTreeView;

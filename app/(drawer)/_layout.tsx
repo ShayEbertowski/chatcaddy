@@ -31,7 +31,7 @@ export function CustomDrawerContent(props: any) {
                     inactiveTintColor={colors.text}
                 />
 
-                <DrawerItem
+                {/* <DrawerItem
                     label="Playground"
                     onPress={() => props.navigation.navigate('playground')}
                     icon={({ color, size }) => (
@@ -40,19 +40,20 @@ export function CustomDrawerContent(props: any) {
                     labelStyle={{ color: colors.accent, fontWeight: '500', fontSize: 16 }}
                     activeTintColor={colors.primary}
                     inactiveTintColor={colors.text}
-                />
+                /> */}
 
 
                 <DrawerItem
-                    label="Swipe Composer"
-                    onPress={() => router.push('/playground/swipe')}
+                    label="Playground"
+                    onPress={() => router.push('/playground')}
                     icon={({ color, size }) => (
-                        <Ionicons name="swap-horizontal-outline" color={colors.accent} size={size} />
+                        <Ionicons name="game-controller-outline" color={colors.accent} size={size} />
                     )}
                     labelStyle={{ color: colors.accent, fontWeight: '500', fontSize: 16 }}
                     activeTintColor={colors.primary}
                     inactiveTintColor={colors.text}
                 />
+
 
 
                 <DrawerItem

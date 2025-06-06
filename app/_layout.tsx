@@ -16,7 +16,7 @@ export default function RootLayout() {
 
     useEffect(() => {
         useAuthStore.getState().loadSession();
-        useEntityStore.getState().loadEntities();  // <--- this was missing
+        useEntityStore.getState().loadEntities();  
     }, []);
 
 

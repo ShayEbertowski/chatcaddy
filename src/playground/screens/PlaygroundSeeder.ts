@@ -1,6 +1,11 @@
-import { ComposerNode } from '../../types/composer';
-import { generateUUID } from '../../utils/uuid/generateUUID';
+import { Alert } from "react-native";
+import { useComposerStore } from "../../stores/useComposerStore";
+import { useEntityStore } from "../../stores/useEntityStore";
+import { ComposerNode } from "../../types/composer";
+import { Entity } from "../../types/entity";
+import { generateUUID } from "../../utils/uuid/generateUUID";
 
+// Pure recursive tree generator
 export async function generatePlaygroundTree(depth: number = 5): Promise<ComposerNode> {
     const id = await generateUUID();
     const variables: Record<string, any> = {};
@@ -18,4 +23,33 @@ export async function generatePlaygroundTree(depth: number = 5): Promise<Compose
         content: `Content for node ${id.substring(0, 4)}`,
         variables,
     };
+}
+
+// Supabase-aware flattening & seeding
+export async function flattenAndSeedEntityStore(node: ComposerNode) {
+    const { addOrUpdateEntity } = useEntityStore.getState();
+
+    const entity: Entity = {
+        id: node.id,
+        entityType: node.entityType,
+        title: node.title,
+        content: node.content,
+        variables: node.variables
+    };
+
+    await addOrUpdateEntity(entity);  // <-- Persist into Supabase
+
+    for (const val of Object.values(node.variables)) {
+        if (val.type === 'entity') {
+            await flattenAndSeedEntityStore(val.entity);
+        }
+    }
+}
+
+// Full safe seeder — now fully persistent
+export async function runPlaygroundSeeder(depth: number = 5) {
+    const { setRootNode } = useComposerStore.getState();
+    const tree = await generatePlaygroundTree(depth);
+    setRootNode(tree);
+    await flattenAndSeedEntityStore(tree);
 }
