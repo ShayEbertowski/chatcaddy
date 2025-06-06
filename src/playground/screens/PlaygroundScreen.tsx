@@ -1,37 +1,38 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../components/ui/ThemedButton';
-import { useColors } from '../../hooks/useColors';
+import { router } from 'expo-router';
 import { useComposerStore } from '../../stores/useComposerStore';
 import { runPlaygroundSeeder } from './PlaygroundSeeder';
+import { useColors } from '../../hooks/useColors';
+import { PlaygroundModeSelector } from '../components/PlaygroundModeSelector';
 
 export default function PlaygroundScreen() {
-    const colors = useColors();
     const { rootNode } = useComposerStore();
-    const [loading, setLoading] = useState(false);
+    const colors = useColors();
 
-    const handleSeed = async () => {
-        setLoading(true);
-        await runPlaygroundSeeder(5);
-        setLoading(false);
+    const handleSeed = () => {
+        runPlaygroundSeeder();
     };
-
 
     return (
         <ThemedSafeArea>
-            <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold' }}>Playground</Text>
+            <View style={[styles.container, { backgroundColor: colors.background }]}>
+                <Text style={[styles.title, { color: colors.text }]}>Playground</Text>
 
-            <ThemedButton title={loading ? "Seeding..." : "Seed Playground"} onPress={handleSeed} />
+                <ThemedButton title="Seed Playground" onPress={handleSeed} />
 
-            {rootNode ? (
-                <View style={{ marginTop: 20 }}>
-                    <Text style={{ color: colors.text }}>Current Root Node:</Text>
-                    <Text style={{ color: colors.text }}>{rootNode.title}</Text>
-                </View>
-            ) : (
-                <Text style={{ color: colors.secondaryText, marginTop: 20 }}>No tree loaded yet</Text>
-            )}
+                {rootNode && <PlaygroundModeSelector rootNodeId={rootNode.id} />}
+
+
+            </View>
         </ThemedSafeArea>
     );
 }
+
+const styles = StyleSheet.create({
+    container: { flex: 1, padding: 20 },
+    title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+    rootText: { marginTop: 10, fontSize: 14, opacity: 0.6 },
+});

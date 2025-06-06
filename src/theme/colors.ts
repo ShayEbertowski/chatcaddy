@@ -30,7 +30,11 @@ export const light = (() => {
         switchThumbOn: '#fff',
         switchThumbOff: '#fff',
         buttonText: '#FFFFFF',
-
+        modalBackground: 'rgba(0, 0, 0, 0.4)',
+        nodeCard: '#FAFAFA',
+        nodeBorder: '#E0E0E0',
+        chipBackground: '#EFEFEF',
+        chipText: '#333333',
     };
 })();
 
@@ -64,6 +68,11 @@ export const dark = (() => {
         switchThumbOn: '#fff',
         switchThumbOff: '#fff',
         buttonText: '#FFFFFF',
+        modalBackground: 'rgba(0, 0, 0, 0.6)',
+        nodeCard: '#1C1C1C',
+        nodeBorder: '#333333',
+        chipBackground: '#2C2C2C',
+        chipText: '#FFFFFF',
 
     };
 })();
