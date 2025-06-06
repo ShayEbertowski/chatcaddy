@@ -42,6 +42,19 @@ export function CustomDrawerContent(props: any) {
                     inactiveTintColor={colors.text}
                 />
 
+
+                <DrawerItem
+                    label="Swipe Composer"
+                    onPress={() => router.push('/playground/swipe')}
+                    icon={({ color, size }) => (
+                        <Ionicons name="swap-horizontal-outline" color={colors.accent} size={size} />
+                    )}
+                    labelStyle={{ color: colors.accent, fontWeight: '500', fontSize: 16 }}
+                    activeTintColor={colors.primary}
+                    inactiveTintColor={colors.text}
+                />
+
+
                 <DrawerItem
                     label="Dev/Admin"
                     onPress={() => props.navigation.navigate('dev')}
