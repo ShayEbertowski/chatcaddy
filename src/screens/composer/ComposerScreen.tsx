@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, TextInput, TouchableOpacity, Text } from 'react-native';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { useColors } from '../../hooks/useColors';
@@ -10,6 +10,7 @@ import PromptSearch from '../../components/prompt/PromptSearch';
 import { ThemedButton } from '../../components/ui/ThemedButton';
 import { generateUUID } from '../../utils/uuid/generateUUID';
 import { getSharedStyles } from '../../styles/shared';
+import { generateSeededTree } from '../../utils/dev/devTreeSeeder';
 
 export default function ComposerScreen() {
     const colors = useColors();
@@ -30,7 +31,7 @@ export default function ComposerScreen() {
     };
 
     const handleSelectExisting = (selected: ComposerNode) => {
-        // TODO: emit selected back to composer
+        handleRootInsert(selected);
         router.back();
     };
 
@@ -42,9 +43,20 @@ export default function ComposerScreen() {
             content: newContent,
             variables: {},
         };
-        // TODO: emit created node back to composer
+        handleRootInsert(newNode);
         router.back();
     };
+
+    // Add this useEffect to seed on first load if empty
+    useEffect(() => {
+        if (!rootNode) {
+            (async () => {
+                const tree = await generateSeededTree(3); // Or however deep you want to start with
+                setRootNode(tree);
+            })();
+        }
+    }, [rootNode]);
+
     return (
         <ThemedSafeArea>
 
@@ -79,7 +91,6 @@ export default function ComposerScreen() {
                     </Text>
                 </TouchableOpacity>
             </View>
-
 
             {mode === 'Search' ? (
                 <PromptSearch onSelect={handleSelectExisting} />
