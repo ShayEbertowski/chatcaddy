@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useComposerStore } from '../../stores/useComposerStore';
 import { ComposerNode } from '../../types/composer';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
+import { useColors } from '../../hooks/useColors';
 
 function findNode(node: ComposerNode, id: string): ComposerNode | null {
     if (node.id === id) return node;
@@ -21,6 +22,7 @@ export default function PlaygroundNodeScreen() {
     const router = useRouter();
     const { nodeId } = useLocalSearchParams<{ nodeId: string }>();
     const { rootNode } = useComposerStore();
+    const colors = useColors();
 
     if (!rootNode || !nodeId) return <Text>Loading...</Text>;
 
@@ -29,8 +31,8 @@ export default function PlaygroundNodeScreen() {
 
     return (
         <ThemedSafeArea>
-            <Text style={{ fontSize: 20 }}>{node.title}</Text>
-            <Text style={{ marginBottom: 10 }}>{node.content}</Text>
+            <Text style={{ fontSize: 20, color: colors.text }}>{node.title}</Text>
+            <Text style={{ marginBottom: 10, color: colors.text }}>{node.content}</Text>
 
             {Object.entries(node.variables).map(([varName, val]) => {
                 if (val.type === 'entity') {
