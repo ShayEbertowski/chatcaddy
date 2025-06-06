@@ -1,97 +1,88 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import { ComposerNode } from '../../types/composer';
-import { useColors } from '../../hooks/useColors';
+import { ComposerNode, VariableValue } from '../../types/composer';
 import { useComposerStore } from '../../stores/useComposerStore';
+import { useColors } from '../../hooks/useColors';
+import { InsertEntityModal } from './modals/InsertEntityModal';
 
 interface Props {
     node: ComposerNode;
-    level?: number;
-    onAddEntity: (parentId: string) => void;
 }
 
-export function ComposerTreeView({ node, level = 0, onAddEntity }: Props) {
+export function ComposerTreeView({ node }: Props) {
+    const { updateVariable } = useComposerStore();
     const colors = useColors();
     const styles = getStyles(colors);
-    const indent = level * 20;
-    const { updateStringValue, insertStringChild } = useComposerStore();
+
+    const [activeVariable, setActiveVariable] = useState<string | null>(null);
 
     return (
-        <View style={{ marginLeft: indent, marginVertical: 4 }}>
-            <View style={styles.nodeContainer}>
-                {node.type === 'string' ? (
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Type here..."
-                        value={node.value || ''}
-                        onChangeText={(newText) => updateStringValue(node.id, newText)}
-                    />
-                ) : (
-                    <Text style={styles.nodeText}>[{node.type}] {node.title}</Text>
-                )}
+        <View style={styles.container}>
+            <Text style={styles.title}>{node.title}</Text>
 
-                <TouchableOpacity onPress={() => insertStringChild(node.id)} style={styles.smallButton}>
-                    <Text style={styles.smallButtonText}>s+</Text>
-                </TouchableOpacity>
+            {Object.entries(node.variables).map(([varName, value]) => (
+                <View key={varName} style={styles.variableRow}>
+                    <Text style={styles.variableLabel}>{varName}:</Text>
 
-                <TouchableOpacity onPress={() => onAddEntity(node.id)} style={styles.addButton}>
-                    <Text style={styles.addButtonText}>+</Text>
-                </TouchableOpacity>
-            </View>
+                    {value.type === 'string' ? (
+                        <TextInput
+                            style={styles.input}
+                            value={value.value}
+                            onChangeText={(text) => updateVariable(node.id, varName, { type: 'string', value: text })}
+                            placeholder={`Enter ${varName}`}
+                        />
+                    ) : (
+                        <View style={styles.entityBox}>
+                            <Text style={styles.entityText}>[{value.entity.title}]</Text>
+                        </View>
+                    )}
 
-            {node.children.map((child) => (
-                <ComposerTreeView key={child.id} node={child} level={level + 1} onAddEntity={onAddEntity} />
+                    <TouchableOpacity onPress={() => setActiveVariable(varName)}>
+                        <Text style={styles.plusButton}>+</Text>
+                    </TouchableOpacity>
+                </View>
             ))}
+
+            {/* Insert Modal */}
+            <InsertEntityModal
+                visible={activeVariable !== null}
+                onClose={() => setActiveVariable(null)}
+                onInsert={(newEntity: any) => {
+                    if (activeVariable) {
+                        updateVariable(node.id, activeVariable, { type: 'entity', entity: newEntity });
+                        setActiveVariable(null);
+                    }
+                }}
+            />
         </View>
     );
 }
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
-        nodeContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            padding: 8,
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 8,
-            backgroundColor: colors.surface,
-            marginBottom: 4,
-        },
-        nodeText: {
-            fontSize: 16,
-            color: colors.text,
-            flex: 1,
-            marginRight: 8,
-        },
+        container: { marginBottom: 20 },
+        title: { fontSize: 20, fontWeight: 'bold', color: colors.accent, marginBottom: 12 },
+        variableRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+        variableLabel: { width: 80, fontWeight: 'bold', color: colors.text },
         input: {
-            fontSize: 16,
             borderWidth: 1,
             borderColor: colors.border,
             paddingHorizontal: 8,
-            paddingVertical: 4,
-            borderRadius: 4,
+            paddingVertical: 6,
+            borderRadius: 6,
             flex: 1,
-            marginRight: 8,
+            marginRight: 10,
             color: colors.text,
         },
-        smallButton: {
-            padding: 4,
-            backgroundColor: colors.primary,
-            borderRadius: 4,
-            marginRight: 6,
+        entityBox: {
+            flex: 1,
+            backgroundColor: colors.surface,
+            padding: 8,
+            borderRadius: 6,
+            borderColor: colors.border,
+            borderWidth: 1,
+            marginRight: 10,
         },
-        smallButtonText: {
-            color: colors.onPrimary,
-            fontWeight: 'bold',
-        },
-        addButton: {
-            padding: 4,
-            backgroundColor: colors.accent,
-            borderRadius: 4,
-        },
-        addButtonText: {
-            color: colors.onPrimary,
-            fontWeight: 'bold',
-        },
+        entityText: { fontStyle: 'italic', color: colors.text },
+        plusButton: { fontSize: 24, color: colors.primary },
     });

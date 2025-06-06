@@ -1,61 +1,54 @@
 import React, { useState } from 'react';
-import { Text, View, StyleSheet, SafeAreaView, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
-import { ComposerTreeView } from '../../components/composer/ComposerTreeView';
-import { InsertChildModal } from '../../components/composer/modals/InsertChildModal';
+import { Text, View, ScrollView, StyleSheet } from 'react-native';
+import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { useColors } from '../../hooks/useColors';
 import { useComposerStore } from '../../stores/useComposerStore';
+import { ComposerTreeView } from '../../components/composer/ComposerTreeView';
 import { ComposerNode } from '../../types/composer';
-import { generateUUID } from '../../utils/uuid/generateUUID';
-import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
+import { InsertEntityModal } from '../../components/composer/modals/InsertEntityModal';
 import { ThemedButton } from '../../components/ui/ThemedButton';
 
 export default function ComposerScreen() {
     const colors = useColors();
     const styles = getStyles(colors);
-    const { rootNode, addChildToNode } = useComposerStore();
-    const [targetParentId, setTargetParentId] = useState<string | null>(null);
+    const { rootNode, setRootNode } = useComposerStore();
 
-    const handleAddRoot = async () => {
-        const id = await generateUUID();
-        const newNode: ComposerNode = {
-            id,
-            type: 'string',
-            value: '',
-            children: [],
-        };
-        addChildToNode(null, newNode);
+    const [showInsertModal, setShowInsertModal] = useState(false);
+
+    const handleRootInsert = (newNode: ComposerNode) => {
+        setRootNode(newNode);
     };
 
     return (
         <ThemedSafeArea>
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <ScrollView contentContainerStyle={{ padding: 16 }}>
-                    {rootNode ? (
-                        <ComposerTreeView node={rootNode} onAddEntity={(parentId) => setTargetParentId(parentId)} />
-                    ) : (
-                        <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-                            <Text style={{ fontSize: 20, color: 'white' }}>No nodes yet</Text>
-                            <ThemedButton title="Add Root Node" onPress={handleAddRoot} style={{ marginTop: 20 }} />
-                        </View>
-                    )}
+            {rootNode ? (
+                <ScrollView contentContainerStyle={styles.contentContainer}>
+                    <ComposerTreeView node={rootNode} />
                 </ScrollView>
+            ) : (
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No prompts yet</Text>
+                    <ThemedSafeArea>
+                        <ThemedButton title="+ Add Root Node" onPress={() => setShowInsertModal(true)} />
+                    </ThemedSafeArea>
+                </View>
+            )}
 
-                <InsertChildModal
-                    visible={targetParentId !== null}
-                    onClose={() => setTargetParentId(null)}
-                    onInsert={(newNode) => {
-                        if (targetParentId) {
-                            addChildToNode(targetParentId, newNode);
-                        }
-                        setTargetParentId(null);
-                    }}
-                />
-            </KeyboardAvoidingView>
+            <InsertEntityModal
+                visible={showInsertModal}
+                onClose={() => setShowInsertModal(false)}
+                onInsert={(newNode) => {
+                    handleRootInsert(newNode);
+                    setShowInsertModal(false);
+                }}
+            />
         </ThemedSafeArea>
     );
 }
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
-        container: { flex: 1, backgroundColor: colors.background, padding: 16 },
+        contentContainer: { padding: 16 },
+        emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+        emptyText: { fontSize: 20, color: colors.text },
     });

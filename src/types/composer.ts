@@ -1,16 +1,11 @@
-export type ComposerNodeType = 'prompt' | 'function' | 'snippet' | 'string';
+export type ComposerNode = {
+    id: string;
+    entityType: 'Prompt' | 'Function' | 'Snippet';
+    title: string;
+    content: string;
+    variables: Record<string, VariableValue>;
+};
 
-export type ComposerNode =
-    | {
-        id: string;
-        type: 'string';
-        value: string;
-        children: ComposerNode[];
-    }
-    | {
-        id: string;
-        type: 'prompt' | 'function' | 'snippet';
-        title: string;
-        children: ComposerNode[];
-    };
-
+export type VariableValue =
+    | { type: 'string'; value: string }
+    | { type: 'entity'; entity: ComposerNode };
