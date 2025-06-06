@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, Button, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useComposerStore } from '../../stores/useComposerStore';
-import { ComposerNode } from '../../types/composer';
+import { useComposerStore } from '../../core/composer/composerStore';
+import { ComposerNode } from '../../core/types/composer';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { useColors } from '../../hooks/useColors';
 

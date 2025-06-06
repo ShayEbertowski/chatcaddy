@@ -1,7 +1,7 @@
 import { Alert } from "react-native";
-import { useComposerStore } from "../../stores/useComposerStore";
+import { composerStore } from "../composer/composerStore";
 import { useEntityStore } from "../../stores/useEntityStore";
-import { ComposerNode } from "../../types/composer";
+import { ComposerNode } from "../types/composer";
 import { Entity } from "../../types/entity";
 import { generateUUID } from "../../utils/uuid/generateUUID";
 
@@ -48,7 +48,7 @@ export async function flattenAndSeedEntityStore(node: ComposerNode) {
 
 // Full safe seeder — now fully persistent
 export async function runPlaygroundSeeder(depth: number = 5) {
-    const { setRootNode } = useComposerStore.getState();
+    const { setRootNode } = composerStore.getState();
     const tree = await generatePlaygroundTree(depth);
     setRootNode(tree);
     await flattenAndSeedEntityStore(tree);

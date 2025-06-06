@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Button, TouchableOpacity, StyleSheet, Modal, TextInput } from 'react-native';
-import { ComposerNode } from '../../types/composer';
-import { useComposerStore } from '../../stores/useComposerStore';
+import { ComposerNode } from '../../core/types/composer';
+import { useComposerStore } from '../../core/composer/composerStore';
 import { useRouter } from 'expo-router';
 import { useColors } from '../../hooks/useColors';
 import { getSharedStyles } from '../../styles/shared';

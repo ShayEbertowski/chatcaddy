@@ -1,6 +1,6 @@
 // src/utils/composer/flattenComposerTree.ts
 
-import { ComposerNode, VariableValue } from '../../types/composer';
+import { ComposerNode, VariableValue } from '../types/composer';
 
 export interface FlattenedNode {
     id: string;

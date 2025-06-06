@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView } from 'react-native';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../components/ui/ThemedButton';
-import { useComposerStore } from '../../stores/useComposerStore';
-import { ComposerNode, VariableValue } from '../../types/composer';
+import { composerStore } from '../../core/composer/composerStore';
+import { ComposerNode, VariableValue } from '../../core/types/composer';
 import { generateUUID } from '../../utils/uuid/generateUUID';
 import { useColors } from '../../hooks/useColors';
 import { router } from 'expo-router';
 import { useEntityStore } from '../../stores/useEntityStore';
-import { EntityPickerModal } from './modals/EntityPickerModal';
+import { EntityPickerModal } from '../modals/EntityPickerModal';
 
 export default function ComposerEditorScreen() {
-    const { setRootNode } = useComposerStore();
+    const { setRootNode } = composerStore();
     const colors = useColors();
 
     const [title, setTitle] = useState('');

@@ -3,15 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../components/ui/ThemedButton';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useComposerStore } from '../../stores/useComposerStore';
-import { ComposerNode, VariableValue } from '../../types/composer';
+import { composerStore } from '../../core/composer/composerStore';
+import { ComposerNode, VariableValue } from '../../core/types/composer';
 import { generateUUID } from '../../utils/uuid/generateUUID';
 import { useColors } from '../../hooks/useColors';
 import { PlaygroundHeader } from '../components/PlaygroundHeader';
 
 export default function ComposerTreeScreen() {
     const { nodeId } = useLocalSearchParams<{ nodeId: string }>();
-    const { rootNode, updateVariable } = useComposerStore();
+    const { rootNode, updateVariable } = composerStore();
     const colors = useColors();
 
     const [newVariableName, setNewVariableName] = useState('');

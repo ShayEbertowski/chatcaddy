@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { ComposerNode, VariableValue } from '../types/composer';
-import { generateUUID } from '../utils/uuid/generateUUID';
+import { generateUUID } from '../../utils/uuid/generateUUID';
+import { loadComposerTree, saveComposerTree } from './ComposerPersistence';
 
 interface ComposerStore {
     rootNode: ComposerNode | null;
@@ -9,7 +10,7 @@ interface ComposerStore {
     updateVariable: (parentId: string, variableName: string, value: VariableValue) => void;
 }
 
-export const useComposerStore = create<ComposerStore>((set, get) => ({
+export const composerStore = create<ComposerStore>((set, get) => ({
     rootNode: null,
 
     setRootNode: (node) => set({ rootNode: node }),
@@ -47,5 +48,20 @@ export const useComposerStore = create<ComposerStore>((set, get) => ({
         set((state) => ({
             rootNode: updateRecursively(state.rootNode!),
         }));
+    },
+
+
+    saveTree: async (name: string) => {
+        const { rootNode } = get();
+        if (rootNode) {
+            await saveComposerTree(rootNode, name);
+        }
+    },
+
+    loadTree: async (id: string) => {
+        const loaded = await loadComposerTree(id);
+        if (loaded) {
+            set({ rootNode: loaded });
+        }
     },
 }));

@@ -6,13 +6,13 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../components/ui/ThemedButton';
-import { useComposerStore } from '../../stores/useComposerStore';
-import { ComposerNode } from '../../types/composer';
+import { composerStore } from '../../core/composer/composerStore';
+import { ComposerNode } from '../../core/types/composer';
 
 
 export default function ComposerBuilderScreen() {
     const { nodeId } = useLocalSearchParams<{ nodeId: string }>();
-    const { rootNode } = useComposerStore();
+    const { rootNode } = composerStore();
 
     if (!rootNode || !nodeId) {
         return (

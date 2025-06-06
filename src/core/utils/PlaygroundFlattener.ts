@@ -1,4 +1,4 @@
-import { ComposerNode } from '../../types/composer';
+import { ComposerNode } from '../types/composer';
 
 export function flattenPlaygroundTree(node: ComposerNode): ComposerNode[] {
     const result: ComposerNode[] = [node];

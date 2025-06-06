@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
 import { ThemedButton } from '../../ui/ThemedButton';
 import { useColors } from '../../../hooks/useColors';
-import { ComposerNode } from '../../../types/composer';
+import { ComposerNode } from '../../../core/types/composer';
 import { generateUUID } from '../../../utils/uuid/generateUUID';
 
 interface Props {

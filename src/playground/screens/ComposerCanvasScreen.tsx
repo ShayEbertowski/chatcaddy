@@ -2,13 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions, FlatList, TouchableOpacity } from 'react-native';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../components/ui/ThemedButton';
-import { useComposerStore } from '../../stores/useComposerStore';
-import { ComposerNode } from '../../types/composer';
+import { composerStore } from '../../core/composer/composerStore';
+import { ComposerNode } from '../../core/types/composer';
 import { useColors } from '../../hooks/useColors';
 import { router } from 'expo-router';
 
 export default function ComposerCanvasScreen() {
-    const { rootNode } = useComposerStore();
+    const { rootNode } = composerStore();
     const colors = useColors();
 
     if (!rootNode) {

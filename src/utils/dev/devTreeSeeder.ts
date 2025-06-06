@@ -1,4 +1,4 @@
-import { ComposerNode } from "../../types/composer";
+import { ComposerNode } from "../../core/types/composer";
 import { generateUUID } from "../uuid/generateUUID";
 
 

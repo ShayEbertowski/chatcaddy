@@ -3,8 +3,8 @@ import { useLocalSearchParams } from 'expo-router';
 import { SwipeNodeView } from './SwipeNodeView';
 import { Text } from 'react-native';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
-import { useComposerStore } from '../../stores/useComposerStore';
-import { ComposerNode } from '../../types/composer';
+import { composerStore } from '../../core/composer/composerStore';
+import { ComposerNode } from '../../core/types/composer';
 
 function findNodeRecursive(node: ComposerNode, id: string): ComposerNode | null {
     if (node.id === id) return node;
@@ -19,7 +19,7 @@ function findNodeRecursive(node: ComposerNode, id: string): ComposerNode | null 
 
 export default function SwipeComposerScreen() {
     const { nodeId } = useLocalSearchParams<{ nodeId?: string }>();
-    const { rootNode } = useComposerStore();
+    const { rootNode } = composerStore();
 
     if (!rootNode) return <Text>Loading...</Text>;
 

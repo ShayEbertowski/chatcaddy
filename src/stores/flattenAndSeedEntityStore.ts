@@ -1,4 +1,4 @@
-import { ComposerNode } from "../types/composer";
+import { ComposerNode } from "../core/types/composer";
 import { Entity } from "../types/entity";
 import { useEntityStore } from "./useEntityStore";
 

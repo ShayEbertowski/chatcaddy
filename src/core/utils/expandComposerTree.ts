@@ -1,6 +1,6 @@
 // src/utils/composer/expandComposerTree.ts
 
-import { ComposerNode, VariableValue } from '../../types/composer';
+import { ComposerNode, VariableValue } from '../types/composer';
 import { substituteVariablesInContent } from './substituteVariablesInContent';
 
 export interface ExpandedNode {

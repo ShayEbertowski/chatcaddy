@@ -2,14 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../components/ui/ThemedButton';
-import { useComposerStore } from '../../stores/useComposerStore';
+import { composerStore } from '../../core/composer/composerStore';
 import { router } from 'expo-router';
 import { useColors } from '../../hooks/useColors';
-import { expandComposerTree, ExpandedNode } from '../../utils/composer/expandComposerTree';
-import { compileExpandedNodesToPrompt } from '../../utils/composer/compileExpandedNodesToPrompt';
+import { expandComposerTree, ExpandedNode } from '../../core/utils/expandComposerTree';
+import { compileExpandedNodesToPrompt } from '../../core/utils/compileExpandedNodesToPrompt';
 
 export default function FlattenPreviewScreen() {
-    const { rootNode } = useComposerStore();
+    const { rootNode } = composerStore();
     const colors = useColors();
 
     if (!rootNode) {

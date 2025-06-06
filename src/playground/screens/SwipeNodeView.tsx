@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { View, Text, StyleSheet, Button, PanResponder, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ComposerNode } from '../../types/composer';
+import { ComposerNode } from '../../core/types/composer';
 import { useColors } from '../../hooks/useColors';
 
 interface Props {

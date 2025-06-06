@@ -1,15 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
+import { ThemedButton } from '../../components/ui/ThemedButton';
 import { router } from 'expo-router';
-import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
-import { ThemedButton } from '../../../../src/components/ui/ThemedButton';
-import { useColors } from '../../../../src/hooks/useColors';
-import { useComposerStore } from '../../../../src/core/composer/composerStore';
-import { ComposerNode } from '../../../../src/core/types/composer';
+import { useColors } from '../../hooks/useColors';
+import { composerStore } from '../../core/composer/composerStore';
+import { ComposerNode } from '../../core/types/composer';
 
 export default function ComposerTreeExplorer() {
-    const { rootNode } = useComposerStore();
+    const { rootNode } = composerStore();
     const colors = useColors();
 
     if (!rootNode) {

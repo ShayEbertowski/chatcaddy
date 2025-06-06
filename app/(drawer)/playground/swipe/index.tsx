@@ -1,3 +1,3 @@
-import SwipeTreeView from "../../../../src/playground/swipe/SwipeTreeView";
+import SwipeTreeView from "../../../../src/playground/screens/SwipeTreeView";
 
 export default SwipeTreeView;

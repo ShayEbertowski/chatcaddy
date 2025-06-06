@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useColors } from '../../../hooks/useColors';
-import { ComposerNode } from '../../../types/composer';
+import { useColors } from '../../hooks/useColors';
+import { ComposerNode } from '../../core/types/composer';
 
 
 interface Props {

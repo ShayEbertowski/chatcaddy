@@ -1,5 +1,5 @@
 import { Entity, PromptEntity, FunctionEntity } from '../../types/entity';
-import { ComposerNode } from '../../types/composer';
+import { ComposerNode } from '../../core/types/composer';
 import { generateUUID } from '../uuid/generateUUID';
 
 export async function createEntityAndNode(entityType: 'Prompt' | 'Function', title: string, content: string): Promise<{ entity: Entity; node: ComposerNode }> {

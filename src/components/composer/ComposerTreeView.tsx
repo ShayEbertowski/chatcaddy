@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import { ComposerNode, VariableValue } from '../../types/composer';
-import { useComposerStore } from '../../stores/useComposerStore';
+import { ComposerNode, VariableValue } from '../../core/types/composer';
+import { useComposerStore } from '../../core/composer/composerStore';
 import { useColors } from '../../hooks/useColors';
 
 interface Props {

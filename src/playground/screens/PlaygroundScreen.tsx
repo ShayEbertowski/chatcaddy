@@ -3,13 +3,13 @@ import { View, Text, StyleSheet } from 'react-native';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../components/ui/ThemedButton';
 import { router } from 'expo-router';
-import { useComposerStore } from '../../stores/useComposerStore';
-import { runPlaygroundSeeder } from './PlaygroundSeeder';
+import { composerStore } from '../../core/composer/composerStore';
+import { runPlaygroundSeeder } from '../../core/utils/PlaygroundSeeder';
 import { useColors } from '../../hooks/useColors';
 import { PlaygroundModeSelector } from '../components/PlaygroundModeSelector';
 
 export default function PlaygroundScreen() {
-    const { rootNode } = useComposerStore();
+    const { rootNode } = composerStore();
     const colors = useColors();
 
     const handleSeed = () => {
