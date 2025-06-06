@@ -16,7 +16,7 @@ export type PromptEntity = {
 export type FunctionEntity = {
     entityType: 'Function';
     id: string;
-    name: string;
+    title: string;
     code: string;
     createdAt?: string;
     updatedAt?: string;

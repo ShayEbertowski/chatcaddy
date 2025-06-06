@@ -5,5 +5,5 @@ export interface ComposerNode {
     type: ComposerNodeType;
     title: string;
     value?: string;
-    children?: ComposerNode[];
+    children: ComposerNode[];
 }

@@ -19,9 +19,6 @@ import { getSharedStyles } from '../../styles/shared';
 import { useColors } from '../../hooks/useColors';
 import { resolveVariableDisplayValue } from '../../utils/variables/variables';
 import { parsePromptParts } from '../../utils/prompt/promptManager';
-import { useEditorStore } from '../../stores/useEditorStore';
-import { Prompt } from '../../types/prompt';
-import { PromptFunction } from '../../types/functions';
 
 type Props = {
     text: string;

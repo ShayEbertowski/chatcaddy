@@ -1,48 +1,73 @@
-import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import BaseModal from '../../modals/BaseModal';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Modal } from 'react-native';
 import { useColors } from '../../../hooks/useColors';
-import { getSharedStyles } from '../../../styles/shared';
+import { ComposerNode } from '../../../types/composer';
+import { generateUUID } from '../../../utils/uuid/generateUUID';
+import { ThemedButton } from '../../ui/ThemedButton';
+import { InsertEntityModal } from './InsertEntityModal';
 
 interface Props {
     visible: boolean;
-    onSelect: (type: 'string' | 'prompt' | 'function' | 'snippet') => void;
     onClose: () => void;
+    onInsert: (newNode: ComposerNode) => void;
 }
 
-export function InsertChildModal({ visible, onSelect, onClose }: Props) {
+export function InsertChildModal({ visible, onClose, onInsert }: Props) {
     const colors = useColors();
     const styles = getStyles(colors);
-    const sharedStyles = getSharedStyles(colors);
+
+    const [activeEntityType, setActiveEntityType] = useState<'Prompt' | 'Function' | null>(null);
+
+    const handleChildInsertString = async () => {
+        const id = await generateUUID();
+
+        const newNode: ComposerNode = {
+            id,
+            type: 'string',
+            title: 'New String',
+            value: '',
+            children: [],
+        };
+
+        onInsert(newNode);
+        onClose();
+    };
 
     return (
-        <BaseModal visible={visible} onRequestClose={onClose} blur animationType='slide'>
-            <Text style={styles.title}>Add Child</Text>
+        <>
+            <Modal visible={visible} transparent animationType="slide">
+                <View style={styles.overlay}>
+                    <View style={styles.container}>
+                        <Text style={styles.title}>Add Child</Text>
 
-            {['string', 'prompt', 'function', 'snippet'].map((type) => (
-                <TouchableOpacity
-                    key={type}
-                    style={styles.option}
-                    onPress={() => {
-                        onSelect(type as any);
+                        <ThemedButton title="Insert Prompt" onPress={() => setActiveEntityType('Prompt')} style={{ marginBottom: 12 }} />
+                        <ThemedButton title="Insert Function" onPress={() => setActiveEntityType('Function')} style={{ marginBottom: 12 }} />
+                        <ThemedButton title="Insert String" onPress={handleChildInsertString} />
+
+                        <ThemedButton title="Cancel" onPress={onClose} colorKey="softError" style={{ marginTop: 16 }} />
+                    </View>
+                </View>
+            </Modal>
+
+            {activeEntityType && (
+                <InsertEntityModal
+                    visible={true}
+                    entityType={activeEntityType}
+                    onClose={() => setActiveEntityType(null)}
+                    onInsert={(newNode: ComposerNode) => {
+                        onInsert(newNode);
+                        setActiveEntityType(null);
                         onClose();
                     }}
-                >
-                    <Text style={styles.optionText}>{type}</Text>
-                </TouchableOpacity>
-            ))}
-
-            <TouchableOpacity onPress={onClose}>
-                <Text style={styles.cancel}>Cancel</Text>
-            </TouchableOpacity>
-        </BaseModal>
+                />
+            )}
+        </>
     );
 }
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
-        title: { fontSize: 18, fontWeight: 'bold', marginBottom: 20, color: colors.accent },
-        option: { padding: 15, borderBottomWidth: 1, borderColor: '#eee' },
-        optionText: { fontSize: 16, color: colors.text },
-        cancel: { marginTop: 20, color: 'red', textAlign: 'center' },
+        overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+        container: { backgroundColor: colors.surface, padding: 20, borderRadius: 10, width: '90%' },
+        title: { fontSize: 20, fontWeight: 'bold', marginBottom: 20, color: colors.accent },
     });
