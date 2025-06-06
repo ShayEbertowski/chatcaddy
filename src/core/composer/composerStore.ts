@@ -1,67 +1,56 @@
 import { create } from 'zustand';
 import { ComposerNode, VariableValue } from '../types/composer';
-import { generateUUID } from '../../utils/uuid/generateUUID';
-import { loadComposerTree, saveComposerTree } from './services/ComposerPersistence';
+import { ComposerStoreState } from '../types/composer';
+import * as persistence from '../composer/services/ComposerPersistence';
 
-interface ComposerStore {
-    rootNode: ComposerNode | null;
-    setRootNode: (node: ComposerNode) => void;
-    insertEntity: (entity: Omit<ComposerNode, 'id'>) => Promise<ComposerNode>;
-    updateVariable: (parentId: string, variableName: string, value: VariableValue) => void;
-}
-
-export const composerStore = create<ComposerStore>((set, get) => ({
+export const composerStore = create<ComposerStoreState>((set, get) => ({
+    activeTreeId: null,
     rootNode: null,
+    availableTrees: [],
 
-    setRootNode: (node) => set({ rootNode: node }),
-
-    insertEntity: async (entity) => {
-        const id = await generateUUID();
-        const newEntity: ComposerNode = { id, ...entity };
-        return newEntity;
+    setRootNode(newRoot) {
+        set({ rootNode: newRoot });
     },
 
-    updateVariable: (parentId, variableName, value) => {
-        const updateRecursively = (node: ComposerNode): ComposerNode => {
-            if (node.id === parentId) {
-                return {
-                    ...node,
-                    variables: {
-                        ...node.variables,
-                        [variableName]: value,
-                    },
-                };
+    updateVariable(variableName: string, variableValue: VariableValue) {
+        const { rootNode } = get();
+        if (!rootNode) return;
+
+        const updatedNode: ComposerNode = {
+            ...rootNode,
+            variables: {
+                ...rootNode.variables,
+                [variableName]: variableValue,
             }
-
-            const updatedVariables: Record<string, VariableValue> = Object.fromEntries(
-                Object.entries(node.variables).map(([key, val]) => {
-                    if (val.type === 'entity') {
-                        return [key, { type: 'entity', entity: updateRecursively(val.entity) }];
-                    }
-                    return [key, val];
-                })
-            );
-
-            return { ...node, variables: updatedVariables };
         };
 
-        set((state) => ({
-            rootNode: updateRecursively(state.rootNode!),
-        }));
+        set({ rootNode: updatedNode });
     },
 
-
-    saveTree: async (name: string) => {
-        const { rootNode } = get();
-        if (rootNode) {
-            await saveComposerTree(rootNode, name);
-        }
+    async loadTree(treeId) {
+        const record = await persistence.loadComposerTree(treeId);
+        set({
+            activeTreeId: record.id,
+            rootNode: record.tree_data,
+        });
     },
 
-    loadTree: async (id: string) => {
-        const loaded = await loadComposerTree(id);
-        if (loaded) {
-            set({ rootNode: loaded });
-        }
+    async saveTree(name) {
+        const id = await persistence.saveComposerTree(
+            name,
+            get().rootNode!,
+            get().activeTreeId ?? undefined
+        );
+        set({ activeTreeId: id });
+        return id;
+    },
+
+    clearTree() {
+        set({ activeTreeId: null, rootNode: null });
+    },
+
+    async listTrees() {
+        const trees = await persistence.listComposerTrees();
+        set({ availableTrees: trees });
     },
 }));

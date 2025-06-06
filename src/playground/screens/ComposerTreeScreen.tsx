@@ -11,7 +11,8 @@ import { PlaygroundHeader } from '../components/PlaygroundHeader';
 
 export default function ComposerTreeScreen() {
     const { nodeId } = useLocalSearchParams<{ nodeId: string }>();
-    const { rootNode, updateVariable } = composerStore();
+    const rootNode = composerStore.getState().rootNode;
+    const updateVariable = composerStore.getState().updateVariable;
     const colors = useColors();
 
     const [newVariableName, setNewVariableName] = useState('');
@@ -46,7 +47,7 @@ export default function ComposerTreeScreen() {
             variables: {},
         };
 
-        updateVariable(currentNode.id, newVariableName, { type: 'entity', entity: childNode });
+        updateVariable(newVariableName, { type: 'entity', entity: childNode });
 
         setNewVariableName('');
         setNewVariableValue('');

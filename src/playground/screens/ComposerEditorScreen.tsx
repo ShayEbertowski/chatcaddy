@@ -11,7 +11,7 @@ import { useEntityStore } from '../../stores/useEntityStore';
 import { EntityPickerModal } from '../modals/EntityPickerModal';
 
 export default function ComposerEditorScreen() {
-    const { setRootNode } = composerStore();
+    const { setRootNode } = composerStore.getState();
     const colors = useColors();
 
     const [title, setTitle] = useState('');

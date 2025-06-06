@@ -18,3 +18,19 @@ export interface ComposerTreeRecord {
     updated_at: string;
     tree_data: ComposerNode;
 }
+
+
+export interface ComposerStoreState {
+    activeTreeId: string | null;
+    rootNode: ComposerNode | null;
+    availableTrees: ComposerTreeRecord[];
+
+    setRootNode: (newRoot: ComposerNode) => void;
+    updateVariable: (variableName: string, variableValue: VariableValue) => void;
+
+    loadTree: (treeId: string) => Promise<void>;
+    saveTree: (name: string) => Promise<string>;
+    clearTree: () => void;
+    listTrees: () => Promise<void>;
+}
+
