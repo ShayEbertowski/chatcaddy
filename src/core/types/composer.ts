@@ -1,5 +1,5 @@
-import { ComposerTreeItem } from "../../../app/(drawer)/(composer)";
 import { EntityType } from "../../types/entity";
+import { ComposerNodeView } from "../../components/composer/ComposerNodeView";
 
 export interface ComposerNode {
     id: string;
@@ -23,6 +23,8 @@ export interface ComposerTreeRecord {
     updated_at: string;
     tree_data: ComposerNode;
 }
+
+export type ComposerTreeItem = ComposerNode & { treeId: string };
 
 export interface ComposerStoreState {
     activeTreeId: string | null;

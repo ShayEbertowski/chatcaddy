@@ -27,7 +27,7 @@ export function ComposerTreeView({ node }: Props) {
                         <TextInput
                             style={styles.input}
                             value={value.value}
-                            onChangeText={(text) => updateVariable(node.id, varName, { type: 'string', value: text })}
+                            onChangeText={(text) => updateVariable(varName, { type: 'string', value: text })}
                             placeholder={`Enter ${varName}`}
                         />
                     ) : (

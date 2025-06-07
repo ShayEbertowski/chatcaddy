@@ -5,18 +5,8 @@ import { router } from 'expo-router';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../../src/components/ui/ThemedButton';
 import { composerStore } from '../../../src/core/composer/composerStore';
-import { ComposerNode } from '../../../src/core/types/composer';
 import { useColors } from '../../../src/hooks/useColors';
-
-// This is your Supabase record
-export interface ComposerTreeRecord {
-    id: string;
-    name: string;
-    tree_data: ComposerNode;
-}
-
-// This is what your store & UI will work with
-export type ComposerTreeItem = ComposerNode & { treeId: string };
+import { ComposerTreeItem } from '../../../src/core/types/composer';
 
 
 export default function ComposerScreen() {
@@ -31,7 +21,6 @@ export default function ComposerScreen() {
         fetchTrees();
     }, []);
 
-
     return (
         <ThemedSafeArea>
             <View style={styles.container}>
@@ -44,20 +33,19 @@ export default function ComposerScreen() {
                     }}
                 />
 
-                <FlatList<ComposerNode>
+                <FlatList<ComposerTreeItem>
                     data={trees}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={(item) => item.treeId}
                     renderItem={({ item }) => (
                         <ThemedButton
                             title={item.title}
                             onPress={() => {
-                                composerStore.getState().loadTree(item.id);
-                                router.push(`/composer/${item.id}`);
+                                composerStore.getState().loadTree(item.treeId);
+                                router.push(`/(drawer)/(composer)/${item.treeId}`);
                             }}
                         />
                     )}
                 />
-
             </View>
         </ThemedSafeArea>
     );

@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import { ComposerNode, VariableValue, ComposerStoreState } from '../types/composer';
+import { ComposerNode, VariableValue, ComposerStoreState, ComposerTreeItem } from '../types/composer';
 import * as persistence from '../composer/services/ComposerPersistence';
-import { ComposerTreeItem } from '../../../app/(drawer)/(composer)';
 import { mapTreeRecordToItem } from '../../utils/composer/mapper';
 
 export const composerStore = create<ComposerStoreState>((set, get) => ({

@@ -1,7 +1,6 @@
 // src/core/composer/utils/mapper.ts
 
-import { ComposerTreeItem } from "../../../app/(drawer)/(composer)";
-import { ComposerTreeRecord } from "../../core/types/composer";
+import { ComposerTreeItem, ComposerTreeRecord } from "../../core/types/composer";
 
 
 export function mapTreeRecordToItem(record: ComposerTreeRecord): ComposerTreeItem {
