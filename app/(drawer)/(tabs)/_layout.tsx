@@ -70,11 +70,11 @@ export default function TabLayout() {
                                     if (isSandbox) {
                                         useEditorStore.getState().clearEditingEntity();
                                         useVariableStore.getState().clearAll();
-                                        router.replace('/2-sandbox');
+                                        router.replace('/(drawer)/(tabs)/2-sandbox');
                                     }
 
                                     if (isComposer) {
-                                        router.push('/composer');
+                                        router.push('/(drawer)/(composer)');
                                     }
                                 },
                             },

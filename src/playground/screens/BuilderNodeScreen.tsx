@@ -3,13 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../components/ui/ThemedButton';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useComposerStore } from '../../core/composer/composerStore';
+import { composerStore } from '../../core/composer/composerStore';
 import { ComposerNode } from '../../core/types/composer';
 import { useColors } from '../../hooks/useColors';
 
 export default function BuilderNodeScreen() {
     const { nodeId } = useLocalSearchParams<{ nodeId: string }>();
-    const { rootNode } = useComposerStore();
+    const { rootNode } = composerStore();
     const colors = useColors();
 
     if (!rootNode || !nodeId) {

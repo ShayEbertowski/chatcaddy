@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Button, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useComposerStore } from '../../core/composer/composerStore';
+import { composerStore } from '../../core/composer/composerStore';
 import { ComposerNode } from '../../core/types/composer';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { useColors } from '../../hooks/useColors';
@@ -21,7 +21,7 @@ function findNode(node: ComposerNode, id: string): ComposerNode | null {
 export default function PlaygroundNodeScreen() {
     const router = useRouter();
     const { nodeId } = useLocalSearchParams<{ nodeId: string }>();
-    const { rootNode } = useComposerStore();
+    const { rootNode } = composerStore();
     const colors = useColors();
 
     if (!rootNode || !nodeId) return <Text>Loading...</Text>;

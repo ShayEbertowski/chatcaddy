@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 
 import { router } from 'expo-router';
-import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
-import { ThemedButton } from '../../src/components/ui/ThemedButton';
-import { composerStore } from '../../src/core/composer/composerStore';
-import { ComposerNode } from '../../src/core/types/composer';
-import { useColors } from '../../src/hooks/useColors';
+import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
+import { ThemedButton } from '../../../src/components/ui/ThemedButton';
+import { composerStore } from '../../../src/core/composer/composerStore';
+import { ComposerNode } from '../../../src/core/types/composer';
+import { useColors } from '../../../src/hooks/useColors';
 
 export default function ComposerScreen() {
     const colors = useColors();

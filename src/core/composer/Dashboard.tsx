@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
-import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
-import { ThemedButton } from '../../../src/components/ui/ThemedButton';
-import { useColors } from '../../../src/hooks/useColors';
-import { composerStore } from '../../../src/core/composer/composerStore';
+import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
+import { ThemedButton } from '../../components/ui/ThemedButton';
+import { useColors } from '../../hooks/useColors';
+import { composerStore } from './composerStore';
 import { router } from 'expo-router';
-import type { ComposerNode } from '../../../src/core/types/composer';
+import type { ComposerNode } from '../types/composer';
 
 export default function ComposerDashboard() {
     const colors = useColors();
@@ -24,7 +24,13 @@ export default function ComposerDashboard() {
             <View style={styles.container}>
                 <Text style={[styles.title, { color: colors.text }]}>Logicraft Composer</Text>
 
-                <ThemedButton title="Create New Tree" onPress={() => router.push('/core/composer/builder/new')} />
+                <ThemedButton
+                    title="Test Hard Push"
+                    onPress={() => {
+                        router.push('/core/composer/builder/test123');
+                    }}
+                />
+
 
                 <FlatList<ComposerNode>
                     data={trees}

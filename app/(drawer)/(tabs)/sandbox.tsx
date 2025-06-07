@@ -57,7 +57,6 @@ export default function Sandbox() {
             setInputText(extracted);
             loadVariablesIntoStore(editingEntity.variables);
             setPromptTitle(editingEntity.title || '');
-            setSelectedFolder(editingEntity.folder || 'Uncategorized');
             setEntityType(editingEntity.entityType || 'Prompt');
         }
     }, [editingEntity]);
@@ -81,7 +80,6 @@ export default function Sandbox() {
         return {
             id: editId ?? uuidv4(),
             title: promptTitle,
-            folder: selectedFolder,
             entityType: entityType,
             variables: useVariableStore.getState().values,
             ...(entityType === 'Prompt' ? { content: inputText } : { content: inputText }),

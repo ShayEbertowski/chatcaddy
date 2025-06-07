@@ -19,13 +19,17 @@ import { getSharedStyles } from '../../styles/shared';
 import { useColors } from '../../hooks/useColors';
 import { resolveVariableDisplayValue } from '../../utils/variables/variables';
 import { parsePromptParts } from '../../utils/prompt/promptManager';
+import { EntityType } from '../../types/entity';
 
 type Props = {
     text: string;
     onChangeText: (newText: string) => void;
-    entityType: 'Prompt' | 'Function' | 'Snippet';
-    onChangeEntityType: (newType: 'Prompt' | 'Function' | 'Snippet') => void;
+    entityType: EntityType;
+    onChangeEntityType: (newType: EntityType) => void;
 };
+
+const entityTypes: EntityType[] = ['Prompt', 'Function', 'Snippet', 'Template'];
+
 
 export default function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType }: Props) {
     const [selection, setSelection] = useState({ start: 0, end: 0 });
@@ -102,10 +106,10 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
             </View>
 
             <View style={styles.typeSelector}>
-                {['Prompt', 'Function', 'Snippet'].map((type) => (
+                {entityTypes.map((type) => (
                     <TouchableOpacity
                         key={type}
-                        onPress={() => onChangeEntityType(type as typeof entityType)}
+                        onPress={() => onChangeEntityType(type)}
                         style={[
                             styles.typeButton,
                             entityType === type && styles.typeButtonActive,

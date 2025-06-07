@@ -7,3 +7,4 @@ export interface Entity {
     content: string;
     variables: Record<string, any>; // You can fully type this later if you want
 }
+ 

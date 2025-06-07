@@ -1,14 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions, FlatList } from 'react-native';
 import { router } from 'expo-router';
-import { useComposerStore } from '../../core/composer/composerStore';
+import { composerStore } from '../../core/composer/composerStore';
 import { ComposerNode } from '../../core/types/composer';
 import { useColors } from '../../hooks/useColors';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../components/ui/ThemedButton';
 
 export default function SwipeTreeView() {
-    const { rootNode } = useComposerStore();
+    const { rootNode } = composerStore();
     const colors = useColors();
 
     if (!rootNode) {
