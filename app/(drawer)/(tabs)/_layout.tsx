@@ -12,76 +12,71 @@ export default function TabLayout() {
     const colors = useColors();
     const toggle = useThemeStore((s) => s.toggle);
 
-    type RouteName = '1-library' | '2-sandbox' | '3-composer-entry';
+    const icons = {
+        library: 'library-outline',
+        sandbox: 'flask-outline',
+        'composer-entry': 'rocket-outline',
+    } as const;
 
-    const icons: Record<RouteName, keyof typeof Ionicons.glyphMap> = {
-        '1-library': 'library-outline',
-        '2-sandbox': 'flask-outline',
-        '3-composer-entry': 'rocket-outline'
-    };
+    const labels = {
+        library: 'Library',
+        sandbox: 'Sandbox',
+        'composer-entry': 'Composer',
+    } as const;
 
-    const labels: Record<RouteName, string> = {
-        '1-library': 'Library',
-        '2-sandbox': 'Sandbox',
-        '3-composer-entry': 'Composer'
-    };
 
     return (
-        <Tabs>
-            {(Object.keys(icons) as RouteName[]).map((routeName) => {
-                const isSandbox = routeName === '2-sandbox';
-                const isComposer = routeName === '3-composer-entry';
-
-                return (
-                    <Tabs.Screen
-                        key={routeName}
-                        name={routeName}
-                        options={{
-                            tabBarLabel: labels[routeName],
-                            tabBarIcon: ({ color, size }) => (
-                                <Ionicons name={icons[routeName]} size={size} color={color} />
-                            ),
-                            tabBarActiveTintColor: colors.primary,
-                            tabBarStyle: {
-                                backgroundColor: colors.background,
-                                borderTopColor: colors.border,
-                            },
-                            headerTitleStyle: { color: colors.accent },
-                            headerStyle: { backgroundColor: colors.surface },
-                            headerTitleAlign: 'center',
-                            headerLeft: () => <UserAvatar />,
-                            headerRight: () => (
-                                <View style={{ flexDirection: 'row', gap: 12, marginRight: 12 }}>
-                                    <TouchableOpacity onPress={() => router.push('/ideas')}>
-                                        <Ionicons name="bulb-outline" size={24} color="orange" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity onPress={toggle}>
-                                        <Ionicons name={colors.isDark ? 'moon' : 'sunny'} size={24} color={colors.toggle} />
-                                    </TouchableOpacity>
-                                </View>
-                            ),
-                            headerTitle: labels[routeName],
-                        }}
-                        {...((isSandbox || isComposer) && {
-                            listeners: {
-                                tabPress: (e) => {
-                                    e.preventDefault();
-
-                                    if (isSandbox) {
-                                        useEditorStore.getState().clearEditingEntity();
-                                        useVariableStore.getState().clearAll();
-                                        router.replace('/(drawer)/(tabs)/2-sandbox');
-                                    }
-
-                                    if (isComposer) {
-                                        router.push('/(drawer)/(composer)');
-                                    }
-                                },
-                            },
-                        })}
-                    />
-                );
+        <Tabs
+            screenOptions={({ route }) => ({
+                tabBarLabel: labels[route.name as keyof typeof labels],
+                tabBarIcon: ({ color, size }) => (
+                    <Ionicons name={icons[route.name as keyof typeof icons]} size={size} color={color} />
+                ),
+                tabBarActiveTintColor: colors.primary,
+                tabBarStyle: {
+                    backgroundColor: colors.background,
+                    borderTopColor: colors.border,
+                },
+                headerTitle: labels[route.name as keyof typeof labels],
+                headerTitleStyle: { color: colors.accent },
+                headerStyle: { backgroundColor: colors.surface },
+                headerTitleAlign: 'center',
+                headerLeft: () => <UserAvatar />,
+                headerRight: () => (
+                    <View style={{ flexDirection: 'row', gap: 12, marginRight: 12 }}>
+                        <TouchableOpacity onPress={() => router.push('/ideas')}>
+                            <Ionicons name="bulb-outline" size={24} color="orange" />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={toggle}>
+                            <Ionicons name={colors.isDark ? 'moon' : 'sunny'} size={24} color={colors.toggle} />
+                        </TouchableOpacity>
+                    </View>
+                ),
             })}
+        >
+            <Tabs.Screen
+                name="library"
+            />
+            <Tabs.Screen
+                name="sandbox"
+                listeners={{
+                    tabPress: (e) => {
+                        e.preventDefault();
+                        useEditorStore.getState().clearEditingEntity();
+                        useVariableStore.getState().clearAll();
+                        router.replace('/(drawer)/(tabs)/2-sandbox');
+                    },
+                }}
+            />
+            <Tabs.Screen
+                name="composer-entry"
+                listeners={{
+                    tabPress: (e) => {
+                        e.preventDefault();
+                        router.push('/(drawer)/(composer)');
+                    },
+                }}
+            />
         </Tabs>
     );
 }
