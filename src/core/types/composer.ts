@@ -9,6 +9,7 @@ export interface ComposerNode {
     children: ComposerNode[];
 }
 
+
 export type VariableValue =
     | { type: 'string'; value: string }
     | { type: 'entity'; entity: ComposerNode };
@@ -25,15 +26,13 @@ export interface ComposerTreeRecord {
 export interface ComposerStoreState {
     activeTreeId: string | null;
     rootNode: ComposerNode | null;
-    availableTrees: ComposerTreeRecord[];
+    availableTrees: any[];
 
     setRootNode: (newRoot: ComposerNode) => void;
-    updateVariable: (variableName: string, variableValue: VariableValue) => void;
-    addChild: (parentId: string, child: ComposerNode) => void;
 
+    updateVariable: (variableName: string, variableValue: VariableValue) => void;
     loadTree: (treeId: string) => Promise<void>;
     saveTree: (name: string) => Promise<string>;
-    deleteTree: (treeId: string) => Promise<void>;   // ✅ add this
     clearTree: () => void;
     listTrees: () => Promise<void>;
 }

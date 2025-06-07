@@ -8,7 +8,8 @@ export const composerStore = create<ComposerStoreState>((set, get) => ({
     rootNode: null,
     availableTrees: [],
 
-    setRootNode(newRoot) {
+    // ✅ STABILIZED SETTER
+    setRootNode(newRoot: ComposerNode) {
         set({ rootNode: newRoot });
     },
 
@@ -53,30 +54,4 @@ export const composerStore = create<ComposerStoreState>((set, get) => ({
         const trees = await persistence.listComposerTrees();
         set({ availableTrees: trees });
     },
-
-    addChild(parentId, child) {
-        const { rootNode } = get();
-        if (!rootNode) return;
-
-        const recursiveInsert = (node: ComposerNode): ComposerNode => {
-            if (node.id === parentId) {
-                return {
-                    ...node,
-                    children: [...node.children, child]
-                };
-            }
-            return {
-                ...node,
-                children: node.children.map(recursiveInsert)
-            };
-        };
-
-        set({ rootNode: recursiveInsert(rootNode) });
-    },
-
-    deleteTree: async (treeId) => {
-        await persistence.deleteComposerTree(treeId);
-    },
-
-
 }));

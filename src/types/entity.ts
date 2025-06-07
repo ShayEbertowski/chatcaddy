@@ -1,4 +1,4 @@
-export type EntityType = 'Prompt' | 'Function' | 'Snippet';
+export type EntityType = 'Prompt' | 'Function' | 'Snippet' | 'Template';
 
 export interface Entity {
     id: string;

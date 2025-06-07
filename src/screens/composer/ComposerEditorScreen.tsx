@@ -7,6 +7,8 @@ import { ComposerNode, VariableValue } from '../../core/types/composer';
 import { composerStore } from '../../core/composer/composerStore';
 import BaseModal from '../../components/modals/BaseModal';
 import { flattenTree } from '../../utils/flattenTree';
+import { EntityType } from '../../types/entity';
+import { runComposerTree } from '../../core/composer/utils/runComposerTree';
 
 
 export default function ComposerEditorScreen() {
@@ -22,6 +24,13 @@ export default function ComposerEditorScreen() {
     const [entityModalVisible, setEntityModalVisible] = useState(false);
     const [pendingVarName, setPendingVarName] = useState<string | null>(null);
 
+
+    const handleRun = async () => {
+        if (!node) return;
+        const result = await runComposerTree(node);
+        console.log("AI Response:", result);
+        // You can later display this result in your app UI.
+    };
 
     const handleSave = () => {
         composerStore.setState((state) => {
@@ -44,12 +53,12 @@ export default function ComposerEditorScreen() {
 
 
     // Following methods must come after     if (!node) return (...
-    const handleAddChild = () => {
+    const handleAddChild = (newEntityType: EntityType) => {
         const childId = crypto.randomUUID();
         const childNode: ComposerNode = {
             id: childId,
-            entityType: 'Prompt',
-            title: `Child ${childId.slice(0, 4)}`,
+            entityType: newEntityType,  // 👈 use dynamic entity type now
+            title: `${newEntityType} ${childId.slice(0, 4)}`,
             content: '',
             variables: {},
             children: [],
@@ -57,6 +66,7 @@ export default function ComposerEditorScreen() {
 
         composerStore.getState().addChild(node.id, childNode);
     };
+
 
     const handleAddVariable = () => {
         const varName = `var${Object.keys(node.variables).length + 1}`;
@@ -143,11 +153,12 @@ export default function ComposerEditorScreen() {
                 <TextInput value={content} onChangeText={setContent} style={[styles.input, { height: 120 }]} multiline />
 
                 <TouchableOpacity
-                    onPress={handleAddChild}
+                    onPress={() => handleAddChild('Prompt')}
                     style={[styles.addChildButton, { backgroundColor: colors.accent }]}
                 >
                     <Text style={{ color: 'white', fontWeight: 'bold' }}>Add Child Node</Text>
                 </TouchableOpacity>
+
 
 
                 <TouchableOpacity onPress={handleSave} style={[styles.save, { backgroundColor: colors.primary }]}>
@@ -190,6 +201,14 @@ export default function ComposerEditorScreen() {
                 >
                     <Text style={{ color: 'white', fontWeight: 'bold' }}>Add Variable</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                    onPress={handleRun}
+                    style={[styles.addChildButton, { backgroundColor: colors.primary }]}
+                >
+                    <Text style={{ color: 'white', fontWeight: 'bold' }}>Run Prompt</Text>
+                </TouchableOpacity>
+
 
             </ScrollView>
 
