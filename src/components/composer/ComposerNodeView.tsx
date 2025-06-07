@@ -1,122 +1,85 @@
-import React, { useState } from 'react';
-import { View, Text, Button, TouchableOpacity, StyleSheet, Modal, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, TextInput, StyleSheet, Text } from 'react-native';
 import { ComposerNode } from '../../core/types/composer';
-import { composerStore } from '../../core/composer/composerStore';
-import { useRouter } from 'expo-router';
-import { useColors } from '../../hooks/useColors';
-import { getSharedStyles } from '../../styles/shared';
-import { generateUUID } from '../../utils/uuid/generateUUID';
-import { InsertChildModal } from './modals/InsertChildModal';
-import BaseModal from '../modals/BaseModal';
 import { ThemedButton } from '../ui/ThemedButton';
+import { composerStore } from '../../core/composer/composerStore';
+import { useColors } from '../../hooks/useColors';
+import { InsertChildModal } from './modals/InsertChildModal';
 
 interface Props {
     node: ComposerNode;
 }
 
 export function ComposerNodeView({ node }: Props) {
-    const { addChild } = composerStore();
-    const router = useRouter();
-
     const colors = useColors();
-    const styles = getStyles(colors);
-    const sharedStyles = getSharedStyles(colors);
 
-    const [editModalVisible, setEditModalVisible] = useState(false);
+    const [title, setTitle] = useState(node.title);
+    const [content, setContent] = useState(node.content);
+
     const [insertModalVisible, setInsertModalVisible] = useState(false);
-    const [tempValue, setTempValue] = useState(node.content || '');
 
-    const handleInsert = async () => {
-        const id = await generateUUID();
-        const childNode: ComposerNode = {
-            id,
-            entityType: 'Prompt',  // fixed
-            title: `New child`,
-            content: '',  // this holds your string value
-            variables: {},
-            children: [],
-        };
-        addChild(node.id, childNode);
+    const handleInsertChild = (newNode: ComposerNode) => {
+        composerStore.getState().addChild(node.id, newNode);
+        composerStore.getState().saveTree(title); // optional: autosave after insert
     };
 
-
-    const handleEditValue = () => {
-        setEditModalVisible(true);
-    };
+    useEffect(() => {
+        setTitle(node.title);
+        setContent(node.content);
+    }, [node.id]);
 
     const handleSave = () => {
-        composerStore.setState((state) => {
-            const updateTree = (n: ComposerNode): ComposerNode => {
-                if (n.id === node.id) return { ...n, content: tempValue };
-                return { ...n, children: n.children.map(updateTree) };
+        const store = composerStore.getState();
+
+        const updateNode = (current: ComposerNode): ComposerNode => {
+            if (current.id === node.id) {
+                return { ...current, title, content };
+            }
+            return {
+                ...current,
+                children: current.children?.map(updateNode) ?? [],
             };
+        };
 
-            if (!state.rootNode) return state;  // <-- ✅ safe early exit if no tree loaded
-
-            return { rootNode: updateTree(state.rootNode) };
-        });
+        const updatedRoot = updateNode(store.rootNode!);
+        store.setRootNode(updatedRoot);
+        store.saveTree(title);
     };
 
-
     return (
-        <View style={styles.node}>
-            <Text style={styles.title}>{node.title}</Text>
+        <View style={styles.container}>
+            <TextInput
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Title"
+                style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+                placeholderTextColor={colors.border}
+            />
 
-            <Button title="Add Child" onPress={() => setInsertModalVisible(true)} />
+            <TextInput
+                value={content}
+                onChangeText={setContent}
+                placeholder="Content"
+                multiline
+                style={[styles.input, { borderColor: colors.border, color: colors.text, height: 150 }]}
+                placeholderTextColor={colors.border}
+            />
 
-            {node.content === 'string' && (
-                <>
-                    <TouchableOpacity style={styles.valueBox} onPress={handleEditValue}>
-                        <Text>{node.content || 'Tap to edit value'}</Text>
-                    </TouchableOpacity>
+            <ThemedButton title="Save Node" onPress={handleSave} />
 
-                    <BaseModal visible={editModalVisible} onRequestClose={() => setEditModalVisible(false)} blur animationType='slide'>
-                        <Text style={styles.title}>Edit Value</Text>
-                        <TextInput
-                            value={tempValue}
-                            onChangeText={setTempValue}
-                            placeholder="Enter value"
-                            style={styles.input}
-                        />
-
-                        <ThemedButton
-                            title="Save"
-                            onPress={handleSave}
-                            style={{ marginTop: 20 }}
-                            // textStyle={{ fontSize: 18 }}
-                            colorKey='primary'
-                        />
-
-                    </BaseModal>
-                </>
-            )}
-
-            {node.children?.map((child) => (
-                <TouchableOpacity key={child.id} onPress={() => router.push(`/composer/${child.id}`)}>
-                    <Text style={styles.child}>{child.title}</Text>
-                </TouchableOpacity>
-            ))}
+            <ThemedButton title="Insert Child" onPress={() => setInsertModalVisible(true)} />
 
             <InsertChildModal
                 visible={insertModalVisible}
+                parentId={node.id}
+                onInsert={handleInsertChild}
                 onClose={() => setInsertModalVisible(false)}
-                onInsert={handleInsert}
             />
         </View>
     );
 }
 
-const getStyles = (colors: ReturnType<typeof useColors>) =>
-    StyleSheet.create({
-        node: { padding: 20 },
-        title: { fontSize: 20, fontWeight: 'bold', marginBottom: 10, color: colors.accent },
-        child: { fontSize: 16, padding: 5, backgroundColor: '#ddd', marginVertical: 5 },
-        valueBox: {
-            padding: 10,
-            borderWidth: 1,
-            borderColor: '#ccc',
-            marginVertical: 10,
-            borderRadius: 5,
-        },
-        input: { borderBottomWidth: 1, padding: 10, marginTop: 10, marginBottom: 20, color: colors.text },
-    });
+const styles = StyleSheet.create({
+    container: { padding: 20, gap: 20 },
+    input: { borderWidth: 1, padding: 10, borderRadius: 8 },
+});

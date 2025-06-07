@@ -8,17 +8,29 @@ import { composerStore } from '../../../src/core/composer/composerStore';
 import { ComposerNode } from '../../../src/core/types/composer';
 import { useColors } from '../../../src/hooks/useColors';
 
+// This is your Supabase record
+export interface ComposerTreeRecord {
+    id: string;
+    name: string;
+    tree_data: ComposerNode;
+}
+
+// This is what your store & UI will work with
+export type ComposerTreeItem = ComposerNode & { treeId: string };
+
+
 export default function ComposerScreen() {
     const colors = useColors();
-    const [trees, setTrees] = useState<ComposerNode[]>([]);
+    const [trees, setTrees] = useState<ComposerTreeItem[]>([]);
 
     useEffect(() => {
         async function fetchTrees() {
-            const trees = await composerStore.getState().listTrees();
+            const trees: ComposerTreeItem[] = await composerStore.getState().listTrees();
             setTrees(trees);
         }
         fetchTrees();
     }, []);
+
 
     return (
         <ThemedSafeArea>
@@ -28,7 +40,7 @@ export default function ComposerScreen() {
                 <ThemedButton
                     title="Create New Tree"
                     onPress={() => {
-                        router.push('/core/composer/builder/new');
+                        router.push('/(drawer)/(composer)/new')
                     }}
                 />
 
@@ -40,11 +52,12 @@ export default function ComposerScreen() {
                             title={item.title}
                             onPress={() => {
                                 composerStore.getState().loadTree(item.id);
-                                router.push(`/core/composer/builder/${item.id}`);
+                                router.push(`/composer/${item.id}`);
                             }}
                         />
                     )}
                 />
+
             </View>
         </ThemedSafeArea>
     );

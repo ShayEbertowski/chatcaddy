@@ -1,8 +1,8 @@
-import { createSupabaseClient } from '../../../lib/supabaseDataClient';
+import { supabase } from '../../../lib/supabaseClient';
 import { generateUUIDSync } from '../../../utils/uuid/generateUUIDSync';
 import { ComposerNode, ComposerTreeRecord } from '../../types/composer';
 
-const supabase = createSupabaseClient();
+const session = supabase;
 
 export async function saveComposerTree(name: string, rootNode: ComposerNode, id?: string): Promise<string> {
     const treeId = id ?? generateUUIDSync();

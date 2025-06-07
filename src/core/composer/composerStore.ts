@@ -1,11 +1,8 @@
 import { create } from 'zustand';
-import { ComposerNode, VariableValue } from '../types/composer';
-import { ComposerStoreState } from '../types/composer';
+import { ComposerNode, VariableValue, ComposerStoreState } from '../types/composer';
 import * as persistence from '../composer/services/ComposerPersistence';
-import { createSupabaseClient } from '../../lib/supabaseDataClient';
-
-// ✅ Create your supabase client ONCE when the store loads
-const supabase = createSupabaseClient();
+import { ComposerTreeItem } from '../../../app/(drawer)/(composer)';
+import { mapTreeRecordToItem } from '../../utils/composer/mapper';
 
 export const composerStore = create<ComposerStoreState>((set, get) => ({
     activeTreeId: null,
@@ -54,15 +51,19 @@ export const composerStore = create<ComposerStoreState>((set, get) => ({
     },
 
     listTrees: async () => {
-        const { data, error } = await supabase.from('trees').select('*');
-        if (error) {
+        try {
+            const trees = await persistence.listComposerTrees();
+            const mapped: ComposerTreeItem[] = trees.map(mapTreeRecordToItem);
+            set({ availableTrees: mapped });
+            return mapped;
+        } catch (error) {
             console.error('Error fetching trees:', error);
+            set({ availableTrees: [] });
             return [];
         }
-        return data ?? [];
     },
 
-    addChild(parentId: any, childNode: any) {
+    addChild(parentId: string, childNode: ComposerNode) {
         const { rootNode } = get();
         if (!rootNode) return;
 

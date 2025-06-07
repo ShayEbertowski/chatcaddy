@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal } from 'react-native';
+import { View, TextInput, StyleSheet, Modal } from 'react-native';
 import { ThemedButton } from '../../ui/ThemedButton';
 import { useColors } from '../../../hooks/useColors';
 import { ComposerNode } from '../../../core/types/composer';
@@ -7,56 +7,65 @@ import { generateUUID } from '../../../utils/uuid/generateUUID';
 
 interface Props {
     visible: boolean;
+    parentId: string;
     onClose: () => void;
     onInsert: (newNode: ComposerNode) => void;
 }
 
-export function InsertChildModal({ visible, onClose, onInsert }: Props) {
+export function InsertChildModal({ visible, parentId, onClose, onInsert }: Props) {
     const colors = useColors();
-    const styles = getStyles(colors);
-    const [insertType, setInsertType] = useState<'Prompt' | 'Function' | null>(null);
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
 
-    const handleInsertEntity = async () => {
-        if (!insertType) return;
+    const handleInsert = async () => {
+        if (!title.trim()) return;
 
-        const id = await generateUUID();
         const newNode: ComposerNode = {
-            id,
-            entityType: insertType,  // ✅ now fully valid
-            title: `New ${insertType}`,
-            content: '',
+            id: await generateUUID(),
+            entityType: 'Prompt',
+            title,
+            content,
             variables: {},
             children: [],
         };
 
         onInsert(newNode);
+        setTitle('');
+        setContent('');
         onClose();
     };
 
-
     return (
-        <Modal visible={visible} transparent animationType="slide">
+        <Modal visible={visible} animationType="slide" transparent>
             <View style={styles.overlay}>
-                <View style={styles.container}>
-                    <Text style={styles.title}>Insert Child</Text>
+                <View style={[styles.container, { backgroundColor: colors.background }]}>
+                    <TextInput
+                        value={title}
+                        onChangeText={setTitle}
+                        placeholder="Child Title"
+                        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+                        placeholderTextColor={colors.border}
+                    />
 
-                    <ThemedButton title="Insert Prompt" onPress={() => setInsertType('Prompt')} style={{ marginBottom: 12 }} />
-                    <ThemedButton title="Insert Function" onPress={() => setInsertType('Function')} style={{ marginBottom: 12 }} />
+                    <TextInput
+                        value={content}
+                        onChangeText={setContent}
+                        placeholder="Child Content"
+                        multiline
+                        style={[styles.input, { borderColor: colors.border, color: colors.text, height: 120 }]}
+                        placeholderTextColor={colors.border}
+                    />
 
-                    {insertType && (
-                        <ThemedButton title="Create & Insert" onPress={handleInsertEntity} style={{ marginTop: 20 }} />
-                    )}
-
-                    <ThemedButton title="Cancel" onPress={onClose} colorKey="softError" style={{ marginTop: 16 }} />
+                    <ThemedButton title="Insert Child" onPress={handleInsert} />
+                    <ThemedButton title="Cancel" onPress={onClose} />
                 </View>
             </View>
         </Modal>
     );
 }
 
-const getStyles = (colors: ReturnType<typeof useColors>) =>
-    StyleSheet.create({
-        overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-        container: { backgroundColor: colors.surface, padding: 20, borderRadius: 10, width: '90%' },
-        title: { fontSize: 20, fontWeight: 'bold', marginBottom: 16, color: colors.accent },
-    });
+const styles = StyleSheet.create({
+    overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)' },
+    container: { padding: 20, borderRadius: 12, width: '90%', gap: 20 },
+    input: { borderWidth: 1, padding: 10, borderRadius: 8 },
+});
