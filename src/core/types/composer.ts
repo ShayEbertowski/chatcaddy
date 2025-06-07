@@ -26,15 +26,15 @@ export interface ComposerTreeRecord {
 export interface ComposerStoreState {
     activeTreeId: string | null;
     rootNode: ComposerNode | null;
-    availableTrees: any[];
+    availableTrees: ComposerNode[];
 
-    setRootNode: (newRoot: ComposerNode) => void;
-
-    updateVariable: (variableName: string, variableValue: VariableValue) => void;
-    loadTree: (treeId: string) => Promise<void>;
-    saveTree: (name: string) => Promise<string>;
-    clearTree: () => void;
-    listTrees: () => Promise<void>;
+    setRootNode(newRoot: ComposerNode): void;
+    updateVariable(variableName: string, variableValue: VariableValue): void;
+    loadTree(treeId: string): Promise<void>;
+    saveTree(name: string): Promise<string>;
+    clearTree(): void;
+    listTrees(): Promise<ComposerNode[]>;   // ✅ <-- the real fix right here
+    addChild(parentId: string, childNode: ComposerNode): void;
 }
 
 

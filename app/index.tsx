@@ -20,17 +20,9 @@ export default function HomeScreen() {
     const trees = useStore(composerStore, (state) => state.availableTrees);
 
     const handleCreate = async () => {
-        console.log('🤡');
-        console.log("newTreeName value:", newTreeName);
-
         if (!newTreeName.trim()) return;
 
         const id = uuid.v4() as string;
-        console.log("Generated ID:", id);
-
-        console.log('🤡🤡');
-        console.log("Generated ID:", id);
-
 
         composerStore.getState().setRootNode({
             id,
@@ -40,7 +32,6 @@ export default function HomeScreen() {
             variables: {},
             children: [],
         });
-        console.log('🤡🤡🤡');
 
         await composerStore.getState().saveTree(newTreeName);
         setNewTreeName('');
@@ -72,7 +63,7 @@ export default function HomeScreen() {
                 keyExtractor={item => item.id}
                 renderItem={({ item }) => (
                     <TouchableOpacity onPress={() => handleLoad(item.id)} style={[styles.treeItem, { borderBottomColor: colors.border }]}>
-                        <Text style={{ color: colors.text }}>{item.name}</Text>
+                        <Text style={{ color: colors.text }}>{item.title}</Text>
                     </TouchableOpacity>
                 )}
             />

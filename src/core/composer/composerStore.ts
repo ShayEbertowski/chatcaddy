@@ -2,13 +2,16 @@ import { create } from 'zustand';
 import { ComposerNode, VariableValue } from '../types/composer';
 import { ComposerStoreState } from '../types/composer';
 import * as persistence from '../composer/services/ComposerPersistence';
+import { createSupabaseClient } from '../../lib/supabaseDataClient';
+
+// ✅ Create your supabase client ONCE when the store loads
+const supabase = createSupabaseClient();
 
 export const composerStore = create<ComposerStoreState>((set, get) => ({
     activeTreeId: null,
     rootNode: null,
     availableTrees: [],
 
-    // ✅ STABILIZED SETTER
     setRootNode(newRoot: ComposerNode) {
         set({ rootNode: newRoot });
     },
@@ -50,8 +53,34 @@ export const composerStore = create<ComposerStoreState>((set, get) => ({
         set({ activeTreeId: null, rootNode: null });
     },
 
-    async listTrees() {
-        const trees = await persistence.listComposerTrees();
-        set({ availableTrees: trees });
+    listTrees: async () => {
+        const { data, error } = await supabase.from('trees').select('*');
+        if (error) {
+            console.error('Error fetching trees:', error);
+            return [];
+        }
+        return data ?? [];
+    },
+
+    addChild(parentId: any, childNode: any) {
+        const { rootNode } = get();
+        if (!rootNode) return;
+
+        function insert(node: ComposerNode): ComposerNode {
+            if (node.id === parentId) {
+                return {
+                    ...node,
+                    children: [...(node.children ?? []), childNode],
+                };
+            }
+
+            return {
+                ...node,
+                children: node.children?.map(insert) ?? [],
+            };
+        }
+
+        const updatedRoot = insert(rootNode);
+        set({ rootNode: updatedRoot });
     },
 }));

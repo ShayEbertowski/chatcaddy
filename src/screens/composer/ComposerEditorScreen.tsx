@@ -24,13 +24,25 @@ export default function ComposerEditorScreen() {
     const [entityModalVisible, setEntityModalVisible] = useState(false);
     const [pendingVarName, setPendingVarName] = useState<string | null>(null);
 
+    const [output, setOutput] = useState<string | null>(null);
+    const [isRunning, setIsRunning] = useState(false);
+
 
     const handleRun = async () => {
         if (!node) return;
-        const result = await runComposerTree(node);
-        console.log("AI Response:", result);
-        // You can later display this result in your app UI.
+        setIsRunning(true);
+        setOutput(null);
+        try {
+            const result = await runComposerTree(node);
+            setOutput(result);
+        } catch (err) {
+            console.error(err);
+            setOutput('⚠️ Error running prompt.');
+        } finally {
+            setIsRunning(false);
+        }
     };
+
 
     const handleSave = () => {
         composerStore.setState((state) => {
@@ -194,6 +206,23 @@ export default function ComposerEditorScreen() {
                     </View>
                 ))}
 
+                <TouchableOpacity
+                    onPress={handleRun}
+                    style={[styles.button, { backgroundColor: colors.accent, marginTop: 16 }]}
+                >
+                    <Text style={[styles.buttonText, { color: colors.background }]}>Run Prompt</Text>
+                </TouchableOpacity>
+
+                {isRunning && (
+                    <Text style={[styles.resultText, { color: colors.placeholder }]}>Running...</Text>
+                )}
+
+                {output && (
+                    <View style={[styles.resultBox, { borderColor: colors.border }]}>
+                        <Text style={{ color: colors.text }}>{output}</Text>
+                    </View>
+                )}
+
 
                 <TouchableOpacity
                     onPress={handleAddVariable}
@@ -295,8 +324,28 @@ const styles = StyleSheet.create({
         padding: 4,
         borderRadius: 4,
     },
-
-
-
+    resultBox: {
+        borderWidth: 1,
+        padding: 12,
+        borderRadius: 8,
+        marginTop: 16,
+    },
+    resultText: {
+        fontSize: 16,
+        marginTop: 12,
+    },
+    button: {
+        padding: 16,
+        borderRadius: 8,
+        marginHorizontal: 16,
+        marginVertical: 8,
+        alignItems: 'center',
+    },
+    buttonText: {
+        fontWeight: 'bold',
+        textAlign: 'center',
+        fontSize: 16,
+        padding: 10,
+    },
 
 });

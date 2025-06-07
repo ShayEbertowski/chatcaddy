@@ -54,8 +54,10 @@ export default function ComposerBuilder() {
                 title,
                 content,
                 variables,
+                children: [],   // <-- 🩺 this is what TypeScript was asking for
             };
             composerStore.setState({ rootNode: newNode });
+            await composerStore.getState().saveTree(title);
         } else if (currentNode) {
             const updatedNode = {
                 ...currentNode,

@@ -1,14 +1,23 @@
-import React from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../../src/components/ui/ThemedButton';
 import { useColors } from '../../../src/hooks/useColors';
-import { router } from 'expo-router';
 import { composerStore } from '../../../src/core/composer/composerStore';
+import { router } from 'expo-router';
+import type { ComposerNode } from '../../../src/core/types/composer';
 
 export default function ComposerDashboard() {
-    const { rootNode } = composerStore();
     const colors = useColors();
+    const [trees, setTrees] = useState<ComposerNode[]>([]);
+
+    useEffect(() => {
+        async function fetchTrees() {
+            const trees = await composerStore.getState().listTrees();
+            setTrees(trees);
+        }
+        fetchTrees();
+    }, []);
 
     return (
         <ThemedSafeArea>
@@ -17,12 +26,19 @@ export default function ComposerDashboard() {
 
                 <ThemedButton title="Create New Tree" onPress={() => router.push('/core/composer/builder/new')} />
 
-                {rootNode && (
-                    <>
-                        <ThemedButton title="Edit Tree" onPress={() => router.push(`/core/composer/builder/${rootNode.id}`)} />
-                        <ThemedButton title="Preview Flattened Output" onPress={() => router.push('/core/composer/preview')} />
-                    </>
-                )}
+                <FlatList<ComposerNode>
+                    data={trees}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                        <ThemedButton
+                            title={item.title}
+                            onPress={() => {
+                                composerStore.getState().loadTree(item.id);
+                                router.push(`/core/composer/builder/${item.id}`);
+                            }}
+                        />
+                    )}
+                />
             </View>
         </ThemedSafeArea>
     );
