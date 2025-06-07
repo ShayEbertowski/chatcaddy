@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
-import { ThemedButton } from '../../../src/components/ui/ThemedButton';
-import { useColors } from '../../../src/hooks/useColors';
-import { composerStore } from '../../../src/core/composer/composerStore';
-import { expandComposerTree } from '../../../src/core/composer/utils/expandComposerTree';
-import { compileExpandedNodesToPrompt } from '../../../src/core/composer/utils/compileExpandedNodesToPrompt';
+import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
+import { ThemedButton } from '../../components/ui/ThemedButton';
+import { useColors } from '../../hooks/useColors';
+import { composerStore } from './composerStore';
+import { expandComposerTree } from './utils/expandComposerTree';
+import { compileExpandedNodesToPrompt } from './utils/compileExpandedNodesToPrompt';
 import { router } from 'expo-router';
 
 export default function ComposerPreview() {
