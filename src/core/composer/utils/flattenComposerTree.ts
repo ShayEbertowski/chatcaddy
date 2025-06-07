@@ -1,7 +1,8 @@
 import { ComposerNode } from "../../types/composer";
 
-export function flattenComposerTree(root: ComposerNode): { node: ComposerNode; depth: number }[] {
+export function flattenComposerTree(root: ComposerNode | null): { node: ComposerNode; depth: number }[] {
     const result: { node: ComposerNode; depth: number }[] = [];
+    if (!root) return result;
 
     function traverse(node: ComposerNode, depth: number) {
         result.push({ node, depth });

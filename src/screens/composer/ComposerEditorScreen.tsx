@@ -5,6 +5,9 @@ import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { useColors } from '../../hooks/useColors';
 import { ComposerNode, VariableValue } from '../../core/types/composer';
 import { composerStore } from '../../core/composer/composerStore';
+import BaseModal from '../../components/modals/BaseModal';
+import { flattenTree } from '../../utils/flattenTree';
+
 
 export default function ComposerEditorScreen() {
     const { nodeId } = useLocalSearchParams<{ nodeId: string }>();
@@ -16,12 +19,22 @@ export default function ComposerEditorScreen() {
     const [title, setTitle] = useState(node?.title ?? '');
     const [content, setContent] = useState(node?.content ?? '');
 
+    const [entityModalVisible, setEntityModalVisible] = useState(false);
+    const [pendingVarName, setPendingVarName] = useState<string | null>(null);
+
+
     const handleSave = () => {
         composerStore.setState((state) => {
             if (!state.rootNode) return state;
             return { rootNode: updateNode(state.rootNode, nodeId!, { title, content }) };
         });
     };
+
+    function flattenTree(node: ComposerNode | null): ComposerNode[] {
+        if (!node) return [];
+        return [node, ...node.children.flatMap(flattenTree)];
+    }
+
 
     if (!node) return (
         <ThemedSafeArea>
@@ -30,7 +43,7 @@ export default function ComposerEditorScreen() {
     );
 
 
-    // Must come after     if (!node) return (...
+    // Following methods must come after     if (!node) return (...
     const handleAddChild = () => {
         const childId = crypto.randomUUID();
         const childNode: ComposerNode = {
@@ -45,9 +58,18 @@ export default function ComposerEditorScreen() {
         composerStore.getState().addChild(node.id, childNode);
     };
 
-    // Must come after     if (!node) return (...
     const handleAddVariable = () => {
         const varName = `var${Object.keys(node.variables).length + 1}`;
+
+        // Offer choice: string or entity insertion
+        // For now we just default to entity mode (later we can build a true picker)
+
+        setPendingVarName(varName);
+        setEntityModalVisible(true);
+    };
+
+    const handleInsertEntityVariable = (selectedNode: ComposerNode) => {
+        if (!pendingVarName) return;
 
         composerStore.setState((state) => {
             const updateTree = (n: ComposerNode): ComposerNode => {
@@ -56,8 +78,8 @@ export default function ComposerEditorScreen() {
                         ...n,
                         variables: {
                             ...n.variables,
-                            [varName]: { type: 'string', value: 'New Value' }
-                        }
+                            [pendingVarName]: { type: 'entity', entity: selectedNode },
+                        },
                     };
                 }
                 return { ...n, children: n.children.map(updateTree) };
@@ -66,7 +88,12 @@ export default function ComposerEditorScreen() {
             if (!state.rootNode) return state;
             return { rootNode: updateTree(state.rootNode) };
         });
+
+        setPendingVarName(null);
+        setEntityModalVisible(false);
     };
+
+
 
     const handleUpdateVariable = (variableName: string, newValue: VariableValue) => {
         composerStore.setState((state) => {
@@ -79,6 +106,22 @@ export default function ComposerEditorScreen() {
                             [variableName]: newValue,
                         },
                     };
+                }
+                return { ...n, children: n.children.map(updateTree) };
+            };
+
+            if (!state.rootNode) return state;
+            return { rootNode: updateTree(state.rootNode) };
+        });
+    };
+
+    const handleDeleteVariable = (variableName: string) => {
+        composerStore.setState((state) => {
+            const updateTree = (n: ComposerNode): ComposerNode => {
+                if (n.id === node.id) {
+                    const newVariables = { ...n.variables };
+                    delete newVariables[variableName];
+                    return { ...n, variables: newVariables };
                 }
                 return { ...n, children: n.children.map(updateTree) };
             };
@@ -120,7 +163,6 @@ export default function ComposerEditorScreen() {
                 ))}
 
                 <Text style={styles.section}>Variables:</Text>
-
                 {Object.entries(node.variables).map(([varName, varValue]) => (
                     <View key={varName} style={styles.variableRow}>
                         <Text style={styles.variableName}>{varName}:</Text>
@@ -134,8 +176,13 @@ export default function ComposerEditorScreen() {
                         ) : (
                             <Text style={styles.variableValue}>[Entity: {varValue.entity.title}]</Text>
                         )}
+
+                        <TouchableOpacity onPress={() => handleDeleteVariable(varName)} style={styles.deleteButton}>
+                            <Text style={{ color: 'red' }}>X</Text>
+                        </TouchableOpacity>
                     </View>
                 ))}
+
 
                 <TouchableOpacity
                     onPress={handleAddVariable}
@@ -145,6 +192,28 @@ export default function ComposerEditorScreen() {
                 </TouchableOpacity>
 
             </ScrollView>
+
+            <BaseModal
+                visible={entityModalVisible}
+                onRequestClose={() => setEntityModalVisible(false)}
+                blur
+                animationType="slide"
+            >
+                <Text style={styles.section}>Select Node to Insert</Text>
+                <ScrollView style={{ maxHeight: 300 }}>
+                    {flattenTree(rootNode).map((candidate) => (
+                        <TouchableOpacity
+                            key={candidate.id}
+                            style={styles.entityButton}
+                            onPress={() => handleInsertEntityVariable(candidate)}
+                        >
+                            <Text>{candidate.title}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </BaseModal>
+
+
         </ThemedSafeArea>
     );
 }
@@ -197,6 +266,17 @@ const styles = StyleSheet.create({
         flex: 1,
         marginLeft: 8,
     },
+    entityButton: {
+        padding: 12,
+        borderBottomWidth: 1,
+        borderColor: '#ccc',
+    },
+    deleteButton: {
+        marginLeft: 8,
+        padding: 4,
+        borderRadius: 4,
+    },
+
 
 
 
