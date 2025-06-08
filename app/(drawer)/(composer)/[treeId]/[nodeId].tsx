@@ -12,61 +12,36 @@ import { findNodePath } from '../../../../src/utils/composer/findNodePath';
 import { VariableEditor } from '../../../../src/components/composer/VariableEditor';
 
 export default function ComposerNodeScreen() {
-
     const colors = useColors();
     const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
-    console.log('Params:', treeId, nodeId);
 
-    const { rootNode, loadTree, saveTree, addChild } = composerStore();
-    const [loading, setLoading] = useState(true);
+    // Zustand subscriptions
+    const rootNode = composerStore((state) => state.rootNode);
+    const loadTree = composerStore((state) => state.loadTree);
+    const saveTree = composerStore((state) => state.saveTree);
+    const addChild = composerStore((state) => state.addChild);
+
     const [currentNode, setCurrentNode] = useState<ComposerNode | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [newChildTitle, setNewChildTitle] = useState('');
-
     const [nodePath, setNodePath] = useState<ComposerNode[]>([]);
 
-    console.log('Loaded params:', treeId, nodeId);
-    console.log('Loaded rootNode:', rootNode);
-
+    // Single effect: load tree
     useEffect(() => {
-        async function fetch() {
-            console.log('Fetching tree', treeId);
-            if (!rootNode) {
-                await loadTree(treeId);
-                console.log('Finished loading tree');
-            }
-            setLoading(false);
+        if (!rootNode) {
+            loadTree(treeId);
         }
-        fetch();
-    }, [treeId]);
+    }, [treeId, rootNode]);
 
-
+    // Find current node and path after rootNode is populated
     useEffect(() => {
-        if (!rootNode) return;
+        if (!rootNode || !nodeId) return;
+
+        const foundNode = findNode(rootNode, nodeId);
+        setCurrentNode(foundNode);
 
         const path = findNodePath(rootNode, nodeId);
         setNodePath(path);
-    }, [rootNode, nodeId]);
-
-
-    useEffect(() => {
-        async function fetch() {
-            if (!rootNode) {
-                await loadTree(treeId);
-            }
-            setLoading(false);
-        }
-        fetch();
-    }, [treeId]);
-
-    useEffect(() => {
-        if (!rootNode) return;
-
-        const foundNode = findNode(rootNode, nodeId);
-        console.log('Found node:', foundNode);
-        setCurrentNode(foundNode);
-
-        setCurrentNode(foundNode);
     }, [rootNode, nodeId]);
 
     function findNode(node: ComposerNode, searchId: string): ComposerNode | null {
@@ -91,13 +66,14 @@ export default function ComposerNodeScreen() {
         };
 
         addChild(currentNode.id, newChild);
-        await saveTree(rootNode!.title); // persist full tree
+        await saveTree(rootNode!.title);
 
         setNewChildTitle('');
         setModalVisible(false);
     };
 
-    if (loading || !currentNode) {
+    // ✅ Use Zustand state directly for loading indicator
+    if (!rootNode || !currentNode) {
         return (
             <ThemedSafeArea>
                 <ActivityIndicator size="large" color={colors.primary} />
@@ -108,7 +84,6 @@ export default function ComposerNodeScreen() {
     return (
         <ThemedSafeArea>
             <View style={styles.container}>
-
                 <View style={styles.breadcrumbs}>
                     {nodePath.map((node, index) => (
                         <TouchableOpacity
@@ -123,9 +98,7 @@ export default function ComposerNodeScreen() {
                 </View>
 
                 <ComposerTreeView node={currentNode} />
-
                 <VariableEditor node={currentNode} />
-
 
                 <Text style={[styles.subtitle, { color: colors.text }]}>Children:</Text>
 
@@ -179,5 +152,4 @@ const styles = StyleSheet.create({
     input: { borderWidth: 1, padding: 10, borderRadius: 8, marginBottom: 16 },
     breadcrumbs: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
     breadcrumb: { fontWeight: 'bold', marginRight: 4 },
-
 });

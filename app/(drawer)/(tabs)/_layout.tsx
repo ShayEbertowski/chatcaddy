@@ -15,13 +15,13 @@ export default function TabLayout() {
     const icons = {
         library: 'library-outline',
         sandbox: 'flask-outline',
-        'composer-entry': 'rocket-outline',
+        'entry': 'rocket-outline',
     } as const;
 
     const labels = {
         library: 'Library',
         sandbox: 'Sandbox',
-        'composer-entry': 'Composer',
+        'entry': 'Composer',
     } as const;
 
 
@@ -68,15 +68,8 @@ export default function TabLayout() {
                     },
                 }}
             />
-            <Tabs.Screen
-                name="composer-entry"
-                listeners={{
-                    tabPress: (e) => {
-                        e.preventDefault();
-                        router.push('/(drawer)/(composer)');
-                    },
-                }}
-            />
+            <Tabs.Screen name="entry" />
+
         </Tabs>
     );
 }

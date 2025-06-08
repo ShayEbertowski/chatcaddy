@@ -1,17 +1,23 @@
-// core/composer/composerStore.ts
-
 import { create } from 'zustand';
-import { ComposerNode, VariableValue, ComposerTreeRecord } from '../types/composer';
+import { ComposerNode, VariableValue } from '../types/composer';
 import { createSupabaseClient } from '../../lib/supabaseDataClient';
 import { generateUUIDSync } from '../../utils/uuid/generateUUIDSync';
 
 const supabase = createSupabaseClient();
+
+interface CreateTreeParams {
+    id: string;
+    name: string;
+    rootNode: ComposerNode;
+    rootPromptId?: string;
+}
 
 interface ComposerStoreState {
     activeTreeId: string | null;
     rootNode: ComposerNode | null;
     availableTrees: { id: string; name: string }[];
 
+    createTree: (params: CreateTreeParams) => Promise<void>;
     setRootNode: (newRoot: ComposerNode) => void;
     updateVariable: (variableName: string, variableValue: VariableValue) => void;
     loadTree: (treeId: string) => Promise<void>;
@@ -25,6 +31,18 @@ export const composerStore = create<ComposerStoreState>((set, get) => ({
     activeTreeId: null,
     rootNode: null,
     availableTrees: [],
+
+    // ✅ NEW TREE CREATION LOGIC
+    createTree: async ({ id, name, rootNode, rootPromptId }) => {
+        await supabase.from('composer_trees').insert({
+            id,
+            name,
+            tree_data: rootNode,
+            root_prompt_id: rootPromptId ?? null,
+        });
+
+        set({ activeTreeId: id, rootNode });
+    },
 
     setRootNode(newRoot) {
         set({ rootNode: newRoot });
@@ -49,7 +67,10 @@ export const composerStore = create<ComposerStoreState>((set, get) => ({
             .eq('id', treeId)
             .single();
 
+        console.log("Supabase loadTree result:", { data, error });
+
         if (error || !data) throw new Error(error?.message || 'Tree not found');
+
         set({
             rootNode: data.tree_data,
             activeTreeId: data.id,

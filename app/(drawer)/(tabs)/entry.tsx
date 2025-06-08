@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
 import PromptSearch from '../../../src/components/prompt/PromptSearch';
-import EmptyState from '../../../src/components/shared/EmptyState'; // Adjust your import path
+import EmptyState from '../../../src/components/shared/EmptyState';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { useColors } from '../../../src/hooks/useColors';
 import { getSharedStyles } from '../../../src/styles/shared';
-import { EntityType } from '../../../src/types/entity';
+import { Entity, EntityType } from '../../../src/types/entity';
+import { router } from 'expo-router';
+import { composerStore } from '../../../src/core/composer/composerStore';
+import { ComposerNode } from '../../../src/core/types/composer';
+import { generateUUIDSync } from '../../../src/utils/uuid/generateUUIDSync';
 
 export default function ComposerIndexScreen() {
     const colors = useColors();
@@ -14,21 +18,37 @@ export default function ComposerIndexScreen() {
     const [mode, setMode] = useState<'Browse' | 'New'>('Browse');
     const [newContent, setNewContent] = useState('');
     const [entityType, setEntityType] = useState<EntityType>('Prompt');
-
-    // Placeholder state: replace with real check against your EntityStore or ComposerStore
-    const [hasEntities, setHasEntities] = useState<boolean>(true);
+    const [hasEntities, setHasEntities] = useState<boolean>(true); // Placeholder for now
 
     useEffect(() => {
         // Future: load actual entity list here from your store
         // setHasEntities(yourEntityList.length > 0);
     }, []);
 
-    function handlePromptSelect(prompt: any) {
-        console.log('Selected existing prompt:', prompt);
-    }
+    const handleSelectNode = async (prompt: Entity) => {
+        const newTreeId = generateUUIDSync();
 
-    function handleCreate() {
-        console.log('Creating new entity:', { newContent, entityType });
+        const rootNode: ComposerNode = {
+            id: newTreeId,
+            entityType: 'Prompt',
+            title: prompt.title,
+            content: '', // Or optionally pull prompt.content if you want
+            variables: {},
+            children: [],
+        };
+
+        await composerStore.getState().createTree({
+            id: newTreeId,
+            name: prompt.title,
+            rootNode,
+            rootPromptId: prompt.id,  // optional field for reference
+        });
+
+        router.push(`/(drawer)/(composer)/${newTreeId}/${newTreeId}`);
+    };
+
+    const handleCreate = () => {
+        // TODO: still need this for richprompt section
     }
 
     return (
@@ -74,7 +94,7 @@ export default function ComposerIndexScreen() {
                 {/* Main Content */}
                 {mode === 'Browse' ? (
                     hasEntities ? (
-                        <PromptSearch onSelect={handlePromptSelect} />
+                        <PromptSearch onSelect={handleSelectNode} />
                     ) : (
                         <EmptyState
                             title="No Prompts Yet"

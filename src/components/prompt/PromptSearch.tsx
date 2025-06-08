@@ -15,7 +15,7 @@ import { getSharedStyles } from '../../styles/shared';
 
 type Props = {
     onSelect: (prompt: Entity) => void;
-};
+}; 
 
 export default function PromptSearch({ onSelect }: Props) {
     const entities = useEntityStore((state) => state.entities);
