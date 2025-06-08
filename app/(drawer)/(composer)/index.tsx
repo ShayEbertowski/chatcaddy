@@ -1,114 +1,94 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
-import PromptSearch from '../../../src/components/prompt/PromptSearch';
-import EmptyState from '../../../src/components/shared/EmptyState'; // Adjust your import path
+import React, { useState } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
+import ToggleRow from '../../../src/components/shared/ToggleRow';
+import SearchInput from '../../../src/components/shared/SearchInput';
+import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
 import { useColors } from '../../../src/hooks/useColors';
-import { getSharedStyles } from '../../../src/styles/shared';
 import { EntityType } from '../../../src/types/entity';
 
 export default function ComposerIndexScreen() {
     const colors = useColors();
-    const sharedStyles = getSharedStyles(colors);
+    const styles = getStyles(colors);
+
     const [mode, setMode] = useState<'Browse' | 'New'>('Browse');
     const [newContent, setNewContent] = useState('');
     const [entityType, setEntityType] = useState<EntityType>('Prompt');
+    const [searchText, setSearchText] = useState('');
 
-    // Placeholder state: replace with real check against your EntityStore or ComposerStore
-    const [hasEntities, setHasEntities] = useState<boolean>(true);
+    const handleModeChange = (val: string) => setMode(val as 'Browse' | 'New');
 
-    useEffect(() => {
-        // Future: load actual entity list here from your store
-        // setHasEntities(yourEntityList.length > 0);
-    }, []);
+
+    function handleCreate() {
+        console.log('Creating new entity:', { newContent, entityType });
+        // TODO: hook into your persistence layer here
+    }
 
     function handlePromptSelect(prompt: any) {
         console.log('Selected existing prompt:', prompt);
     }
 
-    function handleCreate() {
-        console.log('Creating new entity:', { newContent, entityType });
-    }
-
     return (
         <ThemedSafeArea disableTopInset>
-            <View style={{ flex: 1, padding: 16 }}>
-                {/* Toggle Row */}
-                <View style={sharedStyles.toggleRow}>
-                    <TouchableOpacity
-                        style={[
-                            sharedStyles.toggleButton,
-                            mode === 'Browse' && sharedStyles.toggleButtonSelected,
-                        ]}
-                        onPress={() => setMode('Browse')}
-                    >
-                        <Text
-                            style={[
-                                sharedStyles.toggleButtonText,
-                                mode === 'Browse' && sharedStyles.toggleButtonTextSelected,
-                            ]}
-                        >
-                            Browse
-                        </Text>
-                    </TouchableOpacity>
+            <View style={styles.container}>
 
-                    <TouchableOpacity
-                        style={[
-                            sharedStyles.toggleButton,
-                            mode === 'New' && sharedStyles.toggleButtonSelected,
-                        ]}
-                        onPress={() => setMode('New')}
-                    >
-                        <Text
-                            style={[
-                                sharedStyles.toggleButtonText,
-                                mode === 'New' && sharedStyles.toggleButtonTextSelected,
-                            ]}
-                        >
-                            New
-                        </Text>
-                    </TouchableOpacity>
-                </View>
 
-                {/* Main Content */}
+                <ToggleRow
+                    options={[{ label: 'Browse', value: 'Browse' }, { label: 'New', value: 'New' }]}
+                    value={mode}
+                    onChange={handleModeChange}
+                />
+
+
                 {mode === 'Browse' ? (
-                    hasEntities ? (
-                        <PromptSearch onSelect={handlePromptSelect} />
-                    ) : (
-                        <EmptyState
-                            title="No Prompts Yet"
-                            subtitle="You haven't created any prompts. Start your first one below."
-                            buttonLabel="Create First Prompt"
-                            onButtonPress={() => setMode('New')}
-                        />
-                    )
+                    <>
+                        <SearchInput value={searchText} onChange={setSearchText} placeholder="Search for a prompt..." />
+                        {/* 
+              TODO: Hook up actual search results and empty state display here.
+              For now you're just wiring the input.
+            */}
+                    </>
                 ) : (
-                    <View style={{ flex: 1, justifyContent: 'space-between' }}>
-                        <View style={{ marginTop: 16 }}>
-                            <RichPromptEditor
-                                text={newContent}
-                                onChangeText={setNewContent}
-                                entityType={entityType}
-                                onChangeEntityType={setEntityType}
-                            />
-                        </View>
+                    <>
+                        <RichPromptEditor
+                            text={newContent}
+                            onChangeText={setNewContent}
+                            entityType={entityType}
+                            onChangeEntityType={setEntityType}
+                        />
 
-                        <TouchableOpacity
-                            style={{
-                                backgroundColor: colors.primary,
-                                padding: 16,
-                                borderRadius: 8,
-                                alignItems: 'center',
-                                marginTop: 16,
-                            }}
-                            onPress={handleCreate}
-                        >
-                            <Text style={{ color: colors.onPrimary, fontWeight: 'bold' }}>Save</Text>
-                        </TouchableOpacity>
-                    </View>
+                        <View style={styles.saveButtonContainer}>
+                            <TouchableOpacity style={styles.saveButton} onPress={handleCreate}>
+                                <Text style={styles.saveButtonText}>Save</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </>
                 )}
             </View>
         </ThemedSafeArea>
     );
 }
+
+import { TouchableOpacity, Text } from 'react-native';
+
+const getStyles = (colors: ReturnType<typeof useColors>) =>
+    StyleSheet.create({
+        container: {
+            flex: 1,
+            padding: 16,
+        },
+        saveButtonContainer: {
+            marginTop: 24,
+        },
+        saveButton: {
+            backgroundColor: colors.primary,
+            paddingVertical: 16,
+            borderRadius: 10,
+            alignItems: 'center',
+        },
+        saveButtonText: {
+            color: colors.onPrimary,
+            fontWeight: '600',
+            fontSize: 16,
+        },
+    });

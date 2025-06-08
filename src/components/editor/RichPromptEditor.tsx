@@ -1,19 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-    NativeSyntheticEvent,
-    TextInputSelectionChangeEventData,
-    Modal,
-    Pressable,
-    FlatList,
-} from 'react-native';
+import { View, Text, TextInput, StyleSheet, NativeSyntheticEvent, TextInputSelectionChangeEventData, TouchableOpacity } from 'react-native';
 
 import InsertModal from '../modals/InsertModal';
 import CollapsibleSection from '../shared/CollapsibleSection';
+import EntityTypeDropdown from '../shared/EntityTypeDropdown';
 import { useVariableStore } from '../../stores/useVariableStore';
 import { getEntityForEdit } from '../../utils/prompt/generateEntityForEdit';
 import { getSharedStyles } from '../../styles/shared';
@@ -22,8 +12,7 @@ import { resolveVariableDisplayValue } from '../../utils/variables/variables';
 import { parsePromptParts } from '../../utils/prompt/promptManager';
 import { EntityType } from '../../types/entity';
 import { useEntityStore } from '../../stores/useEntityStore';
-import EntityTypeDropdown from '../modals/EntityTypeDropdown';
-import { Ionicons } from '@expo/vector-icons';
+import InsertIconButton from '../shared/InsertIconnButton';
 
 type Props = {
     text: string;
@@ -41,17 +30,14 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
     const [editMode, setEditMode] = useState<'Variable' | 'Function' | 'Snippet'>('Variable');
     const [tempVariableName, setTempVariableName] = useState('');
     const [tempVariableValue, setTempVariableValue] = useState('');
+    const [showVariables, setShowVariables] = useState(true);
+    const [showPreview, setShowPreview] = useState(true);
 
     const colors = useColors();
     const sharedStyles = getSharedStyles(colors);
     const styles = getStyles(colors);
-
     const entityStore = useEntityStore();
-    const { values, setVariable, getVariable, removeVariable } = useVariableStore.getState();
-
-    const [showVariables, setShowVariables] = useState(true);
-    const [showPreview, setShowPreview] = useState(true);
-    const [dropdownVisible, setDropdownVisible] = useState(false);
+    const { setVariable, getVariable, removeVariable } = useVariableStore.getState();
 
     const parts = useMemo(() => parsePromptParts(text), [text]);
 
@@ -64,18 +50,8 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
             if (isEditingVariable) removeVariable(name);
             setVariable(name, { type: 'string', value, richCapable: false });
         } else {
-            const newEntity = {
-                id: name,
-                entityType: mode,
-                title: name,
-                content: value,
-                variables: {},
-            };
-
-            if (isEditingVariable) {
-                entityStore.deleteEntity(name);
-            }
-
+            const newEntity = { id: name, entityType: mode, title: name, content: value, variables: {} };
+            if (isEditingVariable) entityStore.deleteEntity(name);
             entityStore.upsertEntity(newEntity);
         }
 
@@ -107,34 +83,21 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
         <View style={styles.container}>
             <View style={styles.headerRow}>
                 <View style={{ flex: 1 }} />
-                {/* <TouchableOpacity onPress={() => setShowInsertModal(true)} style={styles.addButton}>
-                    <Text style={styles.addButtonText}>+ Insert</Text>
-                </TouchableOpacity> */}
-
-                <TouchableOpacity onPress={() => setShowInsertModal(true)} style={styles.insertIconButton}>
-                    <Ionicons name="add" size={20} color={colors.accent} />
-                </TouchableOpacity>
+                <InsertIconButton onPress={() => setShowInsertModal(true)} />
             </View>
 
-            {/* Dropdown Selector */}
-            <View style={{ marginBottom: 16 }}>
-                <EntityTypeDropdown
-                    value={entityType}
-                    options={entityTypes}
-                    onSelect={onChangeEntityType}
-                />
+            <View style={{ marginBottom: 12 }}>
+                <EntityTypeDropdown value={entityType} options={entityTypes} onSelect={onChangeEntityType} />
             </View>
-
 
             <TextInput
                 value={text}
                 onChangeText={onChangeText}
                 onSelectionChange={(e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) =>
-                    setSelection(e.nativeEvent.selection)
-                }
+                    setSelection(e.nativeEvent.selection)}
                 selection={selection}
                 multiline
-                style={[styles.input, { borderColor: colors.borderThin }]}
+                style={styles.input}
                 placeholder="Try anything here..."
                 placeholderTextColor={colors.secondaryText}
             />
@@ -193,7 +156,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                 }}
                 onInsert={handleInsert}
             />
-        </View >
+        </View>
     );
 }
 
@@ -201,51 +164,18 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
         container: { padding: 4 },
         headerRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 },
-        addButton: {
-            backgroundColor: colors.surface,
-            borderWidth: 1,
-            borderColor: colors.borderThin,  // use your thin variant here
-            paddingHorizontal: 10,
-            paddingVertical: 5,
-            borderRadius: 6,
-        },
-
-        addButtonText: { color: colors.text, fontWeight: '600' },
-
-        dropdownContainer: { marginBottom: 12 },
-        dropdownButton: {
-            borderWidth: 1, borderColor: colors.border, borderRadius: 6,
-            paddingHorizontal: 10, paddingVertical: 10, backgroundColor: colors.card,
-        },
-        dropdownButtonText: { fontSize: 16, color: colors.text, fontWeight: '600' },
-        modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)' },
-        modalContent: { backgroundColor: colors.surface, padding: 16, borderRadius: 10, width: 250 },
-        dropdownItem: { paddingVertical: 10 },
-        dropdownItemText: { fontSize: 16, color: colors.text },
-        dropdownItemActive: { backgroundColor: colors.accent, borderRadius: 6 },
-        dropdownItemTextActive: { color: colors.onAccent, fontWeight: '600' },
-
         input: {
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-            borderWidth: 1,
-            borderRadius: 6,
             fontSize: 16,
-            paddingVertical: 16,
+            borderWidth: 1,
+            borderColor: colors.border,
             paddingHorizontal: 16,
+            paddingVertical: 16,
+            borderRadius: 6,
             color: colors.text,
+            backgroundColor: colors.card,
+            minHeight: 80,
         },
-
-
         chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
         section: { backgroundColor: colors.card, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16, marginBottom: 12 },
         previewContainer: { paddingVertical: 12, paddingHorizontal: 8 },
-        insertIconButton: {
-            backgroundColor: colors.surface,
-            borderColor: colors.borderThin,
-            borderWidth: 1,
-            padding: 8,
-            borderRadius: 6,
-        }
-
     });
