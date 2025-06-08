@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     View,
     Text,
@@ -12,14 +12,13 @@ import {
 import InsertModal from '../modals/InsertModal';
 import CollapsibleSection from '../shared/CollapsibleSection';
 import { useVariableStore } from '../../stores/useVariableStore';
-import { useFunctionStore } from '../../stores/useFunctionStore';
-import { useSnippetStore } from '../../stores/useSnippetStore';
 import { getEntityForEdit } from '../../utils/prompt/generateEntityForEdit';
 import { getSharedStyles } from '../../styles/shared';
 import { useColors } from '../../hooks/useColors';
 import { resolveVariableDisplayValue } from '../../utils/variables/variables';
 import { parsePromptParts } from '../../utils/prompt/promptManager';
 import { EntityType } from '../../types/entity';
+import { useEntityStore } from '../../stores/useEntityStore';
 
 type Props = {
     text: string;
@@ -29,7 +28,6 @@ type Props = {
 };
 
 const entityTypes: EntityType[] = ['Prompt', 'Function', 'Snippet', 'Template'];
-
 
 export default function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType }: Props) {
     const [selection, setSelection] = useState({ start: 0, end: 0 });
@@ -42,9 +40,10 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
     const colors = useColors();
     const sharedStyles = getSharedStyles(colors);
     const styles = getStyles(colors);
+
+    const entityStore = useEntityStore();
     const { values, setVariable, getVariable, removeVariable } = useVariableStore.getState();
-    const addFunction = useFunctionStore((state) => state.addFunction);
-    const { setSnippet, removeSnippet } = useSnippetStore();
+
     const [showVariables, setShowVariables] = useState(true);
     const [showPreview, setShowPreview] = useState(true);
 
@@ -54,22 +53,24 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
         return Array.from(new Set(parts.filter(p => p.type === 'variable').map(p => p.name)));
     }, [parts]);
 
-    const handleInsert = async (mode: 'Function' | 'Snippet' | 'Variable', name: string, value: string) => {
-        if (mode === 'Function') {
-            if (isEditingVariable) {
-                await useFunctionStore.getState().deleteFunction(name);
-            }
-            await addFunction(name, value);
-        } else if (mode === 'Snippet') {
-            if (isEditingVariable) removeSnippet(name);
-            setSnippet(name, value);
-        } else {
+    const handleInsert = (mode: 'Function' | 'Snippet' | 'Variable', name: string, value: string) => {
+        if (mode === 'Variable') {
             if (isEditingVariable) removeVariable(name);
-            setVariable(name, {
-                type: 'string',
-                value,
-                richCapable: false  // or true depending on your logic
-            });
+            setVariable(name, { type: 'string', value, richCapable: false });
+        } else {
+            const newEntity = {
+                id: name,  // you may want to generate a true UUID here later
+                entityType: mode,
+                title: name,
+                content: value,
+                variables: {},
+            };
+
+            if (isEditingVariable) {
+                entityStore.deleteEntity(name);
+            }
+
+            entityStore.upsertEntity(newEntity);
         }
 
         if (!isEditingVariable) {
@@ -211,70 +212,28 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
         container: { padding: 4 },
-        headerRow: {
-            flexDirection: 'row',
-            justifyContent: 'flex-end',
-            marginBottom: 8,
-        },
+        headerRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 },
         addButton: {
             backgroundColor: colors.primary,
             paddingHorizontal: 12,
             paddingVertical: 6,
             borderRadius: 6,
         },
-        addButtonText: {
-            color: colors.onPrimary,
-            fontWeight: '600',
-        },
-        typeSelector: {
-            flexDirection: 'row',
-            marginBottom: 12,
-            gap: 8,
-        },
+        addButtonText: { color: colors.onPrimary, fontWeight: '600' },
+        typeSelector: { flexDirection: 'row', marginBottom: 12, gap: 8 },
         typeButton: {
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 6,
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            backgroundColor: colors.card,
+            borderWidth: 1, borderColor: colors.border, borderRadius: 6,
+            paddingHorizontal: 10, paddingVertical: 4, backgroundColor: colors.card,
         },
-        typeButtonActive: {
-            backgroundColor: colors.primary,
-        },
-        typeButtonText: {
-            fontSize: 14,
-            color: colors.text,
-        },
-        typeButtonTextActive: {
-            color: colors.onPrimary,
-            fontWeight: '600',
-        },
+        typeButtonActive: { backgroundColor: colors.primary },
+        typeButtonText: { fontSize: 14, color: colors.text },
+        typeButtonTextActive: { color: colors.onPrimary, fontWeight: '600' },
         input: {
-            fontSize: 16,
-            borderWidth: 1,
-            borderColor: colors.border,
-            padding: 16,
-            borderRadius: 6,
-            minHeight: 60,
-            color: colors.text,
-            backgroundColor: colors.inputBackground,
+            fontSize: 16, borderWidth: 1, borderColor: colors.border,
+            padding: 16, borderRadius: 6, minHeight: 60,
+            color: colors.text, backgroundColor: colors.inputBackground,
         },
-        chipContainer: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 8,
-            marginTop: 10,
-        },
-        section: {
-            backgroundColor: colors.card,
-            borderRadius: 12,
-            paddingVertical: 10,
-            paddingHorizontal: 16,
-            marginBottom: 12,
-        },
-        previewContainer: {
-            paddingVertical: 12,
-            paddingHorizontal: 8,
-        },
+        chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+        section: { backgroundColor: colors.card, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16, marginBottom: 12 },
+        previewContainer: { paddingVertical: 12, paddingHorizontal: 8 },
     });

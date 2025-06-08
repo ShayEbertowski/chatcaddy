@@ -11,6 +11,7 @@ interface EntityStore {
     addOrUpdateEntity: (entity: Entity) => Promise<void>;
     deleteEntity: (id: string) => Promise<void>;
     clearAll: () => void;
+    upsertEntity: (entity: Entity) => void;
 }
 
 export const useEntityStore = create<EntityStore>((set, get) => ({
@@ -63,6 +64,14 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
             entities: state.entities.filter((e) => e.id !== id),
         }));
     },
+
+    upsertEntity: (entity: Entity) => {
+        set((state) => {
+            const filtered = state.entities.filter(e => e.id !== entity.id);
+            return { entities: [...filtered, entity] };
+        });
+    },
+
 
     clearAll: () => {
         set(() => ({ entities: [] }));
