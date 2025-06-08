@@ -113,27 +113,32 @@ export const getSharedStyles = ({ isDark, ...colors }: Theme) =>
     },
     toggleRow: {
       flexDirection: 'row',
-      backgroundColor: colors.toggleBackground ?? colors.inputBackground,
+      alignSelf: 'center',
       borderRadius: 12,
       overflow: 'hidden',
       marginTop: 10,
     },
+
     toggleButton: {
       flex: 1,
       paddingVertical: 12,
       alignItems: 'center',
     },
+
     toggleButtonSelected: {
-      backgroundColor: colors.primary,
+      backgroundColor: colors.accent,  // switch from primary to accent
     },
+
     toggleButtonText: {
-      color: colors.text,
+      color: colors.secondaryText,  // nice and muted for unselected state
       fontWeight: '500',
     },
+
     toggleButtonTextSelected: {
-      color: colors.onPrimary,
+      color: colors.onAccent,  // your already defined text-on-accent color
       fontWeight: '700',
     },
+
     scroll: {
       flexGrow: 1,
       paddingVertical: 32,

@@ -7,6 +7,9 @@ import {
     StyleSheet,
     NativeSyntheticEvent,
     TextInputSelectionChangeEventData,
+    Modal,
+    Pressable,
+    FlatList,
 } from 'react-native';
 
 import InsertModal from '../modals/InsertModal';
@@ -19,6 +22,8 @@ import { resolveVariableDisplayValue } from '../../utils/variables/variables';
 import { parsePromptParts } from '../../utils/prompt/promptManager';
 import { EntityType } from '../../types/entity';
 import { useEntityStore } from '../../stores/useEntityStore';
+import EntityTypeDropdown from '../modals/EntityTypeDropdown';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
     text: string;
@@ -46,6 +51,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
 
     const [showVariables, setShowVariables] = useState(true);
     const [showPreview, setShowPreview] = useState(true);
+    const [dropdownVisible, setDropdownVisible] = useState(false);
 
     const parts = useMemo(() => parsePromptParts(text), [text]);
 
@@ -59,7 +65,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
             setVariable(name, { type: 'string', value, richCapable: false });
         } else {
             const newEntity = {
-                id: name,  // you may want to generate a true UUID here later
+                id: name,
                 entityType: mode,
                 title: name,
                 content: value,
@@ -101,32 +107,24 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
         <View style={styles.container}>
             <View style={styles.headerRow}>
                 <View style={{ flex: 1 }} />
-                <TouchableOpacity onPress={() => setShowInsertModal(true)} style={styles.addButton}>
+                {/* <TouchableOpacity onPress={() => setShowInsertModal(true)} style={styles.addButton}>
                     <Text style={styles.addButtonText}>+ Insert</Text>
+                </TouchableOpacity> */}
+
+                <TouchableOpacity onPress={() => setShowInsertModal(true)} style={styles.insertIconButton}>
+                    <Ionicons name="add" size={20} color={colors.accent} />
                 </TouchableOpacity>
             </View>
 
-            <View style={styles.typeSelector}>
-                {entityTypes.map((type) => (
-                    <TouchableOpacity
-                        key={type}
-                        onPress={() => onChangeEntityType(type)}
-                        style={[
-                            styles.typeButton,
-                            entityType === type && styles.typeButtonActive,
-                        ]}
-                    >
-                        <Text
-                            style={[
-                                styles.typeButtonText,
-                                entityType === type && styles.typeButtonTextActive,
-                            ]}
-                        >
-                            {type}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
+            {/* Dropdown Selector */}
+            <View style={{ marginBottom: 16 }}>
+                <EntityTypeDropdown
+                    value={entityType}
+                    options={entityTypes}
+                    onSelect={onChangeEntityType}
+                />
             </View>
+
 
             <TextInput
                 value={text}
@@ -141,11 +139,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                 placeholderTextColor={colors.secondaryText}
             />
 
-            <CollapsibleSection
-                title="Variables"
-                isOpen={showVariables}
-                onToggle={() => setShowVariables(!showVariables)}
-            >
+            <CollapsibleSection title="Variables" isOpen={showVariables} onToggle={() => setShowVariables(!showVariables)}>
                 <View style={styles.chipContainer}>
                     {usedVars.length === 0 ? (
                         <Text style={{ color: colors.secondaryText, fontStyle: 'italic', paddingVertical: 6 }}>
@@ -163,16 +157,10 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
 
             <View style={sharedStyles.divider} />
 
-            <CollapsibleSection
-                title="Preview"
-                isOpen={showPreview}
-                onToggle={() => setShowPreview(!showPreview)}
-            >
+            <CollapsibleSection title="Preview" isOpen={showPreview} onToggle={() => setShowPreview(!showPreview)}>
                 <View style={styles.section}>
                     {text.trim() === '' ? (
-                        <Text style={sharedStyles.placeholderText}>
-                            Preview will appear here as you type your prompt.
-                        </Text>
+                        <Text style={sharedStyles.placeholderText}>Preview will appear here as you type your prompt.</Text>
                     ) : (
                         <View style={styles.previewContainer}>
                             <Text style={sharedStyles.previewVariable}>
@@ -205,7 +193,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                 }}
                 onInsert={handleInsert}
             />
-        </View>
+        </View >
     );
 }
 
@@ -214,26 +202,50 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
         container: { padding: 4 },
         headerRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 },
         addButton: {
-            backgroundColor: colors.primary,
-            paddingHorizontal: 12,
-            paddingVertical: 6,
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.borderThin,  // use your thin variant here
+            paddingHorizontal: 10,
+            paddingVertical: 5,
             borderRadius: 6,
         },
-        addButtonText: { color: colors.onPrimary, fontWeight: '600' },
-        typeSelector: { flexDirection: 'row', marginBottom: 12, gap: 8 },
-        typeButton: {
+
+        addButtonText: { color: colors.text, fontWeight: '600' },
+
+        dropdownContainer: { marginBottom: 12 },
+        dropdownButton: {
             borderWidth: 1, borderColor: colors.border, borderRadius: 6,
-            paddingHorizontal: 10, paddingVertical: 4, backgroundColor: colors.card,
+            paddingHorizontal: 10, paddingVertical: 10, backgroundColor: colors.card,
         },
-        typeButtonActive: { backgroundColor: colors.primary },
-        typeButtonText: { fontSize: 14, color: colors.text },
-        typeButtonTextActive: { color: colors.onPrimary, fontWeight: '600' },
+        dropdownButtonText: { fontSize: 16, color: colors.text, fontWeight: '600' },
+        modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)' },
+        modalContent: { backgroundColor: colors.surface, padding: 16, borderRadius: 10, width: 250 },
+        dropdownItem: { paddingVertical: 10 },
+        dropdownItemText: { fontSize: 16, color: colors.text },
+        dropdownItemActive: { backgroundColor: colors.accent, borderRadius: 6 },
+        dropdownItemTextActive: { color: colors.onAccent, fontWeight: '600' },
+
         input: {
-            fontSize: 16, borderWidth: 1, borderColor: colors.border,
-            padding: 16, borderRadius: 6, minHeight: 60,
-            color: colors.text, backgroundColor: colors.inputBackground,
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            borderWidth: 1,
+            borderRadius: 6,
+            fontSize: 16,
+            paddingVertical: 16,
+            paddingHorizontal: 16,
+            color: colors.text,
         },
+
+
         chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
         section: { backgroundColor: colors.card, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16, marginBottom: 12 },
         previewContainer: { paddingVertical: 12, paddingHorizontal: 8 },
+        insertIconButton: {
+            backgroundColor: colors.surface,
+            borderColor: colors.borderThin,
+            borderWidth: 1,
+            padding: 8,
+            borderRadius: 6,
+        }
+
     });

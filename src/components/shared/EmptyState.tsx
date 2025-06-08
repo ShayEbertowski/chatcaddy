@@ -7,13 +7,19 @@ import { typography } from '../../theme/typography';
 import { capitalize, removeLastChar } from '../../utils/string/stringHelper';
 
 type EmptyStateProps = {
-    category: string;
-    onCreatePress: () => void;
+    icon?: React.ReactNode;  // Optional future icon override
+    title: string;
+    subtitle: string;
+    buttonLabel: string;
+    onButtonPress: () => void;
 };
 
 export default function EmptyState({
-    category,
-    onCreatePress,
+    icon,
+    title,
+    subtitle,
+    buttonLabel,
+    onButtonPress,
 }: EmptyStateProps) {
     const colors = useColors();
     const bounceValue = useRef(new Animated.Value(1)).current;
@@ -41,22 +47,15 @@ export default function EmptyState({
 
     return (
         <Animated.View style={[styles.container, { transform: [{ scale: bounceValue }] }]}>
-            <MaterialIcons name="library-books" size={64} color={colors.secondaryText} />
-            <Text style={[styles.title, { color: colors.text }]}>
-                Your {capitalize(removeLastChar(category))} Library is Empty
-            </Text>
-            <Text style={[styles.subtitle, { color: colors.secondaryText }]}>
-                Start by creating your first {removeLastChar(category)}
-            </Text>
+            {icon ?? <MaterialIcons name="library-books" size={64} color={colors.secondaryText} />}
+            <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+            <Text style={[styles.subtitle, { color: colors.secondaryText }]}>{subtitle}</Text>
             <TouchableOpacity
                 style={[styles.button, { backgroundColor: colors.primary }]}
-                onPress={() => {
-                    // console.log('❌ Button pressed');
-                    onCreatePress?.();
-                }}
+                onPress={onButtonPress}
             >
                 <Text style={[styles.buttonText, { color: colors.onPrimary }]}>
-                    Create Your First {capitalize(removeLastChar(category))}
+                    {buttonLabel}
                 </Text>
             </TouchableOpacity>
         </Animated.View>
@@ -80,14 +79,16 @@ const styles = StyleSheet.create({
         ...typography.body,
         textAlign: 'center',
         marginBottom: spacing.lg,
+        color: '#666666', // colors.secondaryText will override this anyway
     },
     button: {
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
         borderRadius: 8,
+        marginTop: spacing.md,
     },
     buttonText: {
-        fontWeight: '600' as const,
+        fontWeight: '600',
         fontSize: 16,
     },
 });
