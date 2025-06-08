@@ -1,18 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useColors } from '../../../../src/hooks/useColors';
 import { ComposerTreeView } from '../../../../src/components/composer/ComposerTreeView';
 import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
+import { ThemedButton } from '../../../../src/components/ui/ThemedButton';
 import { composerStore } from '../../../../src/core/composer/composerStore';
 import { ComposerNode } from '../../../../src/core/types/composer';
+import { useColors } from '../../../../src/hooks/useColors';
+import { generateUUIDSync } from '../../../../src/utils/uuid/generateUUIDSync';
+import { findNodePath } from '../../../../src/utils/composer/findNodePath';
+import { VariableEditor } from '../../../../src/components/composer/VariableEditor';
 
 export default function ComposerNodeScreen() {
     const colors = useColors();
     const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
-    const { rootNode, loadTree } = composerStore();
+    const { rootNode, loadTree, saveTree, addChild } = composerStore();
     const [loading, setLoading] = useState(true);
     const [currentNode, setCurrentNode] = useState<ComposerNode | null>(null);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [newChildTitle, setNewChildTitle] = useState('');
+
+    const [nodePath, setNodePath] = useState<ComposerNode[]>([]);
+
+    useEffect(() => {
+        if (!rootNode) return;
+
+        const path = findNodePath(rootNode, nodeId);
+        setNodePath(path);
+    }, [rootNode, nodeId]);
+
 
     useEffect(() => {
         async function fetch() {
@@ -40,6 +56,25 @@ export default function ComposerNodeScreen() {
         return null;
     }
 
+    const handleInsertChild = async () => {
+        if (!newChildTitle.trim() || !currentNode) return;
+
+        const newChild: ComposerNode = {
+            id: generateUUIDSync(),
+            entityType: 'Prompt',
+            title: newChildTitle,
+            content: '',
+            variables: {},
+            children: [],
+        };
+
+        addChild(currentNode.id, newChild);
+        await saveTree(rootNode!.title); // persist full tree
+
+        setNewChildTitle('');
+        setModalVisible(false);
+    };
+
     if (loading || !currentNode) {
         return (
             <ThemedSafeArea>
@@ -51,7 +86,24 @@ export default function ComposerNodeScreen() {
     return (
         <ThemedSafeArea>
             <View style={styles.container}>
+
+                <View style={styles.breadcrumbs}>
+                    {nodePath.map((node, index) => (
+                        <TouchableOpacity
+                            key={node.id}
+                            onPress={() => router.push(`/composer/${treeId}/${node.id}`)}
+                        >
+                            <Text style={[styles.breadcrumb, { color: colors.accent }]}>
+                                {node.title || '(Untitled)'} {index < nodePath.length - 1 ? ' / ' : ''}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
                 <ComposerTreeView node={currentNode} />
+
+                <VariableEditor node={currentNode} />
+
 
                 <Text style={[styles.subtitle, { color: colors.text }]}>Children:</Text>
 
@@ -71,7 +123,26 @@ export default function ComposerNodeScreen() {
                 ) : (
                     <Text style={{ color: colors.text }}>No children yet.</Text>
                 )}
+
+                <ThemedButton title="Insert Child" onPress={() => setModalVisible(true)} />
             </View>
+
+            <Modal visible={modalVisible} transparent animationType="slide">
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>New Child Title:</Text>
+                        <TextInput
+                            style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+                            value={newChildTitle}
+                            onChangeText={setNewChildTitle}
+                            placeholder="Enter title"
+                            placeholderTextColor={colors.border}
+                        />
+                        <ThemedButton title="Add" onPress={handleInsertChild} />
+                        <ThemedButton title="Cancel" onPress={() => setModalVisible(false)} />
+                    </View>
+                </View>
+            </Modal>
         </ThemedSafeArea>
     );
 }
@@ -80,4 +151,11 @@ const styles = StyleSheet.create({
     container: { padding: 16 },
     subtitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
     childButton: { padding: 12, borderRadius: 8, backgroundColor: '#333', marginBottom: 8 },
+    modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000088' },
+    modalContent: { padding: 24, borderRadius: 12, width: '80%' },
+    modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
+    input: { borderWidth: 1, padding: 10, borderRadius: 8, marginBottom: 16 },
+    breadcrumbs: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
+    breadcrumb: { fontWeight: 'bold', marginRight: 4 },
+
 });
