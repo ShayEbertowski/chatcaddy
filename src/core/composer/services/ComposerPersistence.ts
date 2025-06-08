@@ -1,28 +1,29 @@
-import { supabase } from '../../../lib/supabaseClient';
-import { generateUUIDSync } from '../../../utils/uuid/generateUUIDSync';
-import { ComposerNode, ComposerTreeRecord } from '../../types/composer';
+import { supabase } from "../../../lib/supabaseClient";
+import { ComposerNode } from "../../types/composer";
 
-const session = supabase;
 
-export async function saveComposerTree(name: string, rootNode: ComposerNode, id?: string): Promise<string> {
-    const treeId = id ?? generateUUIDSync();
+export async function saveComposerTree(
+    name: string,
+    rootNode: ComposerNode,
+    id?: string
+): Promise<string> {
+    const treeId = id ?? rootNode.id;
 
-    const { error } = await supabase
-        .from('composer_trees')
-        .upsert({
-            id: treeId,
-            name,
-            tree_data: rootNode,
-        });
+    const { error } = await supabase.from('composer_trees').upsert({
+        id: treeId,
+        name,
+        tree_data: rootNode,
+    });
 
     if (error) {
+        console.error('Supabase error in saveComposerTree:', error);
         throw new Error(error.message);
     }
 
     return treeId;
 }
 
-export async function loadComposerTree(treeId: string): Promise<ComposerTreeRecord> {
+export async function loadComposerTree(treeId: string) {
     const { data, error } = await supabase
         .from('composer_trees')
         .select('*')
@@ -30,32 +31,22 @@ export async function loadComposerTree(treeId: string): Promise<ComposerTreeReco
         .single();
 
     if (error) {
+        console.error('Supabase error in loadComposerTree:', error);
         throw new Error(error.message);
     }
 
-    return data as ComposerTreeRecord;
+    return data;
 }
 
-export async function listComposerTrees(): Promise<ComposerTreeRecord[]> {
+export async function listComposerTrees() {
     const { data, error } = await supabase
         .from('composer_trees')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, name');
 
     if (error) {
+        console.error('Supabase error in listComposerTrees:', error);
         throw new Error(error.message);
     }
 
-    return data as ComposerTreeRecord[];
-}
-
-export async function deleteComposerTree(treeId: string): Promise<void> {
-    const { error } = await supabase
-        .from('composer_trees')
-        .delete()
-        .eq('id', treeId);
-
-    if (error) {
-        throw new Error(error.message);
-    }
+    return data;
 }

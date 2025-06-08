@@ -46,7 +46,6 @@ export function InsertChildModal({ visible, parentId, onClose, onInsert }: Props
                         style={[styles.input, { borderColor: colors.border, color: colors.text }]}
                         placeholderTextColor={colors.border}
                     />
-
                     <TextInput
                         value={content}
                         onChangeText={setContent}
@@ -55,7 +54,6 @@ export function InsertChildModal({ visible, parentId, onClose, onInsert }: Props
                         style={[styles.input, { borderColor: colors.border, color: colors.text, height: 120 }]}
                         placeholderTextColor={colors.border}
                     />
-
                     <ThemedButton title="Insert Child" onPress={handleInsert} />
                     <ThemedButton title="Cancel" onPress={onClose} />
                 </View>

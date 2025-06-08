@@ -1,71 +1,83 @@
 import React, { useEffect, useState } from 'react';
-import { Text, ActivityIndicator, View } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { ComposerNodeView } from '../../../../src/components/composer/ComposerNodeView';
+import { useColors } from '../../../../src/hooks/useColors';
+import { ComposerTreeView } from '../../../../src/components/composer/ComposerTreeView';
 import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
 import { composerStore } from '../../../../src/core/composer/composerStore';
 import { ComposerNode } from '../../../../src/core/types/composer';
-import { ThemedButton } from '../../../../src/components/ui/ThemedButton';
-import { Breadcrumb } from '../../../../src/components/composer/Breadcrumb';
 
 export default function ComposerNodeScreen() {
+    const colors = useColors();
     const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
-    const { rootNode } = composerStore();
-    const [loading, setLoading] = useState(false);
+    const { rootNode, loadTree } = composerStore();
+    const [loading, setLoading] = useState(true);
+    const [currentNode, setCurrentNode] = useState<ComposerNode | null>(null);
 
     useEffect(() => {
-        if (!treeId) return;
-        setLoading(true);
-
-        composerStore.getState().loadTree(treeId)
-            .catch((err) => console.error('Error loading tree:', err))
-            .finally(() => setLoading(false));
+        async function fetch() {
+            if (!rootNode) {
+                await loadTree(treeId);
+            }
+            setLoading(false);
+        }
+        fetch();
     }, [treeId]);
 
-    const findNode = (node: ComposerNode): ComposerNode | undefined => {
-        if (node.id === nodeId) return node;
-        return node.children?.map(findNode).find((n) => n);
-    };
+    useEffect(() => {
+        if (!rootNode) return;
 
-    if (loading) {
-        return (
-            <ThemedSafeArea>
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" />
-                </View>
-            </ThemedSafeArea>
-        );
+        const foundNode = findNode(rootNode, nodeId);
+        setCurrentNode(foundNode);
+    }, [rootNode, nodeId]);
+
+    function findNode(node: ComposerNode, searchId: string): ComposerNode | null {
+        if (node.id === searchId) return node;
+        for (const child of node.children) {
+            const found = findNode(child, searchId);
+            if (found) return found;
+        }
+        return null;
     }
 
-    if (!rootNode) {
+    if (loading || !currentNode) {
         return (
             <ThemedSafeArea>
-                <Text>No root node loaded</Text>
-            </ThemedSafeArea>
-        );
-    }
-
-    const currentNode = nodeId ? findNode(rootNode) : rootNode;
-
-    if (!currentNode) {
-        return (
-            <ThemedSafeArea>
-                <Text>Node not found</Text>
+                <ActivityIndicator size="large" color={colors.primary} />
             </ThemedSafeArea>
         );
     }
 
     return (
         <ThemedSafeArea>
-            <Breadcrumb treeId={treeId} rootNode={rootNode} currentNodeId={nodeId} />
+            <View style={styles.container}>
+                <ComposerTreeView node={currentNode} />
 
-            <ComposerNodeView node={currentNode} />
+                <Text style={[styles.subtitle, { color: colors.text }]}>Children:</Text>
 
-            {/** Simple breadcrumb button: navigate up to parent */}
-            <ThemedButton
-                title="Back to Root"
-                onPress={() => router.push(`/(drawer)/(composer)/${treeId}/${rootNode.id}`)}
-            />
+                {currentNode.children?.length ? (
+                    <FlatList
+                        data={currentNode.children}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                style={styles.childButton}
+                                onPress={() => router.push(`/composer/${treeId}/${item.id}`)}
+                            >
+                                <Text style={{ color: colors.text }}>{item.title || '(Untitled)'}</Text>
+                            </TouchableOpacity>
+                        )}
+                    />
+                ) : (
+                    <Text style={{ color: colors.text }}>No children yet.</Text>
+                )}
+            </View>
         </ThemedSafeArea>
     );
 }
+
+const styles = StyleSheet.create({
+    container: { padding: 16 },
+    subtitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
+    childButton: { padding: 12, borderRadius: 8, backgroundColor: '#333', marginBottom: 8 },
+});

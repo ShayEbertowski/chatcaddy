@@ -1,11 +1,9 @@
+import { ComposerTreeRecord } from "../../core/types/composer";
+
 // src/core/composer/utils/mapper.ts
-
-import { ComposerTreeItem, ComposerTreeRecord } from "../../core/types/composer";
-
-
-export function mapTreeRecordToItem(record: ComposerTreeRecord): ComposerTreeItem {
+export function mapTreeRecordToItem(record: ComposerTreeRecord): { id: string; name: string } {
     return {
-        ...record.tree_data,
-        treeId: record.id
+        id: record.id,
+        name: record.name,
     };
 }

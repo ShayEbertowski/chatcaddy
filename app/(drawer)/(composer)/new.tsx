@@ -14,10 +14,11 @@ export default function NewComposerTreeScreen() {
 
     const handleCreate = async () => {
         if (!name.trim()) return;
-
-        // Create a new root node (empty tree scaffold)
+        console.log('foo');
+        const uuid = await generateUUID();
+        console.log('bar')
         const newRoot: ComposerNode = {
-            id: await generateUUID(),
+            id: uuid,
             entityType: 'Prompt',
             title: name,
             content: '',
@@ -25,15 +26,25 @@ export default function NewComposerTreeScreen() {
             children: [],
         };
 
-        // Set root node into Zustand store
         composerStore.getState().setRootNode(newRoot);
+        console.log('lala');
 
-        // Persist new tree
-        const id = await composerStore.getState().saveTree(name);
+        let id: string;
 
-        // Navigate to authoring screen
+        try {
+            id = await composerStore.getState().saveTree(name);
+            console.log('nope');
+        } catch (err) {
+            console.error('saveTree failed:', err);
+            return; // Don't continue if save failed
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
         router.push(`/(drawer)/(composer)/${id}`);
     };
+
+
 
     return (
         <ThemedSafeArea>

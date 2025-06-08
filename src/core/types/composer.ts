@@ -1,42 +1,19 @@
-import { EntityType } from "../../types/entity";
-import { ComposerNodeView } from "../../components/composer/ComposerNodeView";
+// types/composer.ts
+
+export type VariableValue = string | ComposerNode;
 
 export interface ComposerNode {
     id: string;
-    entityType: EntityType;
+    entityType: 'Prompt' | 'Function' | 'Snippet';
     title: string;
     content: string;
     variables: Record<string, VariableValue>;
     children: ComposerNode[];
 }
 
-
-export type VariableValue =
-    | { type: 'string'; value: string }
-    | { type: 'entity'; entity: ComposerNode };
-
-
+// What Supabase stores
 export interface ComposerTreeRecord {
-    id: string;
+    id: string;               // Supabase row ID
     name: string;
-    created_at: string;
-    updated_at: string;
-    tree_data: ComposerNode;
+    tree_data: ComposerNode;  // Full nested tree
 }
-
-export type ComposerTreeItem = ComposerNode & { treeId: string };
-
-export interface ComposerStoreState {
-    activeTreeId: string | null;
-    rootNode: ComposerNode | null;
-    availableTrees: ComposerTreeItem[];
-
-    setRootNode: (newRoot: ComposerNode) => void;
-    updateVariable: (variableName: string, variableValue: VariableValue) => void;
-    loadTree: (treeId: string) => Promise<void>;
-    saveTree: (name: string) => Promise<string>;
-    clearTree: () => void;
-    listTrees: () => Promise<ComposerTreeItem[]>;
-    addChild: (parentId: string, childNode: ComposerNode) => void;
-}
-

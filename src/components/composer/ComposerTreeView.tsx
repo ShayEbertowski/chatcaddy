@@ -23,16 +23,16 @@ export function ComposerTreeView({ node }: Props) {
                 <View key={varName} style={styles.variableRow}>
                     <Text style={styles.variableLabel}>{varName}:</Text>
 
-                    {value.type === 'string' ? (
+                    {typeof value === 'string' ? (
                         <TextInput
                             style={styles.input}
-                            value={value.value}
-                            onChangeText={(text) => updateVariable(varName, { type: 'string', value: text })}
+                            value={value}
+                            onChangeText={(text) => updateVariable(varName, text)}
                             placeholder={`Enter ${varName}`}
                         />
                     ) : (
                         <View style={styles.entityBox}>
-                            <Text style={styles.entityText}>[{value.entity.title}]</Text>
+                            <Text style={styles.entityText}>[{value.title}]</Text>
                         </View>
                     )}
 
@@ -41,7 +41,6 @@ export function ComposerTreeView({ node }: Props) {
                     </TouchableOpacity>
                 </View>
             ))}
-
         </View>
     );
 }

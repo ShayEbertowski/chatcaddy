@@ -1,86 +1,111 @@
+// core/composer/composerStore.ts
+
 import { create } from 'zustand';
-import { ComposerNode, VariableValue, ComposerStoreState, ComposerTreeItem } from '../types/composer';
-import * as persistence from '../composer/services/ComposerPersistence';
-import { mapTreeRecordToItem } from '../../utils/composer/mapper';
+import { ComposerNode, VariableValue, ComposerTreeRecord } from '../types/composer';
+import { createSupabaseClient } from '../../lib/supabaseDataClient';
+import { generateUUIDSync } from '../../utils/uuid/generateUUIDSync';
+
+const supabase = createSupabaseClient();
+
+interface ComposerStoreState {
+    activeTreeId: string | null;
+    rootNode: ComposerNode | null;
+    availableTrees: { id: string; name: string }[];
+
+    setRootNode: (newRoot: ComposerNode) => void;
+    updateVariable: (variableName: string, variableValue: VariableValue) => void;
+    loadTree: (treeId: string) => Promise<void>;
+    saveTree: (name: string) => Promise<string>;
+    clearTree: () => void;
+    listTrees: () => Promise<{ id: string; name: string }[]>;
+    addChild: (parentId: string, childNode: ComposerNode) => void;
+}
 
 export const composerStore = create<ComposerStoreState>((set, get) => ({
     activeTreeId: null,
     rootNode: null,
     availableTrees: [],
 
-    setRootNode(newRoot: ComposerNode) {
+    setRootNode(newRoot) {
         set({ rootNode: newRoot });
     },
 
-    updateVariable(variableName: string, variableValue: VariableValue) {
+    updateVariable(variableName, variableValue) {
         const { rootNode } = get();
         if (!rootNode) return;
 
-        const updatedNode: ComposerNode = {
+        const updated: ComposerNode = {
             ...rootNode,
-            variables: {
-                ...rootNode.variables,
-                [variableName]: variableValue,
-            }
+            variables: { ...rootNode.variables, [variableName]: variableValue },
         };
 
-        set({ rootNode: updatedNode });
+        set({ rootNode: updated });
     },
 
     async loadTree(treeId) {
-        const record = await persistence.loadComposerTree(treeId);
+        const { data, error } = await supabase
+            .from('composer_trees')
+            .select('*')
+            .eq('id', treeId)
+            .single();
+
+        if (error || !data) throw new Error(error?.message || 'Tree not found');
         set({
-            activeTreeId: record.id,
-            rootNode: record.tree_data,
+            rootNode: data.tree_data,
+            activeTreeId: data.id,
         });
     },
 
     async saveTree(name) {
-        const id = await persistence.saveComposerTree(
-            name,
-            get().rootNode!,
-            get().activeTreeId ?? undefined
-        );
-        set({ activeTreeId: id });
-        return id;
+        const { rootNode, activeTreeId } = get();
+        if (!rootNode) throw new Error('No root node to save.');
+
+        const treeId = activeTreeId ?? generateUUIDSync();
+
+        const { error } = await supabase
+            .from('composer_trees')
+            .upsert({
+                id: treeId,
+                name,
+                tree_data: rootNode,
+            });
+
+        if (error) throw new Error(error.message);
+
+        set({ activeTreeId: treeId });
+        return treeId;
     },
 
     clearTree() {
-        set({ activeTreeId: null, rootNode: null });
+        set({ rootNode: null, activeTreeId: null });
     },
 
-    listTrees: async () => {
-        try {
-            const trees = await persistence.listComposerTrees();
-            const mapped: ComposerTreeItem[] = trees.map(mapTreeRecordToItem);
-            set({ availableTrees: mapped });
-            return mapped;
-        } catch (error) {
-            console.error('Error fetching trees:', error);
-            set({ availableTrees: [] });
-            return [];
-        }
+    async listTrees() {
+        const { data, error } = await supabase.from('composer_trees').select('id, name');
+        if (error) throw new Error(error.message);
+        set({ availableTrees: data });
+        return data;
     },
 
-    addChild(parentId: string, childNode: ComposerNode) {
+    addChild(parentId, childNode) {
         const { rootNode } = get();
         if (!rootNode) return;
 
-        function insert(node: ComposerNode): ComposerNode {
+        function addRecursive(node: ComposerNode): ComposerNode {
             if (node.id === parentId) {
                 return {
                     ...node,
-                    children: [...(node.children ?? []), childNode],
+                    children: [...node.children, childNode],
                 };
             }
 
             return {
                 ...node,
-                children: node.children?.map(insert) ?? [],
+                children: node.children.map(addRecursive),
             };
         }
 
-        const updatedRoot = insert(rootNode);
-        set({ rootNode: updatedRoot });
+        const updated = addRecursive(rootNode);
+        set({ rootNode: updated });
     },
 }));

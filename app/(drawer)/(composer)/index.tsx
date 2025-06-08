@@ -1,57 +1,113 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+// app/composer/[treeId]/index.tsx
 
-import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Modal } from 'react-native';
+import { useLocalSearchParams, router } from 'expo-router';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../../src/components/ui/ThemedButton';
 import { composerStore } from '../../../src/core/composer/composerStore';
+import { ComposerNode } from '../../../src/core/types/composer';
 import { useColors } from '../../../src/hooks/useColors';
-import { ComposerTreeItem } from '../../../src/core/types/composer';
+import { ComposerTreeView } from '../../../src/components/composer/ComposerTreeView';
+import { generateUUIDSync } from '../../../src/utils/uuid/generateUUIDSync';
 
-
-export default function ComposerScreen() {
+export default function ComposerTreeScreen() {
     const colors = useColors();
-    const [trees, setTrees] = useState<ComposerTreeItem[]>([]);
+    const { treeId } = useLocalSearchParams<{ treeId: string }>();
+    const { rootNode, setRootNode, loadTree, saveTree } = composerStore();
+    const [loading, setLoading] = useState(true);
+    const [insertModalVisible, setInsertModalVisible] = useState(false);
+    const [newChildTitle, setNewChildTitle] = useState('');
 
     useEffect(() => {
-        async function fetchTrees() {
-            const trees: ComposerTreeItem[] = await composerStore.getState().listTrees();
-            setTrees(trees);
+        async function fetchTree() {
+            await loadTree(treeId);
+            setLoading(false);
         }
-        fetchTrees();
-    }, []);
+        fetchTree();
+    }, [treeId]);
+
+    if (loading || !rootNode) {
+        return (
+            <ThemedSafeArea>
+                <ActivityIndicator size="large" color={colors.primary} />
+            </ThemedSafeArea>
+        );
+    }
+
+    const handleInsertChild = async () => {
+        if (!newChildTitle.trim()) return;
+
+        const newChild: ComposerNode = {
+            id: generateUUIDSync(),
+            entityType: 'Prompt',
+            title: newChildTitle,
+            content: '',
+            variables: {},
+            children: [],
+        };
+
+        const updatedRoot: ComposerNode = {
+            ...rootNode,
+            children: [...(rootNode.children ?? []), newChild],
+        };
+
+        setRootNode(updatedRoot);
+        await saveTree(updatedRoot.title);
+        setNewChildTitle('');
+        setInsertModalVisible(false);
+    };
 
     return (
         <ThemedSafeArea>
             <View style={styles.container}>
-                <Text style={[styles.title, { color: colors.text }]}>Logicraft Composer</Text>
+                <ComposerTreeView node={rootNode} />
 
-                <ThemedButton
-                    title="Create New Tree"
-                    onPress={() => {
-                        router.push('/(drawer)/(composer)/new')
-                    }}
-                />
+                <Text style={[styles.subtitle, { color: colors.text }]}>Children:</Text>
 
-                <FlatList<ComposerTreeItem>
-                    data={trees}
-                    keyExtractor={(item) => item.treeId}
-                    renderItem={({ item }) => (
-                        <ThemedButton
-                            title={item.title}
-                            onPress={() => {
-                                composerStore.getState().loadTree(item.treeId);
-                                router.push(`/(drawer)/(composer)/${item.treeId}`);
-                            }}
-                        />
-                    )}
-                />
+                {rootNode.children?.length ? (
+                    <FlatList
+                        data={rootNode.children}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity style={styles.childButton}>
+                                <Text style={{ color: colors.text }}>{item.title || '(Untitled)'}</Text>
+                            </TouchableOpacity>
+                        )}
+                    />
+                ) : (
+                    <Text style={{ color: colors.text }}>No children yet.</Text>
+                )}
+
+                <ThemedButton title="Insert Child" onPress={() => setInsertModalVisible(true)} />
             </View>
+
+            <Modal visible={insertModalVisible} transparent animationType="slide">
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>New Child Title:</Text>
+                        <TextInput
+                            style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+                            value={newChildTitle}
+                            onChangeText={setNewChildTitle}
+                            placeholder="Enter title"
+                            placeholderTextColor={colors.border}
+                        />
+                        <ThemedButton title="Add" onPress={handleInsertChild} />
+                        <ThemedButton title="Cancel" onPress={() => setInsertModalVisible(false)} />
+                    </View>
+                </View>
+            </Modal>
         </ThemedSafeArea>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20, gap: 20 },
-    title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+    container: { padding: 16 },
+    subtitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
+    childButton: { padding: 12, borderRadius: 8, backgroundColor: '#333', marginBottom: 8 },
+    modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000088' },
+    modalContent: { padding: 24, borderRadius: 12, width: '80%' },
+    modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
+    input: { borderWidth: 1, padding: 10, borderRadius: 8, marginBottom: 16 },
 });

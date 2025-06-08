@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
-import { signIn, signUp, getUser, refreshAccessToken } from '../lib/auth';
+import { supabase } from '../lib/supabaseClient';
 
 type User = {
     id: string;
@@ -9,7 +8,6 @@ type User = {
 
 type AuthState = {
     user: User | null;
-    accessToken: string | null;
     loading: boolean;
     initialized: boolean;
     signIn: (email: string, password: string) => Promise<void>;
@@ -20,46 +18,38 @@ type AuthState = {
 
 export const useAuthStore = create<AuthState>((set) => ({
     user: null,
-    accessToken: null,
     loading: false,
     initialized: false,
 
     loadSession: async () => {
-        const refreshToken = await SecureStore.getItemAsync('refreshToken');
-        if (!refreshToken) {
-            set({ initialized: true }); // 👈 mark initialized even if no token exists
+        const {
+            data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session) {
+            set({ user: null, initialized: true });
             return;
         }
 
-        try {
-            const data = await refreshAccessToken(refreshToken);
-            const { access_token, refresh_token } = data;
+        set({
+            user: { id: session.user.id, email: session.user.email ?? '' },
+            initialized: true,
+        });
 
-            await SecureStore.setItemAsync('accessToken', access_token);
-            await SecureStore.setItemAsync('refreshToken', refresh_token);
+        console.log('🥶  Supabase session:');
 
-            const user = await getUser(access_token);
-
-            set({
-                accessToken: access_token,
-                user: { id: user.id, email: user.email },
-                initialized: true,  // 👈 mark initialized after successful refresh
-            });
-
-        } catch (e) {
-            console.error('Failed to refresh session', e);
-            await SecureStore.deleteItemAsync('accessToken');
-            await SecureStore.deleteItemAsync('refreshToken');
-            set({ initialized: true }); // 👈 mark initialized even on failure
-        }
     },
-
 
     signUp: async (email, password) => {
         set({ loading: true });
         try {
-            await signUp(email, password);
-        } catch (e: any) {
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+            });
+
+            if (error) throw error;
+        } catch (e) {
             console.error('Sign up failed', e);
             throw e;
         } finally {
@@ -70,27 +60,26 @@ export const useAuthStore = create<AuthState>((set) => ({
     signIn: async (email, password) => {
         set({ loading: true });
         try {
-            const data = await signIn(email, password);
-            const { access_token, refresh_token, user } = data;
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-            await SecureStore.setItemAsync('accessToken', access_token);
-            await SecureStore.setItemAsync('refreshToken', refresh_token);
+            if (error) throw error;
 
             set({
-                accessToken: access_token,
-                user: { id: user.id, email: user.email },
+                user: { id: data.user.id, email: data.user.email ?? '' },
             });
-        } catch (e: any) {
+        } catch (e) {
             console.error('Sign in failed', e);
             throw e;
         } finally {
             set({ loading: false });
         }
     },
-    signOut: async () => {
-        await SecureStore.deleteItemAsync('accessToken');
-        await SecureStore.deleteItemAsync('refreshToken');
-        set({ user: null, accessToken: null });
-    }
 
+    signOut: async () => {
+        await supabase.auth.signOut();
+        set({ user: null });
+    },
 }));

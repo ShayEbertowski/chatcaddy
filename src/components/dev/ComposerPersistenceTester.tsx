@@ -3,11 +3,12 @@ import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native
 import { ThemedSafeArea } from '../shared/ThemedSafeArea';
 import { useColors } from '../../hooks/useColors';
 import { composerStore } from '../../core/composer/composerStore';
-import { ComposerTreeRecord } from '../../core/types/composer';
+import { generateUUIDSync } from '../../utils/uuid/generateUUIDSync';
+import { ComposerNode } from '../../core/types/composer';
 
 export function ComposerPersistenceTester() {
     const colors = useColors();
-    const [trees, setTrees] = useState<ComposerTreeRecord[]>([]);
+    const [trees, setTrees] = useState<{ id: string; name: string }[]>([]);
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -16,13 +17,23 @@ export function ComposerPersistenceTester() {
     }, []);
 
     async function refreshTreeList() {
-        await composerStore.getState().listTrees();
-        setTrees(composerStore.getState().availableTrees);
+        const list = await composerStore.getState().listTrees();
+        setTrees(list);
     }
 
     async function handleSave() {
         try {
             setSaving(true);
+            const newRoot: ComposerNode = {
+                id: generateUUIDSync(),
+                entityType: 'Prompt',
+                title: 'Test Root',
+                content: '',
+                variables: {},
+                children: [],
+            };
+
+            composerStore.getState().setRootNode(newRoot);
             const id = await composerStore.getState().saveTree('Test Tree');
             console.log('Saved with ID:', id);
             await refreshTreeList();
@@ -49,7 +60,7 @@ export function ComposerPersistenceTester() {
                     onPress={handleSave}
                     disabled={saving}
                 >
-                    <Text style={styles.buttonText}>{saving ? 'Saving...' : 'Save Current Tree'}</Text>
+                    <Text style={styles.buttonText}>{saving ? 'Saving...' : 'Save Test Tree'}</Text>
                 </TouchableOpacity>
 
                 <FlatList
