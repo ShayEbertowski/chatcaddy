@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
 import PromptSearch from '../../../src/components/prompt/PromptSearch';
 import EmptyState from '../../../src/components/shared/EmptyState';
@@ -11,7 +11,6 @@ import { router } from 'expo-router';
 import { composerStore } from '../../../src/core/composer/composerStore';
 import { ComposerNode } from '../../../src/core/types/composer';
 import { generateUUIDSync } from '../../../src/utils/uuid/generateUUIDSync';
-import { toComposerEntityType } from '../../../src/utils/composer/entityTypeMapper';
 
 export default function ComposerIndexScreen() {
     const colors = useColors();
@@ -19,12 +18,10 @@ export default function ComposerIndexScreen() {
     const [mode, setMode] = useState<'Browse' | 'New'>('Browse');
     const [newContent, setNewContent] = useState('');
     const [entityType, setEntityType] = useState<EntityType>('Prompt');
-    const safeEntityType = toComposerEntityType(entityType);
-    const [hasEntities, setHasEntities] = useState<boolean>(true); // Placeholder for now
+    const [hasEntities, setHasEntities] = useState<boolean>(true);
 
     useEffect(() => {
         // Future: load actual entity list here from your store
-        // setHasEntities(yourEntityList.length > 0);
     }, []);
 
     const handleSelectNode = async (prompt: Entity) => {
@@ -46,7 +43,7 @@ export default function ComposerIndexScreen() {
             title: prompt.title,
             content: '',
             variables: {},
-            children: [firstChild],
+            children: [firstChild], // ✅ attach first child
         };
 
         await composerStore.getState().createTree({
@@ -56,14 +53,16 @@ export default function ComposerIndexScreen() {
             rootPromptId: prompt.id,
         });
 
-        // ✅ navigate into the child, not the root
         router.push(`/(drawer)/(composer)/${newTreeId}/${firstChildId}`);
     };
-
 
     const handleCreate = async () => {
         const newTreeId = generateUUIDSync();
         const firstChildId = generateUUIDSync();
+
+        // TEMP: Type safety guard for composer node entity types:
+        const safeEntityType: ComposerNode['entityType'] =
+            entityType === 'Template' ? 'Prompt' : entityType;
 
         const firstChild: ComposerNode = {
             id: firstChildId,
@@ -77,7 +76,7 @@ export default function ComposerIndexScreen() {
         const rootNode: ComposerNode = {
             id: newTreeId,
             entityType: 'Prompt',
-            title: newContent, // Use the editor title
+            title: newContent,
             content: '',
             variables: {},
             children: [firstChild],
@@ -92,11 +91,9 @@ export default function ComposerIndexScreen() {
         router.push(`/(drawer)/(composer)/${newTreeId}/${firstChildId}`);
     };
 
-
     return (
         <ThemedSafeArea disableTopInset>
             <View style={{ flex: 1, padding: 16 }}>
-                {/* Toggle Row */}
                 <View style={sharedStyles.toggleRow}>
                     <TouchableOpacity
                         style={[
@@ -133,7 +130,6 @@ export default function ComposerIndexScreen() {
                     </TouchableOpacity>
                 </View>
 
-                {/* Main Content */}
                 {mode === 'Browse' ? (
                     hasEntities ? (
                         <PromptSearch onSelect={handleSelectNode} />
@@ -171,7 +167,6 @@ export default function ComposerIndexScreen() {
                     </View>
                 )}
             </View>
-
         </ThemedSafeArea>
     );
 }

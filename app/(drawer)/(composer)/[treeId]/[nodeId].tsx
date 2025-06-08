@@ -1,61 +1,52 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Modal } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, Modal, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { ComposerTreeView } from '../../../../src/components/composer/ComposerTreeView';
-import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
-import { ThemedButton } from '../../../../src/components/ui/ThemedButton';
 import { composerStore } from '../../../../src/core/composer/composerStore';
 import { ComposerNode } from '../../../../src/core/types/composer';
+import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
+import { ThemedButton } from '../../../../src/components/ui/ThemedButton';
+import { VariableEditor } from '../../../../src/components/composer/VariableEditor';
 import { useColors } from '../../../../src/hooks/useColors';
 import { generateUUIDSync } from '../../../../src/utils/uuid/generateUUIDSync';
-import { findNodePath } from '../../../../src/utils/composer/findNodePath';
-import { VariableEditor } from '../../../../src/components/composer/VariableEditor';
+import { Breadcrumb } from '../../../../src/components/composer/Breadcrumb';
 import { getNodePath, getParentNodeId } from '../../../../src/utils/composer/pathUtils';
 
 export default function ComposerNodeScreen() {
     const colors = useColors();
     const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
 
-    // Zustand subscriptions
     const rootNode = composerStore((state) => state.rootNode);
     const loadTree = composerStore((state) => state.loadTree);
     const saveTree = composerStore((state) => state.saveTree);
     const addChild = composerStore((state) => state.addChild);
 
+    const [loading, setLoading] = useState(true);
     const [currentNode, setCurrentNode] = useState<ComposerNode | null>(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [newChildTitle, setNewChildTitle] = useState('');
     const [nodePath, setNodePath] = useState<ComposerNode[]>([]);
 
-    const path = rootNode ? getNodePath(rootNode, nodeId) : [];
-    const parentId = getParentNodeId(path);
-
-    // Single effect: load tree
     useEffect(() => {
-        if (!rootNode) {
-            loadTree(treeId);
+        async function load() {
+            if (!rootNode) {
+                await loadTree(treeId);
+            }
+            setLoading(false);
         }
-    }, [treeId, rootNode]);
+        load();
+    }, [treeId]);
 
-    // Find current node and path after rootNode is populated
     useEffect(() => {
-        if (!rootNode || !nodeId) return;
+        if (!rootNode) return;
 
-        const foundNode = findNode(rootNode, nodeId);
-        setCurrentNode(foundNode);
-
-        const path = findNodePath(rootNode, nodeId);
+        const path = getNodePath(rootNode, nodeId);
         setNodePath(path);
+
+        const found = path[path.length - 1] ?? null;
+        setCurrentNode(found);
     }, [rootNode, nodeId]);
 
-    function findNode(node: ComposerNode, searchId: string): ComposerNode | null {
-        if (node.id === searchId) return node;
-        for (const child of node.children) {
-            const found = findNode(child, searchId);
-            if (found) return found;
-        }
-        return null;
-    }
+    const parentId = getParentNodeId(nodePath);
 
     const handleInsertChild = async () => {
         if (!newChildTitle.trim() || !currentNode) return;
@@ -71,13 +62,11 @@ export default function ComposerNodeScreen() {
 
         addChild(currentNode.id, newChild);
         await saveTree(rootNode!.title);
-
         setNewChildTitle('');
         setModalVisible(false);
     };
 
-    // ✅ Use Zustand state directly for loading indicator
-    if (!rootNode || !currentNode) {
+    if (loading || !currentNode) {
         return (
             <ThemedSafeArea>
                 <ActivityIndicator size="large" color={colors.primary} />
@@ -88,20 +77,12 @@ export default function ComposerNodeScreen() {
     return (
         <ThemedSafeArea>
             <View style={styles.container}>
-                <View style={styles.breadcrumbs}>
-                    {nodePath.map((node, index) => (
-                        <TouchableOpacity
-                            key={node.id}
-                            onPress={() => router.push(`/composer/${treeId}/${node.id}`)}
-                        >
-                            <Text style={[styles.breadcrumb, { color: colors.accent }]}>
-                                {node.title || '(Untitled)'} {index < nodePath.length - 1 ? ' / ' : ''}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
+                <Breadcrumb treeId={treeId} rootNode={rootNode!} currentNodeId={nodeId} />
 
-                <ComposerTreeView node={currentNode} />
+                <Text style={[styles.title, { color: colors.accent }]}>
+                    Node {currentNode.title || currentNode.id}
+                </Text>
+
                 <VariableEditor node={currentNode} />
 
                 <Text style={[styles.subtitle, { color: colors.text }]}>Children:</Text>
@@ -113,7 +94,7 @@ export default function ComposerNodeScreen() {
                         renderItem={({ item }) => (
                             <TouchableOpacity
                                 style={styles.childButton}
-                                onPress={() => router.push(`/composer/${treeId}/${item.id}`)}
+                                onPress={() => router.push(`/(drawer)/(composer)/${treeId}/${item.id}`)}
                             >
                                 <Text style={{ color: colors.text }}>{item.title || '(Untitled)'}</Text>
                             </TouchableOpacity>
@@ -124,14 +105,14 @@ export default function ComposerNodeScreen() {
                 )}
 
                 <ThemedButton title="Insert Child" onPress={() => setModalVisible(true)} />
-            </View>
 
-            {parentId && (
-                <ThemedButton
-                    title="Back"
-                    onPress={() => router.push(`/(drawer)/(composer)/${treeId}/${parentId}`)}
-                />
-            )}
+                {parentId && (
+                    <ThemedButton
+                        title="Back"
+                        onPress={() => router.push(`/(drawer)/(composer)/${treeId}/${parentId}`)}
+                    />
+                )}
+            </View>
 
             <Modal visible={modalVisible} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
@@ -155,12 +136,11 @@ export default function ComposerNodeScreen() {
 
 const styles = StyleSheet.create({
     container: { padding: 16 },
+    title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
     subtitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
     childButton: { padding: 12, borderRadius: 8, backgroundColor: '#333', marginBottom: 8 },
     modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000088' },
     modalContent: { padding: 24, borderRadius: 12, width: '80%' },
     modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
     input: { borderWidth: 1, padding: 10, borderRadius: 8, marginBottom: 16 },
-    breadcrumbs: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 },
-    breadcrumb: { fontWeight: 'bold', marginRight: 4 },
 });
