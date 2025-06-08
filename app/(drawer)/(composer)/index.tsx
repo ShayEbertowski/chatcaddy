@@ -22,7 +22,7 @@ export default function ComposerIndexScreen() {
     }
 
     return (
-        <ThemedSafeArea>
+        <ThemedSafeArea disableTopInset>
             <View style={{ flex: 1, padding: 16 }}>
                 <View style={sharedStyles.toggleRow}>
                     <TouchableOpacity
