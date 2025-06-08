@@ -1,113 +1,76 @@
-// app/composer/[treeId]/index.tsx
-
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Modal } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
+import PromptSearch from '../../../src/components/prompt/PromptSearch';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
-import { ThemedButton } from '../../../src/components/ui/ThemedButton';
-import { composerStore } from '../../../src/core/composer/composerStore';
-import { ComposerNode } from '../../../src/core/types/composer';
 import { useColors } from '../../../src/hooks/useColors';
-import { ComposerTreeView } from '../../../src/components/composer/ComposerTreeView';
-import { generateUUIDSync } from '../../../src/utils/uuid/generateUUIDSync';
+import { getSharedStyles } from '../../../src/styles/shared';
+import { EntityType } from '../../../src/types/entity';
 
-export default function ComposerTreeScreen() {
+
+export default function ComposerIndexScreen() {
     const colors = useColors();
-    const { treeId } = useLocalSearchParams<{ treeId: string }>();
-    const { rootNode, setRootNode, loadTree, saveTree } = composerStore();
-    const [loading, setLoading] = useState(true);
-    const [insertModalVisible, setInsertModalVisible] = useState(false);
-    const [newChildTitle, setNewChildTitle] = useState('');
+    const sharedStyles = getSharedStyles(colors);
+    const [mode, setMode] = useState<'Search' | 'Create'>('Search');
+    const [newTitle, setNewTitle] = useState('');
+    const [newContent, setNewContent] = useState('');
+    const [entityType, setEntityType] = useState<EntityType>('Prompt');
 
-    useEffect(() => {
-        async function fetchTree() {
-            await loadTree(treeId);
-            setLoading(false);
-        }
-        fetchTree();
-    }, [treeId]);
-
-    if (loading || !rootNode) {
-        return (
-            <ThemedSafeArea>
-                <ActivityIndicator size="large" color={colors.primary} />
-            </ThemedSafeArea>
-        );
+    function handlePromptSelect(prompt: any) {
+        console.log('Selected existing prompt:', prompt);
+        // future: navigate into composer tree here
     }
-
-    const handleInsertChild = async () => {
-        if (!newChildTitle.trim()) return;
-
-        const newChild: ComposerNode = {
-            id: generateUUIDSync(),
-            entityType: 'Prompt',
-            title: newChildTitle,
-            content: '',
-            variables: {},
-            children: [],
-        };
-
-        const updatedRoot: ComposerNode = {
-            ...rootNode,
-            children: [...(rootNode.children ?? []), newChild],
-        };
-
-        setRootNode(updatedRoot);
-        await saveTree(updatedRoot.title);
-        setNewChildTitle('');
-        setInsertModalVisible(false);
-    };
 
     return (
         <ThemedSafeArea>
-            <View style={styles.container}>
-                <ComposerTreeView node={rootNode} />
+            <View style={{ flex: 1, padding: 16 }}>
+                <View style={sharedStyles.toggleRow}>
+                    <TouchableOpacity
+                        style={[
+                            sharedStyles.toggleButton,
+                            mode === 'Search' && sharedStyles.toggleButtonSelected,
+                        ]}
+                        onPress={() => setMode('Search')}
+                    >
+                        <Text
+                            style={[
+                                sharedStyles.toggleButtonText,
+                                mode === 'Search' && sharedStyles.toggleButtonTextSelected,
+                            ]}
+                        >
+                            Search
+                        </Text>
+                    </TouchableOpacity>
 
-                <Text style={[styles.subtitle, { color: colors.text }]}>Children:</Text>
-
-                {rootNode.children?.length ? (
-                    <FlatList
-                        data={rootNode.children}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity style={styles.childButton}>
-                                <Text style={{ color: colors.text }}>{item.title || '(Untitled)'}</Text>
-                            </TouchableOpacity>
-                        )}
-                    />
-                ) : (
-                    <Text style={{ color: colors.text }}>No children yet.</Text>
-                )}
-
-                <ThemedButton title="Insert Child" onPress={() => setInsertModalVisible(true)} />
-            </View>
-
-            <Modal visible={insertModalVisible} transparent animationType="slide">
-                <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-                        <Text style={[styles.modalTitle, { color: colors.text }]}>New Child Title:</Text>
-                        <TextInput
-                            style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-                            value={newChildTitle}
-                            onChangeText={setNewChildTitle}
-                            placeholder="Enter title"
-                            placeholderTextColor={colors.border}
-                        />
-                        <ThemedButton title="Add" onPress={handleInsertChild} />
-                        <ThemedButton title="Cancel" onPress={() => setInsertModalVisible(false)} />
-                    </View>
+                    <TouchableOpacity
+                        style={[
+                            sharedStyles.toggleButton,
+                            mode === 'Create' && sharedStyles.toggleButtonSelected,
+                        ]}
+                        onPress={() => setMode('Create')}
+                    >
+                        <Text
+                            style={[
+                                sharedStyles.toggleButtonText,
+                                mode === 'Create' && sharedStyles.toggleButtonTextSelected,
+                            ]}
+                        >
+                            Create
+                        </Text>
+                    </TouchableOpacity>
                 </View>
-            </Modal>
+
+                {mode === 'Search' ? (
+                    <PromptSearch onSelect={handlePromptSelect} />
+                ) : (
+                    <RichPromptEditor
+                        text={newContent}
+                        onChangeText={setNewContent}
+                        entityType={entityType}
+                        onChangeEntityType={setEntityType}
+                    />
+                )}
+            </View>
         </ThemedSafeArea>
     );
 }
-
-const styles = StyleSheet.create({
-    container: { padding: 16 },
-    subtitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
-    childButton: { padding: 12, borderRadius: 8, backgroundColor: '#333', marginBottom: 8 },
-    modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000088' },
-    modalContent: { padding: 24, borderRadius: 12, width: '80%' },
-    modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
-    input: { borderWidth: 1, padding: 10, borderRadius: 8, marginBottom: 16 },
-});

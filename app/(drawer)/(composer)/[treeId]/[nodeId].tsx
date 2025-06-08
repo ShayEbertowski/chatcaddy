@@ -12,8 +12,11 @@ import { findNodePath } from '../../../../src/utils/composer/findNodePath';
 import { VariableEditor } from '../../../../src/components/composer/VariableEditor';
 
 export default function ComposerNodeScreen() {
+
     const colors = useColors();
     const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
+    console.log('Params:', treeId, nodeId);
+
     const { rootNode, loadTree, saveTree, addChild } = composerStore();
     const [loading, setLoading] = useState(true);
     const [currentNode, setCurrentNode] = useState<ComposerNode | null>(null);
@@ -21,6 +24,22 @@ export default function ComposerNodeScreen() {
     const [newChildTitle, setNewChildTitle] = useState('');
 
     const [nodePath, setNodePath] = useState<ComposerNode[]>([]);
+
+    console.log('Loaded params:', treeId, nodeId);
+    console.log('Loaded rootNode:', rootNode);
+
+    useEffect(() => {
+        async function fetch() {
+            console.log('Fetching tree', treeId);
+            if (!rootNode) {
+                await loadTree(treeId);
+                console.log('Finished loading tree');
+            }
+            setLoading(false);
+        }
+        fetch();
+    }, [treeId]);
+
 
     useEffect(() => {
         if (!rootNode) return;
@@ -44,6 +63,9 @@ export default function ComposerNodeScreen() {
         if (!rootNode) return;
 
         const foundNode = findNode(rootNode, nodeId);
+        console.log('Found node:', foundNode);
+        setCurrentNode(foundNode);
+
         setCurrentNode(foundNode);
     }, [rootNode, nodeId]);
 

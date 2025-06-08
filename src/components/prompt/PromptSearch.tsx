@@ -7,21 +7,24 @@ import {
     StyleSheet,
     ScrollView,
 } from 'react-native';
-import { Prompt } from '../../types/prompt';
-import { usePromptStore } from '../../stores/usePromptsStore';
+import { Entity } from '../../types/entity';
+import { useEntityStore } from '../../stores/useEntityStore';
 import { useColors } from '../../hooks/useColors';
 import { RenderPreviewChunks } from './RenderPreviewChunks';
+import { getSharedStyles } from '../../styles/shared';
 
 type Props = {
-    onSelect: (prompt: Prompt) => void;
+    onSelect: (prompt: Entity) => void;
 };
 
 export default function PromptSearch({ onSelect }: Props) {
-    const prompts = usePromptStore((state) => state.prompts);
+    const entities = useEntityStore((state) => state.entities);
+    const prompts = entities.filter(e => e.entityType === 'Prompt');
     const [search, setSearch] = useState('');
     const [isFocused, setIsFocused] = useState(false);
     const colors = useColors();
     const styles = getStyles(colors);
+    const sharedStyles = getSharedStyles(colors);
 
     const filtered = !isFocused
         ? []
@@ -44,7 +47,7 @@ export default function PromptSearch({ onSelect }: Props) {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.heading}>Search for a prompt</Text>
+            <Text style={[sharedStyles.label, { color: colors.accent }]}>Search for a prompt</Text>
 
             <TextInput
                 placeholder="Type to search..."
@@ -97,8 +100,10 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             borderWidth: 1,
             borderRadius: 8,
             padding: 10,
-            borderColor: '#ccc',
+            borderColor: colors.border,
             marginBottom: 12,
+            color: colors.text,
+            backgroundColor: colors.inputBackground
         },
         promptItem: {
             paddingVertical: 16,
@@ -121,7 +126,7 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
         },
         emptyState: {
             textAlign: 'center',
-            color: '#999',
+            color: colors.secondaryText,
             fontStyle: 'italic',
             marginTop: 20,
             fontSize: 15,
