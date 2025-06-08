@@ -10,6 +10,7 @@ import { useColors } from '../../../../src/hooks/useColors';
 import { generateUUIDSync } from '../../../../src/utils/uuid/generateUUIDSync';
 import { findNodePath } from '../../../../src/utils/composer/findNodePath';
 import { VariableEditor } from '../../../../src/components/composer/VariableEditor';
+import { getNodePath, getParentNodeId } from '../../../../src/utils/composer/pathUtils';
 
 export default function ComposerNodeScreen() {
     const colors = useColors();
@@ -25,6 +26,9 @@ export default function ComposerNodeScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [newChildTitle, setNewChildTitle] = useState('');
     const [nodePath, setNodePath] = useState<ComposerNode[]>([]);
+
+    const path = rootNode ? getNodePath(rootNode, nodeId) : [];
+    const parentId = getParentNodeId(path);
 
     // Single effect: load tree
     useEffect(() => {
@@ -121,6 +125,13 @@ export default function ComposerNodeScreen() {
 
                 <ThemedButton title="Insert Child" onPress={() => setModalVisible(true)} />
             </View>
+
+            {parentId && (
+                <ThemedButton
+                    title="Back"
+                    onPress={() => router.push(`/(drawer)/(composer)/${treeId}/${parentId}`)}
+                />
+            )}
 
             <Modal visible={modalVisible} transparent animationType="slide">
                 <View style={styles.modalOverlay}>

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useColors } from '../../hooks/useColors';
 import { ComposerNode } from '../../core/types/composer';
 import { router } from 'expo-router';
+import { getNodePath } from '../../utils/composer/pathUtils';
 
 interface Props {
     treeId: string;
@@ -13,17 +14,7 @@ interface Props {
 export function Breadcrumb({ treeId, rootNode, currentNodeId }: Props) {
     const colors = useColors();
 
-    // Walk the tree to find full path to current node
-    const buildPath = (node: ComposerNode, path: ComposerNode[] = []): ComposerNode[] | null => {
-        if (node.id === currentNodeId) return [...path, node];
-        for (const child of node.children ?? []) {
-            const result = buildPath(child, [...path, node]);
-            if (result) return result;
-        }
-        return null;
-    };
-
-    const path = buildPath(rootNode) ?? [rootNode]; // fallback to root if unknown
+    const path = getNodePath(rootNode, currentNodeId);
 
     return (
         <View style={styles.container}>

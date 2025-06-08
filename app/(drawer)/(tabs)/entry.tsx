@@ -11,6 +11,7 @@ import { router } from 'expo-router';
 import { composerStore } from '../../../src/core/composer/composerStore';
 import { ComposerNode } from '../../../src/core/types/composer';
 import { generateUUIDSync } from '../../../src/utils/uuid/generateUUIDSync';
+import { toComposerEntityType } from '../../../src/utils/composer/entityTypeMapper';
 
 export default function ComposerIndexScreen() {
     const colors = useColors();
@@ -18,6 +19,7 @@ export default function ComposerIndexScreen() {
     const [mode, setMode] = useState<'Browse' | 'New'>('Browse');
     const [newContent, setNewContent] = useState('');
     const [entityType, setEntityType] = useState<EntityType>('Prompt');
+    const safeEntityType = toComposerEntityType(entityType);
     const [hasEntities, setHasEntities] = useState<boolean>(true); // Placeholder for now
 
     useEffect(() => {
@@ -27,29 +29,69 @@ export default function ComposerIndexScreen() {
 
     const handleSelectNode = async (prompt: Entity) => {
         const newTreeId = generateUUIDSync();
+        const firstChildId = generateUUIDSync();
+
+        const firstChild: ComposerNode = {
+            id: firstChildId,
+            entityType: 'Prompt',
+            title: prompt.title,
+            content: '',
+            variables: {},
+            children: [],
+        };
 
         const rootNode: ComposerNode = {
             id: newTreeId,
             entityType: 'Prompt',
             title: prompt.title,
-            content: '', // Or optionally pull prompt.content if you want
+            content: '',
             variables: {},
-            children: [],
+            children: [firstChild],
         };
 
         await composerStore.getState().createTree({
             id: newTreeId,
             name: prompt.title,
             rootNode,
-            rootPromptId: prompt.id,  // optional field for reference
+            rootPromptId: prompt.id,
         });
 
-        router.push(`/(drawer)/(composer)/${newTreeId}/${newTreeId}`);
+        // ✅ navigate into the child, not the root
+        router.push(`/(drawer)/(composer)/${newTreeId}/${firstChildId}`);
     };
 
-    const handleCreate = () => {
-        // TODO: still need this for richprompt section
-    }
+
+    const handleCreate = async () => {
+        const newTreeId = generateUUIDSync();
+        const firstChildId = generateUUIDSync();
+
+        const firstChild: ComposerNode = {
+            id: firstChildId,
+            entityType: safeEntityType,
+            title: newContent,
+            content: '',
+            variables: {},
+            children: [],
+        };
+
+        const rootNode: ComposerNode = {
+            id: newTreeId,
+            entityType: 'Prompt',
+            title: newContent, // Use the editor title
+            content: '',
+            variables: {},
+            children: [firstChild],
+        };
+
+        await composerStore.getState().createTree({
+            id: newTreeId,
+            name: newContent,
+            rootNode,
+        });
+
+        router.push(`/(drawer)/(composer)/${newTreeId}/${firstChildId}`);
+    };
+
 
     return (
         <ThemedSafeArea disableTopInset>
@@ -129,6 +171,7 @@ export default function ComposerIndexScreen() {
                     </View>
                 )}
             </View>
+
         </ThemedSafeArea>
     );
 }
