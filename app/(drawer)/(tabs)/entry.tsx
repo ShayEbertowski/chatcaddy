@@ -11,14 +11,20 @@ import { router } from 'expo-router';
 import { composerStore } from '../../../src/core/composer/composerStore';
 import { ComposerNode } from '../../../src/core/types/composer';
 import { generateUUIDSync } from '../../../src/utils/uuid/generateUUIDSync';
+import { Variable } from '../../../src/types/prompt';
+import { UIEntityType } from '../../../src/types/entity';
+
 
 export default function ComposerIndexScreen() {
     const colors = useColors();
     const sharedStyles = getSharedStyles(colors);
     const [mode, setMode] = useState<'Browse' | 'New' | 'Starters'>('Browse');
     const [newContent, setNewContent] = useState('');
-    const [entityType, setEntityType] = useState<EntityType>('Prompt');
+
+    const [entityType, setEntityType] = useState<UIEntityType>('Prompt');
     const [hasEntities, setHasEntities] = useState<boolean>(true);
+    const [variables, setVariables] = useState<Record<string, Variable>>({});
+
 
     // 🚧 Hardcoded Starter List for future community seeding
     const starters = [
@@ -72,12 +78,9 @@ export default function ComposerIndexScreen() {
         const newTreeId = generateUUIDSync();
         const firstChildId = generateUUIDSync();
 
-        const safeEntityType: ComposerNode['entityType'] =
-            entityType === 'Template' ? 'Prompt' : entityType;
-
         const firstChild: ComposerNode = {
             id: firstChildId,
-            entityType: safeEntityType,
+            entityType: entityType, // ✔ already safe
             title: newContent,
             content: '',
             variables: {},
@@ -101,6 +104,7 @@ export default function ComposerIndexScreen() {
 
         router.push(`/(drawer)/(composer)/${newTreeId}/${firstChildId}`);
     };
+
 
     const handleStarterSelect = async (starterTitle: string) => {
         const newTreeId = generateUUIDSync();
@@ -165,7 +169,10 @@ export default function ComposerIndexScreen() {
                                 onChangeText={setNewContent}
                                 entityType={entityType}
                                 onChangeEntityType={setEntityType}
+                                variables={variables} // ✅ now included
+                                onChangeVariables={setVariables} // ✅ now included
                             />
+
                         </View>
 
                         <TouchableOpacity

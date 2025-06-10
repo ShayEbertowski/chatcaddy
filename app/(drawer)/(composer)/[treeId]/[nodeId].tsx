@@ -17,6 +17,7 @@ import { VariableValue } from '../../../../src/types/prompt';
 
 export default function ComposerNodeScreen() {
     const colors = useColors();
+    const styles = getStyles(colors);
     const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
 
     const rootNode = composerStore((state) => state.rootNode);
@@ -105,7 +106,16 @@ export default function ComposerNodeScreen() {
     return (
         <ThemedSafeArea>
             <View style={styles.container}>
-                <Breadcrumb treeId={treeId} rootNode={rootNode!} currentNodeId={nodeId} />
+                {nodePath.length === 1 && (
+                    <View style={styles.readOnlyBanner}>
+                        <Text style={styles.readOnlyBannerText}>
+                            Viewing root node – read-only
+                        </Text>
+                    </View>
+                )}
+                {nodePath.length > 1 && (
+                    <Breadcrumb treeId={treeId} rootNode={rootNode!} currentNodeId={nodeId} />
+                )}
 
                 <Text style={[styles.title, { color: colors.accent }]}>
                     Node {currentNode.title || currentNode.id}
@@ -122,9 +132,8 @@ export default function ComposerNodeScreen() {
                     onChangeVariables={(newVars) =>
                         updateCurrentNode({ variables: fromEditorVariables(newVars) })
                     }
+                    readOnly={nodePath.length === 1}
                 />
-
-
 
                 <Text style={[styles.subtitle, { color: colors.text }]}>Children:</Text>
 
@@ -145,7 +154,7 @@ export default function ComposerNodeScreen() {
                     <Text style={{ color: colors.text }}>No children yet.</Text>
                 )}
 
-                <ThemedButton title="Insert Child" onPress={() => setModalVisible(true)} />
+                {/* <ThemedButton title="Insert Child" onPress={() => setModalVisible(true)} /> */}
 
                 {parentId && (
                     <ThemedButton
@@ -175,13 +184,28 @@ export default function ComposerNodeScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: { padding: 16 },
-    title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
-    subtitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
-    childButton: { padding: 12, borderRadius: 8, backgroundColor: '#333', marginBottom: 8 },
-    modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000088' },
-    modalContent: { padding: 24, borderRadius: 12, width: '80%' },
-    modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
-    input: { borderWidth: 1, padding: 10, borderRadius: 8, marginBottom: 16 },
-});
+const getStyles = (colors: ReturnType<typeof useColors>) =>
+    StyleSheet.create({
+        container: { padding: 16 },
+        title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
+        subtitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
+        childButton: { padding: 12, borderRadius: 8, backgroundColor: '#333', marginBottom: 8 },
+        modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000088' },
+        modalContent: { padding: 24, borderRadius: 12, width: '80%' },
+        modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
+        input: { borderWidth: 1, padding: 10, borderRadius: 8, marginBottom: 16 },
+        readOnlyBanner: {
+            padding: 10,
+            backgroundColor: colors.surface,
+            borderRadius: 8,
+            marginBottom: 8,
+            borderWidth: 1,
+            borderColor: colors.borderThin,
+        },
+        readOnlyBannerText: {
+            color: colors.secondaryText,
+            fontStyle: 'italic',
+            textAlign: 'center',
+        },
+
+    });

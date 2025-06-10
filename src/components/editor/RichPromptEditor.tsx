@@ -29,16 +29,18 @@ import { Variable, VariableValue } from '../../types/prompt';
 export interface RichPromptEditorProps {
     text: string;
     onChangeText: (newText: string) => void;
-    entityType: 'Prompt' | 'Function' | 'Snippet'; // Narrow here
+    entityType: 'Prompt' | 'Function' | 'Snippet';
     onChangeEntityType: (newType: 'Prompt' | 'Function' | 'Snippet') => void;
-    variables: Record<string, Variable>; // 👈 This must match `Variable`, not `VariableValue`
+    variables: Record<string, Variable>;
     onChangeVariables: (newVars: Record<string, Variable>) => void;
+    readOnly?: boolean; // 👈 optional read-only mode
 }
+
 
 export const uiEntityTypes = ['Prompt', 'Function', 'Snippet'] as const;
 export type UIEntityType = typeof uiEntityTypes[number];
 
-export default function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType }: RichPromptEditorProps) {
+export default function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType, readOnly }: RichPromptEditorProps) {
     const [selection, setSelection] = useState({ start: 0, end: 0 });
     const [showInsertModal, setShowInsertModal] = useState(false);
     const [isEditingVariable, setIsEditingVariable] = useState(false);
@@ -111,13 +113,11 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
         <View style={styles.container}>
             <View style={styles.headerRow}>
                 <View style={{ flex: 1 }} />
-                {/* <TouchableOpacity onPress={() => setShowInsertModal(true)} style={styles.addButton}>
-                    <Text style={styles.addButtonText}>+ Insert</Text>
-                </TouchableOpacity> */}
-
-                <TouchableOpacity onPress={() => setShowInsertModal(true)} style={styles.insertIconButton}>
-                    <Ionicons name="add" size={20} color={colors.accent} />
-                </TouchableOpacity>
+                {!readOnly && (
+                    <TouchableOpacity onPress={() => setShowInsertModal(true)} style={styles.insertIconButton}>
+                        <Ionicons name="add" size={20} color={colors.accent} />
+                    </TouchableOpacity>
+                )}
             </View>
 
             {/* Dropdown Selector */}
@@ -126,12 +126,14 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                     value={entityType}
                     options={[...uiEntityTypes]}
                     onSelect={onChangeEntityType}
+                    readOnly={readOnly}
                 />
             </View>
 
 
             <TextInput
                 value={text}
+                editable={!readOnly}
                 onChangeText={onChangeText}
                 onSelectionChange={(e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) =>
                     setSelection(e.nativeEvent.selection)
@@ -143,21 +145,38 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                 placeholderTextColor={colors.secondaryText}
             />
 
-            <CollapsibleSection title="Variables" isOpen={showVariables} onToggle={() => setShowVariables(!showVariables)}>
+            <CollapsibleSection
+                title="Variables"
+                isOpen={showVariables}
+                onToggle={() => setShowVariables(!showVariables)}
+            >
                 <View style={styles.chipContainer}>
                     {usedVars.length === 0 ? (
                         <Text style={{ color: colors.secondaryText, fontStyle: 'italic', paddingVertical: 6 }}>
-                            No variables yet. Add one above.
+                            No variables yet. {readOnly ? '' : 'Add one above.'}
                         </Text>
                     ) : (
-                        usedVars.map((varName, i) => (
-                            <TouchableOpacity key={i} onPress={() => handleChipPress(varName)} style={sharedStyles.chip}>
-                                <Text style={sharedStyles.chipText}>{varName}</Text>
-                            </TouchableOpacity>
-                        ))
+                        usedVars.map((varName, i) => {
+                            const chip = (
+                                <View key={i} style={sharedStyles.chip}>
+                                    <Text style={sharedStyles.chipText}>{varName}</Text>
+                                </View>
+                            );
+
+                            if (readOnly) {
+                                return chip;
+                            }
+
+                            return (
+                                <TouchableOpacity key={i} onPress={() => handleChipPress(varName)} style={sharedStyles.chip}>
+                                    <Text style={sharedStyles.chipText}>{varName}</Text>
+                                </TouchableOpacity>
+                            );
+                        })
                     )}
                 </View>
             </CollapsibleSection>
+
 
             <View style={sharedStyles.divider} />
 

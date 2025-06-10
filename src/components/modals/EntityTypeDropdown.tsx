@@ -14,12 +14,14 @@ type EntityTypeDropdownProps = {
     value: UIEntityType;
     options: UIEntityType[];
     onSelect: (type: UIEntityType) => void;
+    readOnly?: boolean; // 👈 optional read-only mode
 };
 
 export default function EntityTypeDropdown({
     value,
     options,
-    onSelect
+    onSelect,
+    readOnly
 }: EntityTypeDropdownProps) {
     const [visible, setVisible] = useState(false);
     const colors = useColors();
@@ -27,35 +29,47 @@ export default function EntityTypeDropdown({
 
     return (
         <>
-            <TouchableOpacity onPress={() => setVisible(true)} style={styles.dropdownButton}>
+            <TouchableOpacity
+                onPress={() => {
+                    if (!readOnly) setVisible(true);
+                }}
+                style={[
+                    styles.dropdownButton,
+                    readOnly && { opacity: 0.5 }, // 👈 dimmed appearance
+                ]}
+            >
                 <Text style={styles.dropdownButtonText}>{value}</Text>
             </TouchableOpacity>
 
-            <Modal transparent visible={visible} animationType="fade">
-                <Pressable style={styles.modalOverlay} onPress={() => setVisible(false)}>
-                    <View style={styles.modalContent}>
-                        {options.map((type) => (
-                            <TouchableOpacity
-                                key={type}
-                                onPress={() => {
-                                    onSelect(type);
-                                    setVisible(false);
-                                }}
-                                style={styles.dropdownItem}
-                            >
-                                <Text
-                                    style={[
-                                        styles.dropdownItemText,
-                                        type === value && styles.dropdownItemTextActive
-                                    ]}
+
+            {!readOnly && (
+                <Modal transparent visible={visible} animationType="fade">
+                    <Pressable style={styles.modalOverlay} onPress={() => setVisible(false)}>
+                        <View style={styles.modalContent}>
+                            {options.map((type) => (
+                                <TouchableOpacity
+                                    key={type}
+                                    onPress={() => {
+                                        onSelect(type);
+                                        setVisible(false);
+                                    }}
+                                    style={styles.dropdownItem}
                                 >
-                                    {type}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </Pressable>
-            </Modal>
+                                    <Text
+                                        style={[
+                                            styles.dropdownItemText,
+                                            type === value && styles.dropdownItemTextActive
+                                        ]}
+                                    >
+                                        {type}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </Pressable>
+                </Modal>
+            )}
+
         </>
     );
 }
