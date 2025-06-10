@@ -11,8 +11,14 @@ export type PromptVariable = {
     promptTitle?: string;
 };
 
+// Raw, minimal value for saving or transmitting
+export type VariableValue =
+    | { type: 'string'; value: string }
+    | { type: 'prompt'; promptId: string; promptTitle?: string };
+
+
+// Rich UI-ready editor state
 export type Variable = StringVariable | PromptVariable;
-export type VariableValue = Variable;
 
 // Optional: if you're still mapping DB rows to internal model
 import { EntityType } from "./entity";

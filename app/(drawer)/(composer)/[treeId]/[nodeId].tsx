@@ -10,6 +10,10 @@ import { useColors } from '../../../../src/hooks/useColors';
 import { generateUUIDSync } from '../../../../src/utils/uuid/generateUUIDSync';
 import { Breadcrumb } from '../../../../src/components/composer/Breadcrumb';
 import { getNodePath, getParentNodeId } from '../../../../src/utils/composer/pathUtils';
+import RichPromptEditor from '../../../../src/components/editor/RichPromptEditor';
+import { Variable } from '../../../../src/types/prompt';
+import { fromEditorVariables, toEditorVariables } from '../../../../src/utils/composer/variables';
+import { VariableValue } from '../../../../src/types/prompt';
 
 export default function ComposerNodeScreen() {
     const colors = useColors();
@@ -66,6 +70,30 @@ export default function ComposerNodeScreen() {
         setModalVisible(false);
     };
 
+    function updateCurrentNode(updates: Partial<ComposerNode>) {
+        if (!currentNode || !rootNode) return;
+
+        const updated: ComposerNode = {
+            ...currentNode,
+            ...updates,
+        };
+
+        const currentId = currentNode.id;
+
+        function updateInTree(node: ComposerNode): ComposerNode {
+            if (node.id === currentId) return updated;
+            return {
+                ...node,
+                children: node.children.map(updateInTree),
+            };
+        }
+
+        const newTree = updateInTree(rootNode);
+        composerStore.setState({ rootNode: newTree });
+        setCurrentNode(updated);
+    }
+
+
     if (loading || !currentNode) {
         return (
             <ThemedSafeArea>
@@ -83,7 +111,20 @@ export default function ComposerNodeScreen() {
                     Node {currentNode.title || currentNode.id}
                 </Text>
 
-                <VariableEditor node={currentNode} />
+                {/* <VariableEditor node={currentNode} /> */}
+
+                <RichPromptEditor
+                    text={currentNode.content}
+                    onChangeText={(newText) => updateCurrentNode({ content: newText })}
+                    entityType={currentNode.entityType}
+                    onChangeEntityType={(newType) => updateCurrentNode({ entityType: newType })}
+                    variables={toEditorVariables(currentNode.variables)}
+                    onChangeVariables={(newVars) =>
+                        updateCurrentNode({ variables: fromEditorVariables(newVars) })
+                    }
+                />
+
+
 
                 <Text style={[styles.subtitle, { color: colors.text }]}>Children:</Text>
 

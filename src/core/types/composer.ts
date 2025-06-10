@@ -1,7 +1,6 @@
 // types/composer.ts
 
-export type VariableValue = string | ComposerNode;
-
+import { VariableValue } from "../../types/prompt";
 export interface ComposerNode {
     id: string;
     entityType: 'Prompt' | 'Function' | 'Snippet';

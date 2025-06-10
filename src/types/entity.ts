@@ -5,6 +5,10 @@ export interface Entity {
     entityType: EntityType;
     title: string;
     content: string;
-    variables: Record<string, any>; // You can fully type this later if you want
+    variables: Record<string, any>;
+    createdAt?: string;  // ISO timestamp (optional unless enforced by DB)
+    updatedAt?: string;  // You can update this on save
 }
- 
+
+export const uiEntityTypes = ['Prompt', 'Function', 'Snippet'] as const;
+export type UIEntityType = typeof uiEntityTypes[number];

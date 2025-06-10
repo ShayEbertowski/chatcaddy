@@ -24,17 +24,21 @@ import { EntityType } from '../../types/entity';
 import { useEntityStore } from '../../stores/useEntityStore';
 import EntityTypeDropdown from '../modals/EntityTypeDropdown';
 import { Ionicons } from '@expo/vector-icons';
+import { Variable, VariableValue } from '../../types/prompt';
 
-type Props = {
+export interface RichPromptEditorProps {
     text: string;
     onChangeText: (newText: string) => void;
-    entityType: EntityType;
-    onChangeEntityType: (newType: EntityType) => void;
-};
+    entityType: 'Prompt' | 'Function' | 'Snippet'; // Narrow here
+    onChangeEntityType: (newType: 'Prompt' | 'Function' | 'Snippet') => void;
+    variables: Record<string, Variable>; // 👈 This must match `Variable`, not `VariableValue`
+    onChangeVariables: (newVars: Record<string, Variable>) => void;
+}
 
-const entityTypes: EntityType[] = ['Prompt', 'Function', 'Snippet', 'Template'];
+export const uiEntityTypes = ['Prompt', 'Function', 'Snippet'] as const;
+export type UIEntityType = typeof uiEntityTypes[number];
 
-export default function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType }: Props) {
+export default function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType }: RichPromptEditorProps) {
     const [selection, setSelection] = useState({ start: 0, end: 0 });
     const [showInsertModal, setShowInsertModal] = useState(false);
     const [isEditingVariable, setIsEditingVariable] = useState(false);
@@ -120,7 +124,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
             <View style={{ marginBottom: 16 }}>
                 <EntityTypeDropdown
                     value={entityType}
-                    options={entityTypes}
+                    options={[...uiEntityTypes]}
                     onSelect={onChangeEntityType}
                 />
             </View>

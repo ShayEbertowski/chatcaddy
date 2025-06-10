@@ -3,7 +3,7 @@ import { PromptPart, Variable, VariableValue } from '../../types/prompt';
 import { cleanPromptVariables } from './cleanPrompt';
 import { useVariableStore } from '../../stores/useVariableStore';
 import { generateSmartTitle } from './generateSmartTitle';
-import type { PromptEntity } from '../../types/entity';
+import { Entity } from '../../types/entity';
 
 // Normalize variables: ensure richCapable is always set for string types
 export function normalizeVariables(variables: Record<string, Variable>): Record<string, Variable> {
@@ -36,7 +36,7 @@ export function preparePromptToSave({
     title: string;
     folder: string;
     entityType: 'Prompt';
-}): PromptEntity {
+}): Entity {
     const cleaned = cleanPromptVariables(inputText);
     const currentVariables = useVariableStore.getState().values;
 
@@ -45,9 +45,7 @@ export function preparePromptToSave({
         entityType,
         title: title.trim() || 'Untitled',
         content: cleaned,
-        folder,
         variables: currentVariables,
-        createdAt: '',  // optional — DB can assign
         updatedAt: '',
     };
 }

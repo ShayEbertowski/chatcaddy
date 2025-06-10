@@ -7,16 +7,20 @@ import {
     Pressable,
     StyleSheet
 } from 'react-native';
-import { EntityType } from '../../types/entity';
 import { useColors } from '../../hooks/useColors';
+import { uiEntityTypes, UIEntityType } from '../../types/entity';
 
-type Props = {
-    value: EntityType;
-    options: EntityType[];
-    onSelect: (type: EntityType) => void;
+type EntityTypeDropdownProps = {
+    value: UIEntityType;
+    options: UIEntityType[];
+    onSelect: (type: UIEntityType) => void;
 };
 
-export default function EntityTypeDropdown({ value, options, onSelect }: Props) {
+export default function EntityTypeDropdown({
+    value,
+    options,
+    onSelect
+}: EntityTypeDropdownProps) {
     const [visible, setVisible] = useState(false);
     const colors = useColors();
     const styles = getStyles(colors);
