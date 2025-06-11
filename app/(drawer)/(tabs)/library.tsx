@@ -4,10 +4,11 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useColors } from '../../../src/hooks/useColors';
 import BaseModal from '../../../src/components/modals/BaseModal';
 import { useEntityStore } from '../../../src/stores/useEntityStore';
-import { Entity, EntityType } from '../../../src/types/entity';
+import { Entity, EntityType, UIEntityType } from '../../../src/types/entity';
 import { useRouter } from 'expo-router';
 import EntityCard from '../../../src/components/entity/EntityCard';
 import ConfirmModal from '../../../src/components/modals/ConfirmModal';
+import DropdownSelector, { DropdownOption } from '../../../src/components/shared/DropdownSelector';
 
 const options: { label: string; value: EntityType }[] = [
     { label: 'Prompts', value: 'Prompt' },
@@ -60,15 +61,20 @@ export default function EntityLibraryScreen() {
     };
 
 
+    const options: DropdownOption<UIEntityType>[] = [
+        { label: 'Prompts', value: 'Prompt' },
+        { label: 'Functions', value: 'Function' },
+        { label: 'Snippets', value: 'Snippet' },
+    ];
+
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
             <View style={styles.dropdownWrapper}>
-                <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.dropdown}>
-                    <Text style={styles.dropdownText}>
-                        {options.find((o) => o.value === category)?.label}
-                    </Text>
-                    <MaterialIcons name="arrow-drop-down" size={24} color={colors.accent} />
-                </TouchableOpacity>
+                <DropdownSelector
+                    value={category}
+                    options={options}
+                    onSelect={setCategory}
+                />
             </View>
 
             {filteredEntities.length === 0 ? (

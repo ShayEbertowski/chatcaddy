@@ -156,6 +156,11 @@ export default function Sandbox() {
                     onChangeText={setInputText}
                     entityType={entityType}
                     onChangeEntityType={setEntityType}
+                    readOnly
+                    onChipPress={(name) => {
+                        console.log("Chip pressed sandbox:", name);
+                        // maybe open a modal or navigate to edit screen here
+                    }}
                 />
                 <CollapsibleSection
                     title="response"

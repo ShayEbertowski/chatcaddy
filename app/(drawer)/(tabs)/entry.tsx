@@ -13,6 +13,7 @@ import { ComposerNode } from '../../../src/core/types/composer';
 import { generateUUIDSync } from '../../../src/utils/uuid/generateUUIDSync';
 import { Variable } from '../../../src/types/prompt';
 import { UIEntityType } from '../../../src/types/entity';
+import PromptPathNavigator from '../../../src/components/composer/PromptPathNavigator';
 
 
 export default function ComposerIndexScreen() {
@@ -24,6 +25,26 @@ export default function ComposerIndexScreen() {
     const [entityType, setEntityType] = useState<UIEntityType>('Prompt');
     const [hasEntities, setHasEntities] = useState<boolean>(true);
     const [variables, setVariables] = useState<Record<string, Variable>>({});
+    const [childChips, setChildChips] = useState<string[]>([]);
+
+    const [draftTree, setDraftTree] = useState<ComposerNode>({
+        id: generateUUIDSync(),
+        title: 'Root',
+        content: '',
+        entityType: 'Prompt',
+        variables: {},
+        children: [],
+    });
+
+    const [draftPath, setDraftPath] = useState<ComposerNode[]>([draftTree]);
+    const currentNode = draftPath[draftPath.length - 1];
+    const [scrollToEnd, setScrollToEnd] = useState(false);
+
+    useEffect(() => {
+        if (scrollToEnd) {
+            setTimeout(() => setScrollToEnd(false), 500); // prevent sticky scroll
+        }
+    }, [scrollToEnd]);
 
 
     // 🚧 Hardcoded Starter List for future community seeding
@@ -80,12 +101,21 @@ export default function ComposerIndexScreen() {
 
         const firstChild: ComposerNode = {
             id: firstChildId,
-            entityType: entityType, // ✔ already safe
+            entityType: entityType,
             title: newContent,
+            content: '',
+            variables: variables,
+            children: [],
+        };
+
+        const generatedChildren: ComposerNode[] = childChips.map((name) => ({
+            id: generateUUIDSync(),
+            entityType: 'Prompt',
+            title: name,
             content: '',
             variables: {},
             children: [],
-        };
+        }));
 
         const rootNode: ComposerNode = {
             id: newTreeId,
@@ -93,7 +123,7 @@ export default function ComposerIndexScreen() {
             title: 'Root',
             content: '',
             variables: {},
-            children: [firstChild],
+            children: [firstChild, ...generatedChildren],
         };
 
         await composerStore.getState().createTree({
@@ -104,6 +134,7 @@ export default function ComposerIndexScreen() {
 
         router.push(`/(drawer)/(composer)/${newTreeId}/${firstChildId}`);
     };
+
 
 
     const handleStarterSelect = async (starterTitle: string) => {
@@ -137,6 +168,47 @@ export default function ComposerIndexScreen() {
         router.push(`/(drawer)/(composer)/${newTreeId}/${firstChildId}`);
     };
 
+    const handleChipPress = (name: string) => {
+        const newChild: ComposerNode = {
+            id: generateUUIDSync(),
+            title: name,
+            content: '',
+            entityType: 'Prompt',
+            variables: {},
+            children: [],
+        };
+
+        const updatedCurrent = {
+            ...currentNode,
+            children: [...currentNode.children, newChild],
+        };
+
+        const newPath = [...draftPath.slice(0, -1), updatedCurrent, newChild];
+        setDraftPath(newPath);
+        setScrollToEnd(true);
+
+        const updateNodeInTree = (node: ComposerNode, updatedNode: ComposerNode): ComposerNode => {
+            if (node.id === updatedNode.id) return updatedNode;
+            return {
+                ...node,
+                children: node.children.map((child) => updateNodeInTree(child, updatedNode)),
+            };
+        };
+
+        const newDraftTree = updateNodeInTree(draftTree, updatedCurrent);
+        setDraftTree(newDraftTree);
+
+        setTimeout(() => {
+            router.push(`/(drawer)/(composer)/${newDraftTree.id}/${newChild.id}`);
+        }, 50);
+    };
+
+
+
+
+
+
+
     return (
         <ThemedSafeArea disableTopInset>
             <View style={{ flex: 1, padding: 16 }}>
@@ -164,6 +236,18 @@ export default function ComposerIndexScreen() {
                 {mode === 'New' && (
                     <View style={{ flex: 1, justifyContent: 'space-between' }}>
                         <View style={{ marginTop: 16 }}>
+
+                            {currentNode.children.length > 0 && (
+                                <PromptPathNavigator
+                                    treeId="DRAFT"
+                                    nodePath={draftPath}
+                                    currentNode={currentNode}
+                                    readOnly={false}
+                                    scrollIntoLast={scrollToEnd}
+                                />
+                            )}
+
+
                             <RichPromptEditor
                                 text={newContent}
                                 onChangeText={setNewContent}
@@ -171,6 +255,8 @@ export default function ComposerIndexScreen() {
                                 onChangeEntityType={setEntityType}
                                 variables={variables} // ✅ now included
                                 onChangeVariables={setVariables} // ✅ now included
+                                onChipPress={handleChipPress}
+
                             />
 
                         </View>

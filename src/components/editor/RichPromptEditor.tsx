@@ -7,9 +7,6 @@ import {
     StyleSheet,
     NativeSyntheticEvent,
     TextInputSelectionChangeEventData,
-    Modal,
-    Pressable,
-    FlatList,
 } from 'react-native';
 
 import InsertModal from '../modals/InsertModal';
@@ -20,11 +17,10 @@ import { getSharedStyles } from '../../styles/shared';
 import { useColors } from '../../hooks/useColors';
 import { resolveVariableDisplayValue } from '../../utils/variables/variables';
 import { parsePromptParts } from '../../utils/prompt/promptManager';
-import { EntityType } from '../../types/entity';
 import { useEntityStore } from '../../stores/useEntityStore';
-import EntityTypeDropdown from '../modals/EntityTypeDropdown';
 import { Ionicons } from '@expo/vector-icons';
-import { Variable, VariableValue } from '../../types/prompt';
+import { Variable } from '../../types/prompt';
+import DropdownSelector, { DropdownOption } from '../shared/DropdownSelector';
 
 export interface RichPromptEditorProps {
     text: string;
@@ -34,13 +30,14 @@ export interface RichPromptEditorProps {
     variables: Record<string, Variable>;
     onChangeVariables: (newVars: Record<string, Variable>) => void;
     readOnly?: boolean; // 👈 optional read-only mode
+    onChipPress: (name: string) => void;
 }
 
 
 export const uiEntityTypes = ['Prompt', 'Function', 'Snippet'] as const;
 export type UIEntityType = typeof uiEntityTypes[number];
 
-export default function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType, readOnly }: RichPromptEditorProps) {
+export default function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType, readOnly, onChipPress }: RichPromptEditorProps) {
     const [selection, setSelection] = useState({ start: 0, end: 0 });
     const [showInsertModal, setShowInsertModal] = useState(false);
     const [isEditingVariable, setIsEditingVariable] = useState(false);
@@ -101,14 +98,14 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
     };
 
     const handleChipPress = (name: string) => {
-        const { type, value } = getEntityForEdit(name);
-        setTempVariableName(name);
-        setTempVariableValue(value ?? '');
-        setEditMode(type);
-        setIsEditingVariable(true);
-        setShowInsertModal(true);
+        onChipPress(name);
     };
 
+    const options: DropdownOption<UIEntityType>[] = [
+        { label: 'Prompt', value: 'Prompt' },
+        { label: 'Function', value: 'Function' },
+        { label: 'Snippet', value: 'Snippet' },
+    ];
     return (
         <View style={styles.container}>
             <View style={styles.headerRow}>
@@ -122,12 +119,14 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
 
             {/* Dropdown Selector */}
             <View style={{ marginBottom: 16 }}>
-                <EntityTypeDropdown
-                    value={entityType}
-                    options={[...uiEntityTypes]}
-                    onSelect={onChangeEntityType}
-                    readOnly={readOnly}
-                />
+                {!readOnly && (
+                    <DropdownSelector
+                        value={entityType}
+                        options={options}
+                        onSelect={onChangeEntityType}
+                        readOnly={readOnly}
+                    />
+                )}
             </View>
 
 

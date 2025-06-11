@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, Modal, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { composerStore } from '../../../../src/core/composer/composerStore';
 import { ComposerNode } from '../../../../src/core/types/composer';
@@ -14,6 +14,7 @@ import RichPromptEditor from '../../../../src/components/editor/RichPromptEditor
 import { Variable } from '../../../../src/types/prompt';
 import { fromEditorVariables, toEditorVariables } from '../../../../src/utils/composer/variables';
 import { VariableValue } from '../../../../src/types/prompt';
+import PromptPathNavigator from '../../../../src/components/composer/PromptPathNavigator';
 
 export default function ComposerNodeScreen() {
     const colors = useColors();
@@ -71,6 +72,19 @@ export default function ComposerNodeScreen() {
         setModalVisible(false);
     };
 
+    // this should be handleChipPress
+    const createChildNode = (name: string) => {
+        if (!currentNode) return;
+        return {
+            id: name,
+            parentId: currentNode.id,
+            title: name,
+            content: '',
+            entityType: 'Prompt',
+            variables: {},
+        };
+    };
+
     function updateCurrentNode(updates: Partial<ComposerNode>) {
         if (!currentNode || !rootNode) return;
 
@@ -113,9 +127,13 @@ export default function ComposerNodeScreen() {
                         </Text>
                     </View>
                 )}
-                {nodePath.length > 1 && (
-                    <Breadcrumb treeId={treeId} rootNode={rootNode!} currentNodeId={nodeId} />
-                )}
+
+                <PromptPathNavigator
+                    treeId={treeId}
+                    nodePath={nodePath}
+                    currentNode={currentNode}
+                    readOnly={nodePath.length === 1}
+                />
 
                 <Text style={[styles.title, { color: colors.accent }]}>
                     Node {currentNode.title || currentNode.id}
@@ -133,28 +151,13 @@ export default function ComposerNodeScreen() {
                         updateCurrentNode({ variables: fromEditorVariables(newVars) })
                     }
                     readOnly={nodePath.length === 1}
+                    onChipPress={(name) => createChildNode(name)}
                 />
 
-                <Text style={[styles.subtitle, { color: colors.text }]}>Children:</Text>
+                <ThemedButton title="Save? Whole thing? Edit later?" onPress={() => Alert.alert("Figure this out...")} />
 
-                {currentNode.children?.length ? (
-                    <FlatList
-                        data={currentNode.children}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={styles.childButton}
-                                onPress={() => router.push(`/(drawer)/(composer)/${treeId}/${item.id}`)}
-                            >
-                                <Text style={{ color: colors.text }}>{item.title || '(Untitled)'}</Text>
-                            </TouchableOpacity>
-                        )}
-                    />
-                ) : (
-                    <Text style={{ color: colors.text }}>No children yet.</Text>
-                )}
 
-                {/* <ThemedButton title="Insert Child" onPress={() => setModalVisible(true)} /> */}
+                <ThemedButton title="Insert Child (should be from chip)" onPress={() => setModalVisible(true)} />
 
                 {parentId && (
                     <ThemedButton
