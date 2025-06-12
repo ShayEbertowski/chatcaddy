@@ -61,13 +61,28 @@ export const composerStore = create<ComposerStoreState>((set, get) => ({
     },
 
     async loadTree(treeId) {
+        console.log('🌲 loadTree called with treeId:', treeId);
+
+        if (treeId === 'DRAFT') {
+            const fallbackDraft: ComposerNode = {
+                id: 'ROOT_NODE',
+                title: 'New Prompt',
+                content: '',
+                entityType: 'Prompt',
+                variables: {},
+                children: [],
+            };
+            set({ rootNode: fallbackDraft });
+            return; // ← this must be here to avoid hitting Supabase!
+        }
+
         const { data, error } = await supabase
             .from('composer_trees')
             .select('*')
             .eq('id', treeId)
             .single();
 
-        console.log("Supabase loadTree result:", { data, error });
+        console.log('🌐 Supabase loadTree result:', { data, error });
 
         if (error || !data) throw new Error(error?.message || 'Tree not found');
 

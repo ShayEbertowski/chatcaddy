@@ -16,3 +16,5 @@ export interface ComposerTreeRecord {
     name: string;
     tree_data: ComposerNode;  // Full nested tree
 }
+
+export { VariableValue };

@@ -36,6 +36,16 @@ export default function ComposerNodeScreen() {
         loadIfNeeded();
     }, [treeId]);
 
+    useEffect(() => {
+        async function load() {
+            console.log('📦 ComposerNodeScreen loading', { treeId });
+            await loadTree(treeId);
+            setLoading(false);
+        }
+        load();
+    }, [treeId]);
+
+
     const parentId = getParentNodeId(nodePath);
 
 

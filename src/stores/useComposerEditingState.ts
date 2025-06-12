@@ -26,7 +26,8 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
                 if (freshRoot) {
                     const path = getNodePath(freshRoot, nodeId);
                     if (path.length > 0) {
-                        setDraftPath(path);
+                        setDraftTree(freshRoot); // ✅ Save the full tree!
+                        setDraftPath(path);      // ✅ Save the path to current node
                     }
                 }
             } else {
