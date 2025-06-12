@@ -1,53 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList } from 'react-native';
-import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
-import PromptSearch from '../../../src/components/prompt/PromptSearch';
-import EmptyState from '../../../src/components/shared/EmptyState';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { useColors } from '../../../src/hooks/useColors';
 import { getSharedStyles } from '../../../src/styles/shared';
-import { Entity, EntityType } from '../../../src/types/entity';
+import { Entity } from '../../../src/types/entity';
+import PromptSearch from '../../../src/components/prompt/PromptSearch';
+import EmptyState from '../../../src/components/shared/EmptyState';
+import PromptPathNavigator from '../../../src/components/composer/PromptPathNavigator';
+import RichPromptEditor from '../../../src/components/editor/RichPromptEditor';
 import { router } from 'expo-router';
 import { composerStore } from '../../../src/core/composer/composerStore';
-import { ComposerNode } from '../../../src/core/types/composer';
+import { toEditorVariables, fromEditorVariables } from '../../../src/utils/composer/variables';
 import { generateUUIDSync } from '../../../src/utils/uuid/generateUUIDSync';
-import { Variable } from '../../../src/types/prompt';
-import { UIEntityType } from '../../../src/types/entity';
-import PromptPathNavigator from '../../../src/components/composer/PromptPathNavigator';
-
+import { useComposerEditingState } from '../../../src/stores/useComposerEditingState';
 
 export default function ComposerIndexScreen() {
     const colors = useColors();
     const sharedStyles = getSharedStyles(colors);
     const [mode, setMode] = useState<'Browse' | 'New' | 'Starters'>('Browse');
-    const [newContent, setNewContent] = useState('');
-
-    const [entityType, setEntityType] = useState<UIEntityType>('Prompt');
     const [hasEntities, setHasEntities] = useState<boolean>(true);
-    const [variables, setVariables] = useState<Record<string, Variable>>({});
-    const [childChips, setChildChips] = useState<string[]>([]);
 
-    const [draftTree, setDraftTree] = useState<ComposerNode>({
-        id: generateUUIDSync(),
-        title: 'Root',
-        content: '',
-        entityType: 'Prompt',
-        variables: {},
-        children: [],
-    });
+    // Shared editing hook for draft tree
+    const {
+        currentNode,
+        nodePath,
+        updateNode,
+        insertChildNode,
+    } = useComposerEditingState('DRAFT', 'DRAFT');
 
-    const [draftPath, setDraftPath] = useState<ComposerNode[]>([draftTree]);
-    const currentNode = draftPath[draftPath.length - 1];
-    const [scrollToEnd, setScrollToEnd] = useState(false);
-
-    useEffect(() => {
-        if (scrollToEnd) {
-            setTimeout(() => setScrollToEnd(false), 500); // prevent sticky scroll
-        }
-    }, [scrollToEnd]);
-
-
-    // 🚧 Hardcoded Starter List for future community seeding
     const starters = [
         "Best Summer Fruits",
         "Pizza Toppings by Age",
@@ -66,23 +46,20 @@ export default function ComposerIndexScreen() {
         const newTreeId = generateUUIDSync();
         const firstChildId = generateUUIDSync();
 
-        const firstChild: ComposerNode = {
-            id: firstChildId,
-            entityType: prompt.entityType as 'Prompt' | 'Function' | 'Snippet', // ✅ fixed here
-            title: prompt.title,
-            content: prompt.content,        // ✅ populate original content
-            variables: prompt.variables,    // ✅ include any variables!
-            children: [],
-        };
-
-
-        const rootNode: ComposerNode = {
+        const rootNode = {
             id: newTreeId,
-            entityType: 'Prompt',
+            entityType: 'Prompt' as const,
             title: 'Root',
             content: '',
             variables: {},
-            children: [firstChild],
+            children: [{
+                id: firstChildId,
+                entityType: prompt.entityType as 'Prompt' | 'Function' | 'Snippet',
+                title: prompt.title,
+                content: prompt.content,
+                variables: prompt.variables,
+                children: [],
+            }],
         };
 
         await composerStore.getState().createTree({
@@ -95,119 +72,45 @@ export default function ComposerIndexScreen() {
         router.push(`/(drawer)/(composer)/${newTreeId}/${firstChildId}`);
     };
 
-    const handleCreate = async () => {
+    const handleStarterSelect = async (title: string) => {
         const newTreeId = generateUUIDSync();
         const firstChildId = generateUUIDSync();
 
-        const firstChild: ComposerNode = {
-            id: firstChildId,
-            entityType: entityType,
-            title: newContent,
-            content: '',
-            variables: variables,
-            children: [],
-        };
-
-        const generatedChildren: ComposerNode[] = childChips.map((name) => ({
-            id: generateUUIDSync(),
-            entityType: 'Prompt',
-            title: name,
-            content: '',
-            variables: {},
-            children: [],
-        }));
-
-        const rootNode: ComposerNode = {
+        const rootNode = {
             id: newTreeId,
-            entityType: 'Prompt',
+            entityType: 'Prompt' as const,
             title: 'Root',
             content: '',
             variables: {},
-            children: [firstChild, ...generatedChildren],
+            children: [{
+                id: firstChildId,
+                entityType: 'Prompt' as const,
+                title,
+                content: '',
+                variables: {},
+                children: [],
+            }],
         };
 
         await composerStore.getState().createTree({
             id: newTreeId,
-            name: newContent,
+            name: title,
             rootNode,
         });
 
         router.push(`/(drawer)/(composer)/${newTreeId}/${firstChildId}`);
     };
 
-
-
-    const handleStarterSelect = async (starterTitle: string) => {
-        const newTreeId = generateUUIDSync();
-        const firstChildId = generateUUIDSync();
-
-        const firstChild: ComposerNode = {
-            id: firstChildId,
-            entityType: 'Prompt',
-            title: starterTitle,
-            content: '',
-            variables: {},
-            children: [],
-        };
-
-        const rootNode: ComposerNode = {
-            id: newTreeId,
-            entityType: 'Prompt',
-            title: 'Root',
-            content: '',
-            variables: {},
-            children: [firstChild],
-        };
-
+    const handleSaveDraftTree = async () => {
+        const root = nodePath[0];
         await composerStore.getState().createTree({
-            id: newTreeId,
-            name: starterTitle,
-            rootNode,
+            id: root.id,
+            name: currentNode.title || 'Untitled',
+            rootNode: root,
         });
 
-        router.push(`/(drawer)/(composer)/${newTreeId}/${firstChildId}`);
+        router.push(`/(drawer)/(composer)/${root.id}/${currentNode.id}`);
     };
-
-    const handleChipPress = (name: string) => {
-        const newChild: ComposerNode = {
-            id: generateUUIDSync(),
-            title: name,
-            content: '',
-            entityType: 'Prompt',
-            variables: {},
-            children: [],
-        };
-
-        const updatedCurrent = {
-            ...currentNode,
-            children: [...currentNode.children, newChild],
-        };
-
-        const newPath = [...draftPath.slice(0, -1), updatedCurrent, newChild];
-        setDraftPath(newPath);
-        setScrollToEnd(true);
-
-        const updateNodeInTree = (node: ComposerNode, updatedNode: ComposerNode): ComposerNode => {
-            if (node.id === updatedNode.id) return updatedNode;
-            return {
-                ...node,
-                children: node.children.map((child) => updateNodeInTree(child, updatedNode)),
-            };
-        };
-
-        const newDraftTree = updateNodeInTree(draftTree, updatedCurrent);
-        setDraftTree(newDraftTree);
-
-        setTimeout(() => {
-            router.push(`/(drawer)/(composer)/${newDraftTree.id}/${newChild.id}`);
-        }, 50);
-    };
-
-
-
-
-
-
 
     return (
         <ThemedSafeArea disableTopInset>
@@ -219,7 +122,7 @@ export default function ComposerIndexScreen() {
                     <ToggleButton title="Starters" mode={mode} setMode={setMode} />
                 </View>
 
-                {/* Main Content */}
+                {/* Browse Mode */}
                 {mode === 'Browse' && (
                     hasEntities ? (
                         <PromptSearch onSelect={handleSelectNode} />
@@ -233,33 +136,31 @@ export default function ComposerIndexScreen() {
                     )
                 )}
 
-                {mode === 'New' && (
+                {/* New Mode */}
+                {mode === 'New' && currentNode && (
                     <View style={{ flex: 1, justifyContent: 'space-between' }}>
-                        <View style={{ marginTop: 16 }}>
-
-                            {currentNode.children.length > 0 && (
-                                <PromptPathNavigator
-                                    treeId="DRAFT"
-                                    nodePath={draftPath}
-                                    currentNode={currentNode}
-                                    readOnly={false}
-                                    scrollIntoLast={scrollToEnd}
-                                />
-                            )}
-
-
-                            <RichPromptEditor
-                                text={newContent}
-                                onChangeText={setNewContent}
-                                entityType={entityType}
-                                onChangeEntityType={setEntityType}
-                                variables={variables} // ✅ now included
-                                onChangeVariables={setVariables} // ✅ now included
-                                onChipPress={handleChipPress}
-
+                        {currentNode.children.length > 0 && (
+                            <PromptPathNavigator
+                                treeId="DRAFT"
+                                nodePath={nodePath}
+                                currentNode={currentNode}
+                                readOnly={false}
+                                scrollIntoLast={true}
                             />
+                        )}
 
-                        </View>
+                        <RichPromptEditor
+                            text={currentNode.content}
+                            onChangeText={(text) => updateNode({ content: text })}
+                            entityType={currentNode.entityType}
+                            onChangeEntityType={(type) => updateNode({ entityType: type })}
+                            variables={toEditorVariables(currentNode.variables)}
+                            onChangeVariables={(vars) =>
+                                updateNode({ variables: fromEditorVariables(vars) })
+                            }
+                            readOnly={false}
+                            onChipPress={(name) => insertChildNode(name)}
+                        />
 
                         <TouchableOpacity
                             style={{
@@ -269,13 +170,14 @@ export default function ComposerIndexScreen() {
                                 alignItems: 'center',
                                 marginTop: 16,
                             }}
-                            onPress={handleCreate}
+                            onPress={handleSaveDraftTree}
                         >
                             <Text style={{ color: colors.onPrimary, fontWeight: 'bold' }}>Save</Text>
                         </TouchableOpacity>
                     </View>
                 )}
 
+                {/* Starters Mode */}
                 {mode === 'Starters' && (
                     <View style={{ flex: 1 }}>
                         <FlatList
@@ -302,7 +204,6 @@ export default function ComposerIndexScreen() {
     );
 }
 
-// Helper toggle button component
 function ToggleButton({ title, mode, setMode }: { title: string; mode: string; setMode: (mode: any) => void }) {
     const colors = useColors();
     const sharedStyles = getSharedStyles(colors);

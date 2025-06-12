@@ -59,47 +59,51 @@ export default function PromptPathNavigator({
         paddingHorizontal: 4,
     }));
 
-    return (
-        <ScrollView
-            ref={scrollViewRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.pathRow}
-        >
-            {nodePath.map((node, i) => {
-                const isLast = i === nodePath.length - 1;
+    console.log('🐒')
 
-                return (
-                    <View key={node.id} style={styles.pathItem}>
-                        <TouchableOpacity
-                            disabled={isLast || readOnly}
-                            onPress={() =>
-                                router.push(`/(drawer)/(composer)/${treeId}/${node.id}`)
-                            }
-                        >
-                            {isLast ? (
-                                <Animated.View style={animatedFlashStyle}>
-                                    <Text style={[styles.pathText, styles.activePath]}>
+    return (
+        <View style={styles.container}>
+            <ScrollView
+                ref={scrollViewRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.pathRow}
+            >
+                {nodePath.map((node, i) => {
+                    const isLast = i === nodePath.length - 1;
+
+                    return (
+                        <View key={node.id} style={styles.pathItem}>
+                            <TouchableOpacity
+                                disabled={isLast || readOnly}
+                                onPress={() =>
+                                    router.push(`/(drawer)/(composer)/${treeId}/${node.id}`)
+                                }
+                            >
+                                {isLast ? (
+                                    <Animated.View style={animatedFlashStyle}>
+                                        <Text style={[styles.pathText, styles.activePath]}>
+                                            {node.title || node.id}
+                                        </Text>
+                                    </Animated.View>
+                                ) : (
+                                    <Text style={styles.pathText}>
                                         {node.title || node.id}
                                     </Text>
-                                </Animated.View>
-                            ) : (
-                                <Text style={styles.pathText}>
-                                    {node.title || node.id}
-                                </Text>
-                            )}
-                        </TouchableOpacity>
-                        {!isLast && <Text style={styles.separator}>›</Text>}
-                    </View>
-                );
-            })}
-        </ScrollView>
+                                )}
+                            </TouchableOpacity>
+                            {!isLast && <Text style={styles.separator}>›</Text>}
+                        </View>
+                    );
+                })}
+            </ScrollView>
+        </View>
     );
 }
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
-        container: { marginBottom: 16 },
+        container: { marginBottom: 12 },
         label: {
             fontWeight: '600',
             fontSize: 16,
@@ -134,16 +138,8 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             marginHorizontal: 6,
             color: colors.secondaryText,
         },
-        childrenContainer: {
-            marginTop: 4,
-        },
-        childButton: {
-            paddingVertical: 8,
-            paddingHorizontal: 12,
-            backgroundColor: colors.surface,
-            borderRadius: 8,
-            marginBottom: 6,
-        },
+
+
         childText: {
             color: colors.text,
         },

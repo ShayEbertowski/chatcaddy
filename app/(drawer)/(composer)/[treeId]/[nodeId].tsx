@@ -1,113 +1,39 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, Modal, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { composerStore } from '../../../../src/core/composer/composerStore';
-import { ComposerNode } from '../../../../src/core/types/composer';
 import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../../../src/components/ui/ThemedButton';
-import { VariableEditor } from '../../../../src/components/composer/VariableEditor';
 import { useColors } from '../../../../src/hooks/useColors';
-import { generateUUIDSync } from '../../../../src/utils/uuid/generateUUIDSync';
-import { Breadcrumb } from '../../../../src/components/composer/Breadcrumb';
-import { getNodePath, getParentNodeId } from '../../../../src/utils/composer/pathUtils';
-import RichPromptEditor from '../../../../src/components/editor/RichPromptEditor';
-import { Variable } from '../../../../src/types/prompt';
-import { fromEditorVariables, toEditorVariables } from '../../../../src/utils/composer/variables';
-import { VariableValue } from '../../../../src/types/prompt';
-import PromptPathNavigator from '../../../../src/components/composer/PromptPathNavigator';
+import { getParentNodeId } from '../../../../src/utils/composer/pathUtils';
+import { useComposerEditingState } from '../../../../src/stores/useComposerEditingState';
+import { ComposerEditorView } from '../../../../src/components/composer/ComposerEditorView';
 
 export default function ComposerNodeScreen() {
     const colors = useColors();
-    const styles = getStyles(colors);
     const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
-
-    const rootNode = composerStore((state) => state.rootNode);
-    const loadTree = composerStore((state) => state.loadTree);
-    const saveTree = composerStore((state) => state.saveTree);
-    const addChild = composerStore((state) => state.addChild);
-
     const [loading, setLoading] = useState(true);
-    const [currentNode, setCurrentNode] = useState<ComposerNode | null>(null);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [newChildTitle, setNewChildTitle] = useState('');
-    const [nodePath, setNodePath] = useState<ComposerNode[]>([]);
+
+    const {
+        rootNode,
+        currentNode,
+        nodePath,
+        updateNode,
+        insertChildNode,
+        saveTree,
+        loadTree,
+    } = useComposerEditingState(treeId, nodeId);
 
     useEffect(() => {
-        async function load() {
+        async function loadIfNeeded() {
             if (!rootNode) {
                 await loadTree(treeId);
             }
             setLoading(false);
         }
-        load();
+        loadIfNeeded();
     }, [treeId]);
 
-    useEffect(() => {
-        if (!rootNode) return;
-
-        const path = getNodePath(rootNode, nodeId);
-        setNodePath(path);
-
-        const found = path[path.length - 1] ?? null;
-        setCurrentNode(found);
-    }, [rootNode, nodeId]);
-
     const parentId = getParentNodeId(nodePath);
-
-    const handleInsertChild = async () => {
-        if (!newChildTitle.trim() || !currentNode) return;
-
-        const newChild: ComposerNode = {
-            id: generateUUIDSync(),
-            entityType: 'Prompt',
-            title: newChildTitle,
-            content: '',
-            variables: {},
-            children: [],
-        };
-
-        addChild(currentNode.id, newChild);
-        await saveTree(rootNode!.title);
-        setNewChildTitle('');
-        setModalVisible(false);
-    };
-
-    // this should be handleChipPress
-    const createChildNode = (name: string) => {
-        if (!currentNode) return;
-        return {
-            id: name,
-            parentId: currentNode.id,
-            title: name,
-            content: '',
-            entityType: 'Prompt',
-            variables: {},
-        };
-    };
-
-    function updateCurrentNode(updates: Partial<ComposerNode>) {
-        if (!currentNode || !rootNode) return;
-
-        const updated: ComposerNode = {
-            ...currentNode,
-            ...updates,
-        };
-
-        const currentId = currentNode.id;
-
-        function updateInTree(node: ComposerNode): ComposerNode {
-            if (node.id === currentId) return updated;
-            return {
-                ...node,
-                children: node.children.map(updateInTree),
-            };
-        }
-
-        const newTree = updateInTree(rootNode);
-        composerStore.setState({ rootNode: newTree });
-        setCurrentNode(updated);
-    }
-
 
     if (loading || !currentNode) {
         return (
@@ -118,97 +44,48 @@ export default function ComposerNodeScreen() {
     }
 
     return (
-        <ThemedSafeArea>
-            <View style={styles.container}>
+        <ThemedSafeArea disableTopInset>
+            <View style={{ flex: 1, padding: 16 }}>
                 {nodePath.length === 1 && (
-                    <View style={styles.readOnlyBanner}>
-                        <Text style={styles.readOnlyBannerText}>
+                    <View
+                        style={{
+                            padding: 8,
+                            marginBottom: 8,
+                            borderRadius: 6,
+                            backgroundColor: 'rgba(255,255,255,0.05)', // or a soft accent glow
+                        }}
+                    >
+                        <Text
+                            style={{
+                                color: colors.secondaryText,
+                                fontStyle: 'italic',
+                                textAlign: 'center',
+                            }}
+                        >
                             Viewing root node – read-only
                         </Text>
                     </View>
+
+
+
                 )}
 
-                <PromptPathNavigator
+                <ComposerEditorView
                     treeId={treeId}
-                    nodePath={nodePath}
                     currentNode={currentNode}
+                    nodePath={nodePath}
                     readOnly={nodePath.length === 1}
+                    onChangeNode={updateNode}
+                    onChipPress={insertChildNode}
                 />
 
-                <Text style={[styles.title, { color: colors.accent }]}>
-                    Node {currentNode.title || currentNode.id}
-                </Text>
-
-                {/* <VariableEditor node={currentNode} /> */}
-
-                <RichPromptEditor
-                    text={currentNode.content}
-                    onChangeText={(newText) => updateCurrentNode({ content: newText })}
-                    entityType={currentNode.entityType}
-                    onChangeEntityType={(newType) => updateCurrentNode({ entityType: newType })}
-                    variables={toEditorVariables(currentNode.variables)}
-                    onChangeVariables={(newVars) =>
-                        updateCurrentNode({ variables: fromEditorVariables(newVars) })
-                    }
-                    readOnly={nodePath.length === 1}
-                    onChipPress={(name) => createChildNode(name)}
-                />
-
-                <ThemedButton title="Save? Whole thing? Edit later?" onPress={() => Alert.alert("Figure this out...")} />
-
-
-                <ThemedButton title="Insert Child (should be from chip)" onPress={() => setModalVisible(true)} />
-
-                {parentId && (
+                {/* {parentId && (
                     <ThemedButton
                         title="Back"
                         onPress={() => router.push(`/(drawer)/(composer)/${treeId}/${parentId}`)}
                     />
-                )}
+                )} */}
             </View>
-
-            <Modal visible={modalVisible} transparent animationType="slide">
-                <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-                        <Text style={[styles.modalTitle, { color: colors.text }]}>New Child Title:</Text>
-                        <TextInput
-                            style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-                            value={newChildTitle}
-                            onChangeText={setNewChildTitle}
-                            placeholder="Enter title"
-                            placeholderTextColor={colors.border}
-                        />
-                        <ThemedButton title="Add" onPress={handleInsertChild} />
-                        <ThemedButton title="Cancel" onPress={() => setModalVisible(false)} />
-                    </View>
-                </View>
-            </Modal>
         </ThemedSafeArea>
     );
 }
-
-const getStyles = (colors: ReturnType<typeof useColors>) =>
-    StyleSheet.create({
-        container: { padding: 16 },
-        title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
-        subtitle: { fontSize: 18, fontWeight: '600', marginBottom: 8 },
-        childButton: { padding: 12, borderRadius: 8, backgroundColor: '#333', marginBottom: 8 },
-        modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#00000088' },
-        modalContent: { padding: 24, borderRadius: 12, width: '80%' },
-        modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
-        input: { borderWidth: 1, padding: 10, borderRadius: 8, marginBottom: 16 },
-        readOnlyBanner: {
-            padding: 10,
-            backgroundColor: colors.surface,
-            borderRadius: 8,
-            marginBottom: 8,
-            borderWidth: 1,
-            borderColor: colors.borderThin,
-        },
-        readOnlyBannerText: {
-            color: colors.secondaryText,
-            fontStyle: 'italic',
-            textAlign: 'center',
-        },
-
-    });
