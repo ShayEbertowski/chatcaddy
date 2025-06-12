@@ -7,7 +7,6 @@ import { useColors } from '../../../../src/hooks/useColors';
 import { getParentNodeId } from '../../../../src/utils/composer/pathUtils';
 import { useComposerEditingState } from '../../../../src/stores/useComposerEditingState';
 import { ComposerEditorView } from '../../../../src/components/composer/ComposerEditorView';
-import { FullscreenToggle } from '../../../../src/components/ui/FullscreenToggle';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ComposerNodeScreen() {
@@ -15,16 +14,7 @@ export default function ComposerNodeScreen() {
     const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
     const [loading, setLoading] = useState(true);
 
-    const [isFullscreen, setIsFullscreen] = useState(false);
     const navigation = useNavigation();
-
-    useLayoutEffect(() => {
-        navigation.setOptions({
-            headerShown: !isFullscreen,
-            tabBarStyle: isFullscreen ? { display: 'none' } : undefined,
-        });
-    }, [isFullscreen]);
-
 
     const {
         rootNode,
@@ -58,12 +48,7 @@ export default function ComposerNodeScreen() {
     }
 
     return (
-        <ThemedSafeArea disableTopInset={isFullscreen}>
-
-            <FullscreenToggle
-                isFullscreen={isFullscreen}
-                onToggle={() => setIsFullscreen((prev) => !prev)}
-            />
+        <ThemedSafeArea>
 
             <View style={{
                 flex: 1,
