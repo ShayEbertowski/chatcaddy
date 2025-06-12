@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList } from 'react-native';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { useColors } from '../../../src/hooks/useColors';
@@ -13,12 +13,22 @@ import { composerStore } from '../../../src/core/composer/composerStore';
 import { toEditorVariables, fromEditorVariables } from '../../../src/utils/composer/variables';
 import { generateUUIDSync } from '../../../src/utils/uuid/generateUUIDSync';
 import { useComposerEditingState } from '../../../src/stores/useComposerEditingState';
+import { ComposerNode } from '../../../src/core/types/composer';
 
 export default function ComposerIndexScreen() {
     const colors = useColors();
     const sharedStyles = getSharedStyles(colors);
     const [mode, setMode] = useState<'Browse' | 'New' | 'Starters'>('Browse');
     const [hasEntities, setHasEntities] = useState<boolean>(true);
+    const [draftStarted, setDraftStarted] = useState(false);
+
+
+    useEffect(() => {
+        if (mode === 'New' && !draftStarted) {
+            setDraftStarted(true);
+            handleNewPrompt();
+        }
+    }, [mode]);
 
     // Shared editing hook for draft tree
     const {
@@ -112,6 +122,29 @@ export default function ComposerIndexScreen() {
         router.push(`/(drawer)/(composer)/${root.id}/${currentNode.id}`);
     };
 
+    const handleNewPrompt = async () => {
+        const newTreeId = 'DRAFT';
+        const rootId = generateUUIDSync();
+
+        const rootNode: ComposerNode = {
+            id: rootId,
+            title: 'New Prompt',
+            content: '',
+            entityType: 'Prompt',
+            variables: {},
+            children: [],
+        };
+
+        await composerStore.getState().createTree({
+            id: newTreeId,
+            name: 'Untitled',
+            rootNode,
+        });
+
+        router.push(`/(drawer)/(composer)/${newTreeId}/${rootId}`);
+    };
+
+
     return (
         <ThemedSafeArea disableTopInset>
             <View style={{ flex: 1, padding: 16 }}>
@@ -122,7 +155,6 @@ export default function ComposerIndexScreen() {
                     <ToggleButton title="Starters" mode={mode} setMode={setMode} />
                 </View>
 
-                {/* Browse Mode */}
                 {mode === 'Browse' && (
                     hasEntities ? (
                         <PromptSearch onSelect={handleSelectNode} />
@@ -136,46 +168,8 @@ export default function ComposerIndexScreen() {
                     )
                 )}
 
-                {/* New Mode */}
-                {mode === 'New' && currentNode && (
-                    <View style={{ flex: 1, justifyContent: 'space-between' }}>
-                        {currentNode.children.length > 0 && (
-                            <PromptPathNavigator
-                                treeId="DRAFT"
-                                nodePath={nodePath}
-                                currentNode={currentNode}
-                                readOnly={false}
-                                scrollIntoLast={true}
-                            />
-                        )}
+                {mode === 'New' && null}
 
-                        <RichPromptEditor
-                            text={currentNode.content}
-                            onChangeText={(text) => updateNode({ content: text })}
-                            entityType={currentNode.entityType}
-                            onChangeEntityType={(type) => updateNode({ entityType: type })}
-                            variables={toEditorVariables(currentNode.variables)}
-                            onChangeVariables={(vars) =>
-                                updateNode({ variables: fromEditorVariables(vars) })
-                            }
-                            readOnly={false}
-                            onChipPress={(name) => insertChildNode(name)}
-                        />
-
-                        <TouchableOpacity
-                            style={{
-                                backgroundColor: colors.primary,
-                                padding: 16,
-                                borderRadius: 8,
-                                alignItems: 'center',
-                                marginTop: 16,
-                            }}
-                            onPress={handleSaveDraftTree}
-                        >
-                            <Text style={{ color: colors.onPrimary, fontWeight: 'bold' }}>Save</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
 
                 {/* Starters Mode */}
                 {mode === 'Starters' && (
