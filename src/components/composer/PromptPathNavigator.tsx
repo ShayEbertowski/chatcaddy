@@ -103,7 +103,10 @@ export default function PromptPathNavigator({
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
-        container: { marginBottom: 12 },
+        container: {
+            marginTop: 8, // ⬅️ New: adds breathing room under notch/header
+            marginBottom: 12,
+        },
         label: {
             fontWeight: '600',
             fontSize: 16,
@@ -120,7 +123,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             flexDirection: 'row',
             flexWrap: 'wrap',
             alignItems: 'center',
-            marginBottom: 12,
         },
         pathItem: {
             flexDirection: 'row',
@@ -138,8 +140,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             marginHorizontal: 6,
             color: colors.secondaryText,
         },
-
-
         childText: {
             color: colors.text,
         },

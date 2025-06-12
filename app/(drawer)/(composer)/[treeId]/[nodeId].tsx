@@ -1,17 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams, router, useNavigation } from 'expo-router';
 import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../../../src/components/ui/ThemedButton';
 import { useColors } from '../../../../src/hooks/useColors';
 import { getParentNodeId } from '../../../../src/utils/composer/pathUtils';
 import { useComposerEditingState } from '../../../../src/stores/useComposerEditingState';
 import { ComposerEditorView } from '../../../../src/components/composer/ComposerEditorView';
+import { FullscreenToggle } from '../../../../src/components/ui/FullscreenToggle';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ComposerNodeScreen() {
     const colors = useColors();
     const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
     const [loading, setLoading] = useState(true);
+
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const navigation = useNavigation();
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerShown: !isFullscreen,
+            tabBarStyle: isFullscreen ? { display: 'none' } : undefined,
+        });
+    }, [isFullscreen]);
+
 
     const {
         rootNode,
@@ -35,6 +48,7 @@ export default function ComposerNodeScreen() {
 
     const parentId = getParentNodeId(nodePath);
 
+
     if (loading || !currentNode) {
         return (
             <ThemedSafeArea>
@@ -44,8 +58,17 @@ export default function ComposerNodeScreen() {
     }
 
     return (
-        <ThemedSafeArea disableTopInset>
-            <View style={{ flex: 1, padding: 16 }}>
+        <ThemedSafeArea disableTopInset={isFullscreen}>
+
+            <FullscreenToggle
+                isFullscreen={isFullscreen}
+                onToggle={() => setIsFullscreen((prev) => !prev)}
+            />
+
+            <View style={{
+                flex: 1,
+                paddingHorizontal: 16,
+            }}>
                 {nodePath.length === 1 && (
                     <View
                         style={{
