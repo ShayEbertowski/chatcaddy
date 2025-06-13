@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { ThemedSafeArea } from '../shared/ThemedSafeArea';
 import { useColors } from '../../hooks/useColors';
-import { composerStore } from '../../core/composer/composerStore';
 import { generateUUIDSync } from '../../utils/uuid/generateUUIDSync';
-import { ComposerNode } from '../../core/types/composer';
+import { useComposerStore } from '../../stores/useComposerStore';
+import { ComposerNode } from '../../types/composer';
 
 export function ComposerPersistenceTester() {
     const colors = useColors();
@@ -17,7 +17,7 @@ export function ComposerPersistenceTester() {
     }, []);
 
     async function refreshTreeList() {
-        const list = await composerStore.getState().listTrees();
+        const list = await useComposerStore.getState().listTrees();
         setTrees(list);
     }
 
@@ -33,8 +33,8 @@ export function ComposerPersistenceTester() {
                 children: [],
             };
 
-            composerStore.getState().setRootNode(newRoot);
-            const id = await composerStore.getState().saveTree('Test Tree');
+            useComposerStore.getState().setRootNode(newRoot);
+            const id = await useComposerStore.getState().saveTree('Test Tree');
             console.log('Saved with ID:', id);
             await refreshTreeList();
         } finally {
@@ -45,7 +45,7 @@ export function ComposerPersistenceTester() {
     async function handleLoad(treeId: string) {
         try {
             setLoading(true);
-            await composerStore.getState().loadTree(treeId);
+            await useComposerStore.getState().loadTree(treeId);
             console.log('Loaded tree:', treeId);
         } finally {
             setLoading(false);

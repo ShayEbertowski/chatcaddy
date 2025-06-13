@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { ComposerNode, VariableValue } from '../../core/types/composer';
-import { composerStore } from '../../core/composer/composerStore';
+import { useComposerStore } from '../../core/composer/useComposerStore';
 import { useColors } from '../../hooks/useColors';
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function ComposerTreeView({ node }: Props) {
-    const { updateVariable } = composerStore();
+    const { updateVariable } = useComposerStore();
     const colors = useColors();
     const styles = getStyles(colors);
 

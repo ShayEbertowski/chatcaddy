@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { router } from 'expo-router';
 import { generateUUIDSync } from '../../../src/utils/uuid/generateUUIDSync';
-import { composerStore } from '../../../src/core/composer/composerStore';
-import { ComposerNode } from '../../../src/core/types/composer';
+import { ComposerNode } from '../../../src/types/composer';
+import { useComposerStore } from '../../../src/stores/useComposerStore';
 
 export default function NewPromptComposerEntry() {
     useEffect(() => {
@@ -18,7 +18,7 @@ export default function NewPromptComposerEntry() {
                 children: [],
             };
 
-            await composerStore.getState().createTree({
+            await useComposerStore.getState().createTree({
                 id: 'DRAFT',
                 name: 'Untitled',
                 rootNode,

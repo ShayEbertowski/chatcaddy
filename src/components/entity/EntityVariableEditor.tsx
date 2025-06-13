@@ -12,8 +12,8 @@ import BaseModal from '../modals/BaseModal';
 import { useColors } from '../../hooks/useColors';
 import type { Variable, StringVariable } from '../../types/prompt';
 import { RichVariableRenderer } from '../shared/RichVariableRenderer';
-import VariableEditModal from '../modals/VariableEditModal';
 import { Entity } from '../../types/entity';
+import VariableEditModal from '../modals/VariableEditModal';
 
 type EntityVariableEditorProps = {
     prompt: Entity;
@@ -41,23 +41,22 @@ export function EntityVariableEditor({
     }, [inputs, onChange]);
 
     useEffect(() => {
-        if (!prompt) return;
-
         const initial: Record<string, string> = {};
 
-        Object.entries(prompt.variables || {}).forEach(([name, variable]) => {
-            const typed = variable as { type: string; value?: string; promptTitle?: string };
-
-            if (typed.type === 'string') {
-                initial[name] = initialValues[name] ?? typed.value ?? '';
-            } else if (typed.type === 'prompt') {
-                initial[name] = initialValues[name] ?? typed.promptTitle ?? '';
+        Object.entries(prompt.variables ?? {}).forEach(([name, variable]) => {
+            if (variable.type === 'string') {
+                initial[name] = initialValues[name] ?? variable.value ?? '';
+            } else if (variable.type === 'prompt') {
+                initial[name] = initialValues[name] ?? variable.promptTitle ?? '';
             }
         });
 
         setInputs((prev) => ({ ...initial, ...prev }));
-    }, [prompt?.id]); // ✅ use something stable
+    }, [prompt, initialValues]);
 
+    const handleChipPress = (name: string) => {
+        setEditingVariable({ name, value: inputs[name] ?? '' });
+    };
 
     const handleInsert = (value: string) => {
         if (!insertTarget) return;
@@ -71,11 +70,6 @@ export function EntityVariableEditor({
         setInsertTarget(null);
         setTempVariable('');
     };
-
-    const handleChipPress = (name: string) => {
-        setEditingVariable({ name, value: inputs[name] ?? '' });
-    };
-
 
     if (!prompt.variables) return null;
 

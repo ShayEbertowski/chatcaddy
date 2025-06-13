@@ -4,13 +4,13 @@ import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { ComposerNode } from '../../core/types/composer';
 import { flattenComposerTree } from '../../core/composer/utils/flattenComposerTree';
 import { useColors } from '../../hooks/useColors';
-import { composerStore } from '../../core/composer/composerStore';
+import { useComposerStore } from '../../core/composer/useComposerStore';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function ComposerViewerScreen() {
     const colors = useColors();
-    const rootNode = composerStore.getState().rootNode;
+    const rootNode = useComposerStore.getState().rootNode;
     const flatNodes = flattenComposerTree(rootNode);
     const [index, setIndex] = useState(0);
 

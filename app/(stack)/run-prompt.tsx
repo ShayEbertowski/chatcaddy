@@ -17,8 +17,8 @@ import { useFunctionStore } from '../../src/stores/useFunctionStore';
 import { useEntityStore } from '../../src/stores/useEntityStore';
 import type { Variable } from '../../src/types/prompt';
 import { isPrompt } from '../../src/utils/entity/entityGuards';
-import { PromptEntity } from '../../src/types/entity';
-import { EntityVariableEditor } from '../../src/components/prompt/EntityVariableEditor';
+import { Entity } from '../../src/types/entity';
+import { EntityVariableEditor } from '../../src/components/entity/EntityVariableEditor';
 
 export default function RunPrompt() {
     const colors = useColors();
@@ -43,7 +43,7 @@ export default function RunPrompt() {
         );
     }
 
-    const prompt: PromptEntity = entity;
+    const prompt: Entity = entity;
 
     useEffect(() => {
         navigation.setOptions({ title: 'Run Prompt' });

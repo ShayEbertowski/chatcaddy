@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { Prompt, PromptRow } from '../types/prompt';
 import { useAuthStore } from './useAuthStore';
-import { createSupabaseClient } from '../lib/supabaseDataClient';
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '../lib/supabaseClient';
 
 type FunctionStore = {
     functions: Prompt[];
@@ -16,11 +16,7 @@ export const useFunctionStore = create<FunctionStore>((set, get) => ({
     functions: [],
 
     loadFunctions: async () => {
-        const state = useAuthStore.getState();
-        const token = state.accessToken ?? undefined;
-        const client = createSupabaseClient(token);
-
-        const { data, error } = await client
+        const { data, error } = await supabase
             .from('prompts')
             .select('*')
             .eq('type', 'Function');
@@ -43,8 +39,6 @@ export const useFunctionStore = create<FunctionStore>((set, get) => ({
             return;
         }
 
-        const client = createSupabaseClient(token);
-
         const insertData = {
             id: uuidv4(),
             title,
@@ -55,7 +49,7 @@ export const useFunctionStore = create<FunctionStore>((set, get) => ({
             user_id: user.id,
         };
 
-        const { error } = await client.from('prompts').insert(insertData);
+        const { error } = await supabase.from('prompts').insert(insertData);
 
         if (error) {
             console.error('Error inserting function:', error);
@@ -68,9 +62,8 @@ export const useFunctionStore = create<FunctionStore>((set, get) => ({
     deleteFunction: async (id) => {
         const state = useAuthStore.getState();
         const token = state.accessToken ?? undefined;
-        const client = createSupabaseClient(token);
 
-        const { error } = await client
+        const { error } = await supabase
             .from('prompts')
             .delete()
             .eq('id', id);

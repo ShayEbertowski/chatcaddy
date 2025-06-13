@@ -1,14 +1,16 @@
 // types/composer.ts
 
-import { VariableValue } from "../../types/prompt";
-export interface ComposerNode {
+import { Variable } from "./prompt";
+
+export type ComposerNode = {
     id: string;
-    entityType: 'Prompt' | 'Function' | 'Snippet';
     title: string;
+    entityType: string;
     content: string;
-    variables: Record<string, VariableValue>;
+    variables: Record<string, Variable>;
     children: ComposerNode[];
-}
+};
+
 
 // What Supabase stores
 export interface ComposerTreeRecord {
@@ -16,5 +18,3 @@ export interface ComposerTreeRecord {
     name: string;
     tree_data: ComposerNode;  // Full nested tree
 }
-
-export { VariableValue };

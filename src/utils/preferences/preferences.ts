@@ -1,4 +1,4 @@
-import { createSupabaseClient } from "../../lib/supabaseDataClient";
+import { supabase } from "../../lib/supabaseClient";
 import { useAuthStore } from "../../stores/useAuthStore";
 
 
@@ -13,9 +13,8 @@ export async function loadUserPreferences(): Promise<UserPreferences | null> {
     if (!user) return null;
 
     const token = useAuthStore.getState().accessToken;
-    const client = createSupabaseClient(token ?? undefined);
 
-    const { data, error } = await client
+    const { data, error } = await supabase
         .from('user_preferences')
         .select('*')
         .eq('user_id', user.id)
@@ -34,9 +33,8 @@ export async function saveUserPreferences(preferences: Partial<UserPreferences>)
     if (!user) return;
 
     const token = useAuthStore.getState().accessToken;
-    const client = createSupabaseClient(token ?? undefined);
 
-    const { error } = await client
+    const { error } = await supabase
         .from('user_preferences')
         .upsert({
             user_id: user.id,

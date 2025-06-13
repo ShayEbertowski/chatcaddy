@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
-import { composerStore } from '../core/composer/composerStore';
-import { ComposerNode } from '../core/types/composer';
 import { generateUUIDSync } from '../utils/uuid/generateUUIDSync';
 import { getNodePath } from '../utils/composer/pathUtils';
 import { router } from 'expo-router';
+import { ComposerNode } from '../types/composer';
+import { useComposerStore } from './useComposerStore';
 
 export function useComposerEditingState(treeId?: string, nodeId?: string) {
     const [draftTree, setDraftTree] = useState<ComposerNode | null>(null);
     const [draftPath, setDraftPath] = useState<ComposerNode[]>([]);
 
-    const rootNode = composerStore((s) => s.rootNode);
-    const loadTree = composerStore((s) => s.loadTree);
-    const saveTree = composerStore((s) => s.saveTree);
+    const rootNode = useComposerStore((s) => s.rootNode);
+    const loadTree = useComposerStore((s) => s.loadTree);
+    const saveTree = useComposerStore((s) => s.saveTree);
 
     const currentNode = draftPath[draftPath.length - 1] ?? null;
 
@@ -22,7 +22,7 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
                     await loadTree(treeId);
                 }
 
-                const freshRoot = composerStore.getState().rootNode;
+                const freshRoot = useComposerStore.getState().rootNode;
                 if (freshRoot) {
                     const path = getNodePath(freshRoot, nodeId);
                     if (path.length > 0) {

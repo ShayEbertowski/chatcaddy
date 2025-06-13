@@ -1,48 +1,17 @@
+// core/composer/composerStore.ts
+
 import { create } from 'zustand';
-import { ComposerNode, VariableValue } from '../types/composer';
-import { createSupabaseClient } from '../../lib/supabaseDataClient';
-import { generateUUIDSync } from '../../utils/uuid/generateUUIDSync';
+import { Variable } from '../types/prompt';
+import { ComposerNode } from '../types/composer';
+import { supabase } from '../lib/supabaseClient';
+import { fromEditorVariables } from '../types/variable';
+import { ComposerStoreState } from '../types/stores';
 
-const supabase = createSupabaseClient();
-
-interface CreateTreeParams {
-    id: string;
-    name: string;
-    rootNode: ComposerNode;
-    rootPromptId?: string;
-}
-
-interface ComposerStoreState {
-    activeTreeId: string | null;
-    rootNode: ComposerNode | null;
-    availableTrees: { id: string; name: string }[];
-
-    createTree: (params: CreateTreeParams) => Promise<void>;
-    setRootNode: (newRoot: ComposerNode) => void;
-    updateVariable: (variableName: string, variableValue: VariableValue) => void;
-    loadTree: (treeId: string) => Promise<void>;
-    saveTree: (name: string) => Promise<string>;
-    clearTree: () => void;
-    listTrees: () => Promise<{ id: string; name: string }[]>;
-    addChild: (parentId: string, childNode: ComposerNode) => void;
-}
-
-export const composerStore = create<ComposerStoreState>((set, get) => ({
+export const useComposerStore = create<ComposerStoreState>((set, get) => ({
     activeTreeId: null,
     rootNode: null,
     availableTrees: [],
 
-    // ✅ NEW TREE CREATION LOGIC
-    createTree: async ({ id, name, rootNode, rootPromptId }) => {
-        await supabase.from('composer_trees').insert({
-            id,
-            name,
-            tree_data: rootNode,
-            root_prompt_id: rootPromptId ?? null,
-        });
-
-        set({ activeTreeId: id, rootNode });
-    },
 
     setRootNode(newRoot) {
         set({ rootNode: newRoot });
@@ -52,40 +21,27 @@ export const composerStore = create<ComposerStoreState>((set, get) => ({
         const { rootNode } = get();
         if (!rootNode) return;
 
+        const updatedVars: Record<string, Variable> = {
+            ...(fromEditorVariables(rootNode.variables as any)),
+            [variableName]: variableValue,
+        };
+
         const updated: ComposerNode = {
             ...rootNode,
-            variables: { ...rootNode.variables, [variableName]: variableValue },
+            variables: updatedVars,
         };
 
         set({ rootNode: updated });
     },
 
     async loadTree(treeId) {
-        console.log('🌲 loadTree called with treeId:', treeId);
-
-        if (treeId === 'DRAFT') {
-            const fallbackDraft: ComposerNode = {
-                id: 'ROOT_NODE',
-                title: 'New Prompt',
-                content: '',
-                entityType: 'Prompt',
-                variables: {},
-                children: [],
-            };
-            set({ rootNode: fallbackDraft });
-            return; // ← this must be here to avoid hitting Supabase!
-        }
-
         const { data, error } = await supabase
             .from('composer_trees')
             .select('*')
             .eq('id', treeId)
             .single();
 
-        console.log('🌐 Supabase loadTree result:', { data, error });
-
         if (error || !data) throw new Error(error?.message || 'Tree not found');
-
         set({
             rootNode: data.tree_data,
             activeTreeId: data.id,
@@ -144,4 +100,24 @@ export const composerStore = create<ComposerStoreState>((set, get) => ({
         const updated = addRecursive(rootNode);
         set({ rootNode: updated });
     },
+
+    createTree(tree) {
+        const { id, name, rootNode } = tree;
+
+        set({
+            activeTreeId: id,
+            rootNode,
+            availableTrees: [...get().availableTrees, { id, name }],
+        });
+    },
+
 }));
+
+function createSupabaseClient() {
+    throw new Error('Function not implemented.');
+}
+
+
+function generateUUIDSync(): string | null {
+    throw new Error('Function not implemented.');
+}

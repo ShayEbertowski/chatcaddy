@@ -1,9 +1,7 @@
 import { create } from 'zustand';
 import { Entity } from '../types/entity';
-import { createSupabaseClient } from '../lib/supabaseDataClient';  // assuming you have this
-import Constants from 'expo-constants';
+import { supabase } from '../lib/supabaseClient';
 
-const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.SUPABASE_ANON_KEY;
 
 interface EntityStore {
     entities: Entity[];
@@ -18,7 +16,6 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
     entities: [],
 
     loadEntities: async () => {
-        const supabase = createSupabaseClient();
         const { data, error } = await supabase.from('entities').select('*');
         if (error) {
             console.error('Error loading entities', error);
@@ -28,7 +25,6 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
     },
 
     addOrUpdateEntity: async (entity) => {
-        const supabase = createSupabaseClient();
         const { error } = await supabase
             .from('entities')
             .upsert([entity], { onConflict: 'id' });
@@ -53,7 +49,6 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
 
 
     deleteEntity: async (id) => {
-        const supabase = createSupabaseClient();
         const { error } = await supabase.from('entities').delete().eq('id', id);
         if (error) {
             console.error('Error deleting entity', error);

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { ComposerNode, VariableValue } from '../../core/types/composer';
-import { composerStore } from '../../core/composer/composerStore';
+import { useComposerStore } from '../../core/composer/useComposerStore';
 import { useColors } from '../../hooks/useColors';
 import { ThemedButton } from '../ui/ThemedButton';
 import { flattenTree } from '../../utils/flattenTree';
@@ -13,12 +13,12 @@ interface Props {
 
 export function VariableEditor({ node }: Props) {
     const colors = useColors();
-    const { updateVariable } = composerStore();
+    const { updateVariable } = useComposerStore();
 
     const [newVarName, setNewVarName] = useState('');
 
     const [insertFor, setInsertFor] = useState<string | null>(null);
-    const { rootNode } = composerStore();
+    const { rootNode } = useComposerStore();
     const flatNodes = rootNode ? flattenTree(rootNode) : [];
 
     const handleAddVariable = () => {

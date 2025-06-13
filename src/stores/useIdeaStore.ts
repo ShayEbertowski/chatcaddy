@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { IdeaRow } from '../types/idea';
 import { useAuthStore } from './useAuthStore';
-import { createSupabaseClient } from '../lib/supabaseDataClient';
+import { supabase } from '../lib/supabaseClient';
 
 type IdeaStore = {
     ideas: IdeaRow[];
@@ -16,9 +16,8 @@ export const useIdeaStore = create<IdeaStore>((set, get) => ({
 
     loadIdeas: async () => {
         const token = useAuthStore.getState().accessToken;
-        const client = createSupabaseClient(token ?? undefined);
 
-        const { data, error } = await client
+        const { data, error } = await supabase
             .from<'ideas', IdeaRow>('ideas')
             .select('*');
 
@@ -40,9 +39,7 @@ export const useIdeaStore = create<IdeaStore>((set, get) => ({
             return;
         }
 
-        const client = createSupabaseClient(token ?? undefined);
-
-        const { error } = await client
+        const { error } = await supabase
             .from('ideas')
             .insert({
                 content,
@@ -59,9 +56,8 @@ export const useIdeaStore = create<IdeaStore>((set, get) => ({
 
     updateIdea: async (id, newContent) => {
         const token = useAuthStore.getState().accessToken;
-        const client = createSupabaseClient(token ?? undefined);
 
-        const { error } = await client
+        const { error } = await supabase
             .from('ideas')
             .update({ content: newContent })
             .eq('id', id);
@@ -76,9 +72,8 @@ export const useIdeaStore = create<IdeaStore>((set, get) => ({
 
     deleteIdea: async (id) => {
         const token = useAuthStore.getState().accessToken;
-        const client = createSupabaseClient(token ?? undefined);
 
-        const { error } = await client
+        const { error } = await supabase
             .from('ideas')
             .delete()
             .eq('id', id);

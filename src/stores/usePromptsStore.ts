@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { useAuthStore } from './useAuthStore';
 import { Prompt, PromptRow } from '../types/prompt';
 import Constants from 'expo-constants';
-import { createSupabaseClient } from '../lib/supabaseDataClient';
 import { normalizePromptRow } from '../utils/prompt/normalizePrompt';
+import { supabase } from '../lib/supabaseClient';
 
 type PromptStore = {
     prompts: Prompt[];
@@ -18,9 +18,8 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
     loadPrompts: async () => {
         const state = useAuthStore.getState();
         const token = state.accessToken ?? undefined;
-        const client = createSupabaseClient(token);
 
-        const { data, error } = await client
+        const { data, error } = await supabase
             .from('prompts')
             .select('*')
             .eq('type', 'Prompt');  // ✅ filter only real prompts
@@ -44,8 +43,6 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
             return;
         }
 
-        const client = createSupabaseClient(token);
-
         console.log("🌯Preparing upsert payload:", {
             ...prompt,
             type: prompt.entityType,
@@ -53,7 +50,7 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
         });
 
 
-        const { error } = await client.from('prompts').upsert({
+        const { error } = await supabase.from('prompts').upsert({
             ...prompt,
             type: prompt.entityType,
             user_id: user.id,
@@ -85,9 +82,8 @@ export const usePromptStore = create<PromptStore>((set, get) => ({
     deletePrompt: async (id) => {
         const state = useAuthStore.getState();
         const token = state.accessToken ?? undefined;
-        const client = createSupabaseClient(token);
 
-        const { error } = await client.from('prompts').delete().eq('id', id);
+        const { error } = await supabase.from('prompts').delete().eq('id', id);
 
         if (error) {
             console.error('Error deleting prompt:', error);

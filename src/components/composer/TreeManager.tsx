@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { ThemedSafeArea } from '../shared/ThemedSafeArea';
 import { useColors } from '../../hooks/useColors';
-import { composerStore } from '../../core/composer/composerStore';
+import { useComposerStore } from '../../core/composer/useComposerStore';
 import { ComposerTreeRecord } from '../../core/types/composer';
 import { useRouter } from 'expo-router';
 
@@ -17,13 +17,13 @@ export function LogicraftTreeManager() {
     }, []);
 
     async function refresh() {
-        await composerStore.getState().listTrees();
-        setTrees(composerStore.getState().availableTrees);
+        await useComposerStore.getState().listTrees();
+        setTrees(useComposerStore.getState().availableTrees);
     }
 
     async function handleCreate() {
         if (!newTreeName.trim()) return;
-        composerStore.getState().setRootNode({
+        useComposerStore.getState().setRootNode({
             id: crypto.randomUUID(),
             entityType: 'Prompt',
             title: newTreeName,
@@ -31,20 +31,20 @@ export function LogicraftTreeManager() {
             variables: {},
             children: [],
         });
-        await composerStore.getState().saveTree(newTreeName);
+        await useComposerStore.getState().saveTree(newTreeName);
         setNewTreeName('');
         refresh();
     }
 
     async function handleLoad(id: string) {
-        await composerStore.getState().loadTree(id);
-        router.push(`/composer/${composerStore.getState().rootNode?.id}`);
+        await useComposerStore.getState().loadTree(id);
+        router.push(`/composer/${useComposerStore.getState().rootNode?.id}`);
     }
 
 
     async function handleDelete(id: string) {
-        await composerStore.getState().clearTree();
-        await composerStore.getState().deleteTree(id);
+        await useComposerStore.getState().clearTree();
+        await useComposerStore.getState().deleteTree(id);
         refresh();
     }
 

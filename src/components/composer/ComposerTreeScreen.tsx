@@ -5,14 +5,14 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator }
 import { useLocalSearchParams, router } from 'expo-router';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../../src/components/ui/ThemedButton';
-import { composerStore } from '../../../src/core/composer/composerStore';
+import { useComposerStore } from '../../../src/core/composer/useComposerStore';
 import { ComposerNode } from '../../../src/core/types/composer';
 import { useColors } from '../../../src/hooks/useColors';
 
 export default function ComposerTreeScreen() {
     const colors = useColors();
     const { treeId } = useLocalSearchParams<{ treeId: string }>();
-    const { rootNode, setRootNode, loadTree } = composerStore();
+    const { rootNode, setRootNode, loadTree } = useComposerStore();
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {

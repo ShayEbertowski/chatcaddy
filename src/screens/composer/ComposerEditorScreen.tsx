@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ThemedSafeArea } from '../../components/shared/ThemedSafeArea';
 import { useColors } from '../../hooks/useColors';
 import { ComposerNode, VariableValue } from '../../core/types/composer';
-import { composerStore } from '../../core/composer/composerStore';
+import { useComposerStore } from '../../core/composer/useComposerStore';
 import BaseModal from '../../components/modals/BaseModal';
 import { flattenTree } from '../../utils/flattenTree';
 import { EntityType } from '../../types/entity';
@@ -16,7 +16,7 @@ export default function ComposerEditorScreen() {
     const colors = useColors();
     const router = useRouter();
 
-    const rootNode = composerStore.getState().rootNode;
+    const rootNode = useComposerStore.getState().rootNode;
     const node = findNodeById(rootNode, nodeId);
     const [title, setTitle] = useState(node?.title ?? '');
     const [content, setContent] = useState(node?.content ?? '');
@@ -45,7 +45,7 @@ export default function ComposerEditorScreen() {
 
 
     const handleSave = () => {
-        composerStore.setState((state) => {
+        useComposerStore.setState((state) => {
             if (!state.rootNode) return state;
             return { rootNode: updateNode(state.rootNode, nodeId!, { title, content }) };
         });
@@ -76,7 +76,7 @@ export default function ComposerEditorScreen() {
             children: [],
         };
 
-        composerStore.getState().addChild(node.id, childNode);
+        useComposerStore.getState().addChild(node.id, childNode);
     };
 
 
@@ -93,7 +93,7 @@ export default function ComposerEditorScreen() {
     const handleInsertEntityVariable = (selectedNode: ComposerNode) => {
         if (!pendingVarName) return;
 
-        composerStore.setState((state) => {
+        useComposerStore.setState((state) => {
             const updateTree = (n: ComposerNode): ComposerNode => {
                 if (n.id === node.id) {
                     return {
@@ -118,7 +118,7 @@ export default function ComposerEditorScreen() {
 
 
     const handleUpdateVariable = (variableName: string, newValue: VariableValue) => {
-        composerStore.setState((state) => {
+        useComposerStore.setState((state) => {
             const updateTree = (n: ComposerNode): ComposerNode => {
                 if (n.id === node.id) {
                     return {
@@ -138,7 +138,7 @@ export default function ComposerEditorScreen() {
     };
 
     const handleDeleteVariable = (variableName: string) => {
-        composerStore.setState((state) => {
+        useComposerStore.setState((state) => {
             const updateTree = (n: ComposerNode): ComposerNode => {
                 if (n.id === node.id) {
                     const newVariables = { ...n.variables };

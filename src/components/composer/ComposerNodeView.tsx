@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, TextInput, StyleSheet, Text } from 'react-native';
 import { ComposerNode } from '../../core/types/composer';
 import { ThemedButton } from '../ui/ThemedButton';
-import { composerStore } from '../../core/composer/composerStore';
+import { useComposerStore } from '../../core/composer/useComposerStore';
 import { useColors } from '../../hooks/useColors';
 import { InsertChildModal } from './modals/InsertChildModal';
 
@@ -19,8 +19,8 @@ export function ComposerNodeView({ node }: Props) {
     const [insertModalVisible, setInsertModalVisible] = useState(false);
 
     const handleInsertChild = (newNode: ComposerNode) => {
-        composerStore.getState().addChild(node.id, newNode);
-        composerStore.getState().saveTree(title); // optional: autosave after insert
+        useComposerStore.getState().addChild(node.id, newNode);
+        useComposerStore.getState().saveTree(title); // optional: autosave after insert
     };
 
     useEffect(() => {
@@ -29,7 +29,7 @@ export function ComposerNodeView({ node }: Props) {
     }, [node.id]);
 
     const handleSave = () => {
-        const store = composerStore.getState();
+        const store = useComposerStore.getState();
 
         const updateNode = (current: ComposerNode): ComposerNode => {
             if (current.id === node.id) {
