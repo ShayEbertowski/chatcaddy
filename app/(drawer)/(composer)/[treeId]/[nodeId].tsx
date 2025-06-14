@@ -8,11 +8,14 @@ import { getParentNodeId } from '../../../../src/utils/composer/pathUtils';
 import { useComposerEditingState } from '../../../../src/stores/useComposerEditingState';
 import { ComposerEditorView } from '../../../../src/components/composer/ComposerEditorView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEntityStore } from '../../../../src/stores/useEntityStore';
+import { supabase } from '../../../../src/lib/supabaseClient';
 
 export default function ComposerNodeScreen() {
     const colors = useColors();
     const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
     const [loading, setLoading] = useState(true);
+
 
     const navigation = useNavigation();
 
@@ -27,12 +30,33 @@ export default function ComposerNodeScreen() {
     } = useComposerEditingState(treeId, nodeId);
 
     useEffect(() => {
+        const fetchEntities = async () => {
+            const { data, error } = await supabase
+                .from('composer_trees')
+                .select('id, name');
+
+            if (data) useEntityStore.getState().loadEntities();
+        };
+
+        fetchEntities();
+    }, []);
+
+    useEffect(() => {
         async function loadIfNeeded() {
             if (!rootNode) {
-                await loadTree(treeId);
+                console.log('👽 Attempting to load tree:', treeId);
+                try {
+                    await loadTree(treeId);
+                    console.log('✅ Successfully loaded tree');
+                } catch (err) {
+                    console.error('❌ Error loading tree:', err);
+                }
+                setLoading(false);
+            } else {
+                console.log('⚠️ Tree already loaded:', rootNode);
             }
-            setLoading(false);
         }
+
         loadIfNeeded();
     }, [treeId]);
 

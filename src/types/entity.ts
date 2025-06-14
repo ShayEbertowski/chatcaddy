@@ -12,3 +12,11 @@ export interface Entity {
 
 export const uiEntityTypes = ['Prompt', 'Function', 'Snippet'] as const;
 export type UIEntityType = typeof uiEntityTypes[number];
+
+export type IndexedEntity = {
+    id: string;
+    entityType: 'Prompt' | 'Function' | 'Snippet';
+    title: string;
+    content: string;
+    variables: Record<string, any>; // ✅ REQUIRED, not optional
+};

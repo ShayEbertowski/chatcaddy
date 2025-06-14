@@ -1,16 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useColors } from '../../../src/hooks/useColors';
 import BaseModal from '../../../src/components/modals/BaseModal';
-import { useEntityStore } from '../../../src/stores/useEntityStore';
-import { Entity, EntityType, UIEntityType } from '../../../src/types/entity';
-import { useRouter } from 'expo-router';
-import EntityCard from '../../../src/components/entity/EntityCard';
 import ConfirmModal from '../../../src/components/modals/ConfirmModal';
 import DropdownSelector, { DropdownOption } from '../../../src/components/shared/DropdownSelector';
+import { supabase } from '../../../src/lib/supabaseClient';
+import { useRouter } from 'expo-router';
+import EntityCard from '../../../src/components/entity/EntityCard';
+import { IndexedEntity } from '../../../src/types/entity';
 
-const options: { label: string; value: EntityType }[] = [
+
+
+const options: DropdownOption<IndexedEntity['entityType']>[] = [
     { label: 'Prompts', value: 'Prompt' },
     { label: 'Functions', value: 'Function' },
     { label: 'Snippets', value: 'Snippet' },
@@ -20,52 +22,76 @@ export default function EntityLibraryScreen() {
     const colors = useColors();
     const router = useRouter();
     const styles = getStyles(colors);
-    const [category, setCategory] = useState<EntityType>('Prompt');
+
+    const [category, setCategory] = useState<IndexedEntity['entityType']>('Prompt');
     const [modalVisible, setModalVisible] = useState(false);
-    const entities = useEntityStore((state) => state.entities);
-    const [deleteTarget, setDeleteTarget] = useState<Entity | null>(null);
+    const [entities, setEntities] = useState<IndexedEntity[]>([]);
+    const [deleteTarget, setDeleteTarget] = useState<IndexedEntity | null>(null);
+
+    useEffect(() => {
+        async function loadEntities() {
+            const { data, error } = await supabase.from('indexed_entities').select('*');
+            if (error) {
+                console.error('Error loading indexed entities:', error);
+                return;
+            }
+
+            // Normalize shape to ensure type compatibility
+            const normalized = (data || []).map((item) => ({
+                ...item,
+                variables: item.variables ?? {}, // 👈 ensure it always exists
+            }));
+
+            setEntities(normalized);
+        }
+
+        loadEntities();
+    }, []);
+
 
     const filteredEntities = useMemo(
         () => entities.filter((e) => e.entityType === category),
         [entities, category]
     );
 
-    const handleEdit = (entity: Entity) => {
+    const handleEdit = (entity: IndexedEntity) => {
         router.push({
             pathname: '/2-sandbox',
             params: { editId: entity.id },
         });
     };
 
-
-    const handleRun = (entity: Entity) => {
+    const handleRun = (entity: IndexedEntity) => {
         router.push({
             pathname: '/run-prompt',
             params: { id: entity.id },
         });
     };
 
-    const handleDeleteRequest = (entity: Entity) => {
+    const handleDeleteRequest = (entity: IndexedEntity) => {
         setDeleteTarget(entity);
     };
 
     const handleConfirmDelete = async () => {
         if (deleteTarget) {
-            await useEntityStore.getState().deleteEntity(deleteTarget.id);
-            setDeleteTarget(null);  // close modal after deletion
+            const { error } = await supabase
+                .from('indexed_entities')
+                .delete()
+                .eq('id', deleteTarget.id);
+
+            if (!error) {
+                setEntities((prev) => prev.filter((e) => e.id !== deleteTarget.id));
+            } else {
+                console.error('Failed to delete indexed entity:', error);
+            }
+
+            setDeleteTarget(null);
         }
     };
 
     const handleCancelDelete = () => {
         setDeleteTarget(null);
     };
-
-
-    const options: DropdownOption<UIEntityType>[] = [
-        { label: 'Prompts', value: 'Prompt' },
-        { label: 'Functions', value: 'Function' },
-        { label: 'Snippets', value: 'Snippet' },
-    ];
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -94,7 +120,6 @@ export default function EntityLibraryScreen() {
                         />
                     )}
                 />
-
             )}
 
             <BaseModal visible={modalVisible} blur dismissOnBackdropPress onRequestClose={() => setModalVisible(false)}>
@@ -122,7 +147,6 @@ export default function EntityLibraryScreen() {
                 cancelText="Cancel"
                 showCheckbox={true}
             />
-
         </View>
     );
 }
@@ -137,14 +161,4 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             paddingHorizontal: 20,
             backgroundColor: colors.background,
         },
-        dropdown: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: colors.inputBackground,
-            paddingVertical: 12,
-            paddingHorizontal: 16,
-            borderRadius: 10,
-        },
-        dropdownText: { fontSize: 16, fontWeight: '500', color: colors.accent },
     });

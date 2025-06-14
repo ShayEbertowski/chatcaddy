@@ -67,6 +67,12 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
         });
     },
 
+    refreshEntities: async () => {
+        const store = get();
+        store.clearAll();
+        await store.loadEntities();
+    },
+
 
     clearAll: () => {
         set(() => ({ entities: [] }));

@@ -10,9 +10,10 @@ type EntityCardProps = {
     onPress: () => void;
     onEdit: () => void;
     onDelete: () => void;
+    variables?: Record<string, any>;
 };
 
-export default function EntityCard({ entity, onPress, onEdit, onDelete }: EntityCardProps) {
+export default function EntityCard({ entity, onPress, onEdit, onDelete, variables }: EntityCardProps) {
     const colors = useColors();
     const styles = getStyles(colors);
 

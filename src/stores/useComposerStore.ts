@@ -54,7 +54,8 @@ export const useComposerStore = create<ComposerStoreState>((set, get) => ({
 
         const treeId = activeTreeId ?? generateUUIDSync();
 
-        const { error } = await supabase
+        // 1. Save to composer_trees
+        const { error: treeError } = await supabase
             .from('composer_trees')
             .upsert({
                 id: treeId,
@@ -62,11 +63,26 @@ export const useComposerStore = create<ComposerStoreState>((set, get) => ({
                 tree_data: rootNode,
             });
 
-        if (error) throw new Error(error.message);
+        if (treeError) throw new Error(treeError.message);
 
+        // 2. Sync to indexed_entities
+        const { error: indexError } = await supabase
+            .from('indexed_entities')
+            .upsert({
+                id: rootNode.id,
+                tree_id: treeId,
+                title: rootNode.title,
+                entity_type: rootNode.entityType, // e.g., "Prompt", "Snippet"
+                updated_at: new Date().toISOString(),
+            });
+
+        if (indexError) throw new Error(indexError.message);
+
+        // 3. Update local state
         set({ activeTreeId: treeId });
         return treeId;
     },
+
 
     clearTree() {
         set({ rootNode: null, activeTreeId: null });
