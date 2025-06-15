@@ -8,6 +8,7 @@ import { useEntityStore } from '../../../src/stores/useEntityStore';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { v4 as uuidv4 } from 'uuid';
+import { useComposerStore } from '../../../src/stores/useComposerStore';
 
 export default function ComposerIndexScreen() {
     const colors = useColors();
@@ -39,9 +40,13 @@ export default function ComposerIndexScreen() {
                         title="No Prompts Yet"
                         subtitle="Create your first prompt to begin composing."
                         buttonLabel="New Prompt"
-                        onButtonPress={() => {
-                            const newId = uuidv4();
-                            router.push(`/(drawer)/(composer)/${newId}/${newId}`);
+                        onButtonPress={async () => {
+                            try {
+                                const newId = await useComposerStore.getState().createEmptyTree(); // 🛠️ This creates and persists
+                                router.replace(`/(drawer)/(composer)/${newId}/${newId}`);
+                            } catch (err) {
+                                console.error('❌ Failed to create new tree', err);
+                            }
                         }}
                     />
                 )}
@@ -49,10 +54,10 @@ export default function ComposerIndexScreen() {
                 <TouchableOpacity
                     onPress={async () => {
                         try {
-                            const newId = await createEmptyTree();
-                            router.push(`/(drawer)/(composer)/${newId}/${newId}`);
+                            const newId = await useComposerStore.getState().createEmptyTree(); // 🛠️ This creates and persists
+                            router.replace(`/(drawer)/(composer)/${newId}/${newId}`);
                         } catch (err) {
-                            console.error('❌ Failed to create tree', err);
+                            console.error('❌ Failed to create new tree', err);
                         }
                     }}
                     style={{

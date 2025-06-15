@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, Alert } from 'react-native';
-import { ComposerNode } from '../../core/types/composer';
+import { View, Text } from 'react-native';
 import PromptPathNavigator from './PromptPathNavigator';
 import RichPromptEditor from '../editor/RichPromptEditor';
 import { ThemedButton } from '../ui/ThemedButton';
 import { toEditorVariables, fromEditorVariables } from '../../utils/composer/variables';
+import { ComposerNode } from '../../types/composer';
 
 type ComposerEditorViewProps = {
     treeId: string;
@@ -13,6 +13,7 @@ type ComposerEditorViewProps = {
     readOnly?: boolean;
     onChangeNode: (updates: Partial<ComposerNode>) => void;
     onChipPress: (chipText: string) => void;
+    onSaveTree?: () => void; // ✅ optional save handler
 };
 
 export function ComposerEditorView({
@@ -22,7 +23,17 @@ export function ComposerEditorView({
     readOnly,
     onChangeNode,
     onChipPress,
+    onSaveTree,
 }: ComposerEditorViewProps) {
+
+    const allowedTypes = ['Prompt', 'Function', 'Snippet'] as const;
+    const fallbackType: 'Prompt' | 'Function' | 'Snippet' =
+        allowedTypes.includes(currentNode.entityType as any)
+            ? (currentNode.entityType as any)
+            : 'Prompt';
+
+            console.log('🥶', readOnly)
+
     return (
         <View style={{ flex: 1, padding: 16 }}>
             <PromptPathNavigator
@@ -34,13 +45,13 @@ export function ComposerEditorView({
             />
 
             <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 12, color: 'white' }}>
-                {currentNode.title || '(Untitled Node)'}
+                {currentNode.title?.trim() || '(Untitled Node)'}
             </Text>
 
             <RichPromptEditor
                 text={currentNode.content}
                 onChangeText={(text) => onChangeNode({ content: text })}
-                entityType={currentNode.entityType}
+                entityType={fallbackType}
                 onChangeEntityType={(entityType) => onChangeNode({ entityType })}
                 variables={toEditorVariables(currentNode.variables)}
                 onChangeVariables={(vars) =>
@@ -50,10 +61,10 @@ export function ComposerEditorView({
                 readOnly={readOnly}
             />
 
-            {!readOnly && (
+            {!readOnly && onSaveTree && (
                 <ThemedButton
                     title="Save Tree"
-                    onPress={() => Alert.alert('Not wired yet', 'Connect this to saveTree()')}
+                    onPress={onSaveTree}
                     style={{ marginTop: 24 }}
                 />
             )}

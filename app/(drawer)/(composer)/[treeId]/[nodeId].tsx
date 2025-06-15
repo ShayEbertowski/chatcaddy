@@ -27,33 +27,59 @@ export default function ComposerNodeScreen() {
         loadTree,
     } = useComposerEditingState(treeId, nodeId);
 
-   useEffect(() => {
-    const load = async () => {
-        if (!treeId || typeof treeId !== 'string') return;
+    const activeTreeId = useComposerStore((s) => s.activeTreeId);
+    const isNewTree =
+        rootNode?.id === treeId &&
+        (!rootNode?.title || rootNode.title.trim() === '') &&
+        (!rootNode.children || rootNode.children.length === 0);
 
-        console.log('👽 Attempting to load tree:', treeId);
-        try {
-            await loadTree(treeId);
+    const readOnly = nodePath.length === 1 && !isNewTree;
 
-            // ✅ This is safe — no hook call here
-            const updated = useComposerStore.getState().rootNode;
 
-            if (!updated) {
-                console.warn('⚠️ No tree found with ID:', treeId);
+
+    useEffect(() => {
+        if (currentNode) {
+            console.log('✏️ currentNode.content from store:', currentNode.content);
+        }
+    }, [currentNode?.content]);
+
+    useEffect(() => {
+        const load = async () => {
+            if (!treeId || typeof treeId !== 'string') return;
+
+            console.log('👽 Attempting to load tree:', treeId);
+            try {
+                await loadTree(treeId);
+
+                // ✅ This is safe — no hook call here
+                const updated = useComposerStore.getState().rootNode;
+
+                if (!updated) {
+                    console.warn('⚠️ No tree found with ID:', treeId);
+                    setNotFound(true);
+                } else {
+                    console.log('✅ Successfully loaded tree');
+                }
+            } catch (err) {
+                console.error('❌ Error loading tree:', err);
                 setNotFound(true);
-            } else {
-                console.log('✅ Successfully loaded tree');
+            } finally {
+                setLoading(false);
             }
+        };
+
+        load();
+    }, [treeId]);
+
+    const handleSave = async () => {
+        try {
+            await saveTree(currentNode.title || 'Untitled');
+            console.log('✅ Tree saved!');
         } catch (err) {
-            console.error('❌ Error loading tree:', err);
-            setNotFound(true);
-        } finally {
-            setLoading(false);
+            console.error('❌ Failed to save tree:', err);
         }
     };
 
-    load();
-}, [treeId]);
 
 
     const parentId = getParentNodeId(nodePath);
@@ -90,10 +116,18 @@ export default function ComposerNodeScreen() {
         );
     }
 
+    console.log('🔍 isNewTree:', isNewTree);
+    console.log('🧠 activeTreeId:', activeTreeId);
+    console.log('🌳 rootNode.id:', rootNode?.id);
+    console.log('📛 rootNode.title:', rootNode?.title);
+    console.log('📦 nodePath:', nodePath);
+
+
+
     return (
         <ThemedSafeArea>
             <View style={{ flex: 1, paddingHorizontal: 16 }}>
-                {nodePath.length === 1 && (
+                {nodePath.length === 1 && readOnly && (
                     <View
                         style={{
                             padding: 8,
@@ -118,9 +152,10 @@ export default function ComposerNodeScreen() {
                     treeId={treeId}
                     currentNode={currentNode}
                     nodePath={nodePath}
-                    readOnly={nodePath.length === 1}
                     onChangeNode={updateNode}
                     onChipPress={insertChildNode}
+                    readOnly={nodePath.length === 1 && !isNewTree}
+                    onSaveTree={!readOnly ? handleSave : undefined}
                 />
             </View>
         </ThemedSafeArea>
