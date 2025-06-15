@@ -7,6 +7,7 @@ import { useColors } from '../../../src/hooks/useColors';
 import { useEntityStore } from '../../../src/stores/useEntityStore';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function ComposerIndexScreen() {
     const colors = useColors();
@@ -15,26 +16,45 @@ export default function ComposerIndexScreen() {
 
     const hasPrompts = entities.some((e) => e.entityType === 'Prompt');
 
+    function createEmptyTree() {
+        throw new Error('Function not implemented.');
+    }
+
     return (
         <ThemedSafeArea disableTopInset>
             <View style={{ flex: 1, padding: 16 }}>
                 {hasPrompts ? (
                     <PromptSearch
-                        onSelect={(prompt) =>
-                            router.push(`/(drawer)/(composer)/${prompt.id}/${prompt.id}`)
-                        }
+                        onSelect={async () => {
+                            try {
+                                const newId = await createEmptyTree();
+                                router.push(`/(drawer)/(composer)/${newId}/${newId}`);
+                            } catch (err) {
+                                console.error('❌ Failed to create tree', err);
+                            }
+                        }}
                     />
                 ) : (
                     <EmptyState
                         title="No Prompts Yet"
                         subtitle="Create your first prompt to begin composing."
                         buttonLabel="New Prompt"
-                        onButtonPress={() => router.push('/composer/new')}
+                        onButtonPress={() => {
+                            const newId = uuidv4();
+                            router.push(`/(drawer)/(composer)/${newId}/${newId}`);
+                        }}
                     />
                 )}
 
                 <TouchableOpacity
-                    onPress={() => router.push('/composer/new')}
+                    onPress={async () => {
+                        try {
+                            const newId = await createEmptyTree();
+                            router.push(`/(drawer)/(composer)/${newId}/${newId}`);
+                        } catch (err) {
+                            console.error('❌ Failed to create tree', err);
+                        }
+                    }}
                     style={{
                         position: 'absolute',
                         bottom: 24,

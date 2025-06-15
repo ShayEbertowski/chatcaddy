@@ -14,33 +14,35 @@ interface EntityStore {
 
 export const useEntityStore = create<EntityStore>((set, get) => ({
     entities: [],
-
     loadEntities: async () => {
-        const { data, error } = await supabase.from('entities').select('*');
+        const { data, error } = await supabase.from('indexed_entities').select('*');
         if (error) {
-            console.error('Error loading entities', error);
+            console.error('Error loading indexed entities', error);
             return;
         }
-        set({ entities: data as Entity[] });
+        set({ entities: data || [] });
     },
+
 
     addOrUpdateEntity: async (entity) => {
         const { error } = await supabase
-            .from('entities')
+            .from('indexed_entities')
             .upsert([entity], { onConflict: 'id' });
 
         if (error) {
-            console.error("Supabase error:", error);
+            console.error('Supabase error:', error);
         } else {
-            console.log("Supabase upsert successful");
+            console.log('Supabase upsert successful');
         }
 
-
+        // update local state
         set((state) => {
             const existing = state.entities.find((e) => e.id === entity.id);
             if (existing) {
                 return {
-                    entities: state.entities.map((e) => (e.id === entity.id ? entity : e)),
+                    entities: state.entities.map((e) =>
+                        e.id === entity.id ? entity : e
+                    ),
                 };
             }
             return { entities: [...state.entities, entity] };
@@ -49,7 +51,11 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
 
 
     deleteEntity: async (id) => {
-        const { error } = await supabase.from('entities').delete().eq('id', id);
+        const { error } = await supabase
+            .from('indexed_entities')
+            .delete()
+            .eq('id', id);
+
         if (error) {
             console.error('Error deleting entity', error);
             return;
@@ -59,6 +65,7 @@ export const useEntityStore = create<EntityStore>((set, get) => ({
             entities: state.entities.filter((e) => e.id !== id),
         }));
     },
+
 
     upsertEntity: (entity: Entity) => {
         set((state) => {

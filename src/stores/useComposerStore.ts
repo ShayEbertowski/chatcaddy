@@ -1,17 +1,15 @@
-// core/composer/composerStore.ts
-
 import { create } from 'zustand';
 import { Variable } from '../types/prompt';
 import { ComposerNode } from '../types/composer';
 import { supabase } from '../lib/supabaseClient';
 import { fromEditorVariables } from '../types/variable';
 import { ComposerStoreState } from '../types/stores';
+import { v4 as uuidv4 } from 'uuid';
 
 export const useComposerStore = create<ComposerStoreState>((set, get) => ({
     activeTreeId: null,
     rootNode: null,
     availableTrees: [],
-
 
     setRootNode(newRoot) {
         set({ rootNode: newRoot });
@@ -35,13 +33,28 @@ export const useComposerStore = create<ComposerStoreState>((set, get) => ({
     },
 
     async loadTree(treeId) {
+        if (!treeId || typeof treeId !== 'string') {
+            console.error('🚫 Invalid treeId passed to loadTree:', treeId);
+            return;
+        }
+
         const { data, error } = await supabase
             .from('composer_trees')
             .select('*')
             .eq('id', treeId)
-            .single();
+            .maybeSingle();
 
-        if (error || !data) throw new Error(error?.message || 'Tree not found');
+        if (error) {
+            console.error('❌ Supabase error while loading tree:', error);
+            throw new Error(error.message);
+        }
+
+        if (!data) {
+            console.warn('⚠️ No tree found with ID:', treeId);
+            return;
+        }
+
+        console.log('✅ Successfully loaded tree');
         set({
             rootNode: data.tree_data,
             activeTreeId: data.id,
@@ -54,7 +67,6 @@ export const useComposerStore = create<ComposerStoreState>((set, get) => ({
 
         const treeId = activeTreeId ?? generateUUIDSync();
 
-        // 1. Save to composer_trees
         const { error: treeError } = await supabase
             .from('composer_trees')
             .upsert({
@@ -65,24 +77,21 @@ export const useComposerStore = create<ComposerStoreState>((set, get) => ({
 
         if (treeError) throw new Error(treeError.message);
 
-        // 2. Sync to indexed_entities
         const { error: indexError } = await supabase
             .from('indexed_entities')
             .upsert({
                 id: rootNode.id,
                 tree_id: treeId,
                 title: rootNode.title,
-                entity_type: rootNode.entityType, // e.g., "Prompt", "Snippet"
+                entity_type: rootNode.entityType,
                 updated_at: new Date().toISOString(),
             });
 
         if (indexError) throw new Error(indexError.message);
 
-        // 3. Update local state
         set({ activeTreeId: treeId });
         return treeId;
     },
-
 
     clearTree() {
         set({ rootNode: null, activeTreeId: null });
@@ -127,12 +136,31 @@ export const useComposerStore = create<ComposerStoreState>((set, get) => ({
         });
     },
 
+    async createEmptyTree() {
+        const id = uuidv4();
+        const newTree = {
+            id,
+            name: 'Untitled',
+            tree_data: {
+                id,
+                title: '',
+                content: '',
+                entityType: 'Prompt',
+                variables: {},
+                children: [],
+            },
+        };
+
+        const { error } = await supabase.from('composer_trees').insert(newTree);
+        if (error) throw new Error(error.message);
+
+        return id;
+    }
 }));
 
 function createSupabaseClient() {
     throw new Error('Function not implemented.');
 }
-
 
 function generateUUIDSync(): string | null {
     throw new Error('Function not implemented.');

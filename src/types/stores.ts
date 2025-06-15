@@ -18,4 +18,6 @@ export interface ComposerStoreState {
         name: string;
         rootNode: ComposerNode;
     }) => void;
+    createEmptyTree: () => Promise<string>;
+
 }
