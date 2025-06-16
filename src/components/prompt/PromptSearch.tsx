@@ -14,14 +14,15 @@ import { supabase } from '../../lib/supabaseClient';
 import { IndexedEntity } from '../../types/entity';
 
 type SimplifiedPrompt = {
-    id: string;
+    nodeId: string;
+    treeId: string;
     title: string;
     content: string;
 };
 
 type Props = {
     onSelect: (prompt: SimplifiedPrompt) => void;
-};
+};;
 
 export default function PromptSearch({ onSelect }: Props) {
     const [entities, setEntities] = useState<IndexedEntity[]>([]);
@@ -93,7 +94,8 @@ export default function PromptSearch({ onSelect }: Props) {
                             key={entity.id}
                             onPress={() =>
                                 onSelect({
-                                    id: entity.id,
+                                    treeId: entity.tree_id,
+                                    nodeId: entity.id,
                                     title: entity.title ?? '(Untitled)',
                                     content: entity.content ?? '',
                                 })

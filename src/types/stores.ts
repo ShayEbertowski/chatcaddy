@@ -7,6 +7,8 @@ export interface ComposerStoreState {
     availableTrees: { id: string; name: string }[];
 
     setRootNode: (newRoot: ComposerNode) => void;
+    setComposerTree: (input: { id: string; name: string; rootNode: ComposerNode }) => void;
+
     updateVariable: (variableName: string, variableValue: Variable) => void;
     loadTree: (treeId: string) => Promise<void>;
     saveTree: (name: string) => Promise<string | null>

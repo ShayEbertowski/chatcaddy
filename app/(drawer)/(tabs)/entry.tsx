@@ -42,10 +42,33 @@ export default function ComposerIndexScreen() {
             <View style={{ flex: 1, padding: 16 }}>
                 {hasPrompts ? (
                     <PromptSearch
-                        onSelect={(prompt) => {
-                            router.push(`/(drawer)/(composer)/${prompt.id}/${prompt.id}`);
+                        onSelect={async (prompt) => {
+                            try {
+                                const { data, error } = await supabase
+                                    .from('composer_trees')
+                                    .select('id, name, tree_data')
+                                    .eq('id', prompt.treeId)
+                                    .maybeSingle();
+
+                                if (error || !data) {
+                                    console.error('❌ Failed to load full tree:', error);
+                                    return;
+                                }
+
+                                useComposerStore.getState().setComposerTree({
+                                    id: data.id,
+                                    name: data.name ?? 'Untitled',
+                                    rootNode: data.tree_data,
+                                });
+
+                                router.push(`/(drawer)/(composer)/${data.id}/${data.tree_data.id}`);
+                            } catch (err) {
+                                console.error('❌ Prompt selection error:', err);
+                            }
                         }}
+
                     />
+
                 ) : (
                     <EmptyState
                         title="No Prompts Yet"

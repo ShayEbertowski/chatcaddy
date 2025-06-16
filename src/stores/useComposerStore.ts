@@ -15,6 +15,21 @@ export const useComposerStore = create<ComposerStoreState>((set, get) => ({
         set({ rootNode: newRoot });
     },
 
+    setComposerTree({
+        id,
+        name,
+        rootNode,
+    }: { id: string; name: string; rootNode: ComposerNode }) {
+        set({
+            activeTreeId: id,
+            rootNode,
+            availableTrees: [
+                { id, name },
+            ],
+        });
+    },
+
+
     updateVariable(variableName, variableValue) {
         const { rootNode } = get();
         if (!rootNode) return;

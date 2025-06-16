@@ -15,35 +15,40 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
 
     const currentNode = draftPath[draftPath.length - 1] ?? null;
 
+    // ✅ Load on mount if not loaded
     useEffect(() => {
         (async () => {
-            if (treeId && nodeId) {
-                if (!rootNode) {
-                    await loadTree(treeId);
-                }
-
-                const freshRoot = useComposerStore.getState().rootNode;
-                if (freshRoot) {
-                    const path = getNodePath(freshRoot, nodeId);
-                    if (path.length > 0) {
-                        setDraftTree(freshRoot); // ✅ Save the full tree!
-                        setDraftPath(path);      // ✅ Save the path to current node
-                    }
-                }
-            } else {
-                // Draft-only mode — create root node in memory
-                const newTree: ComposerNode = {
-                    id: generateUUIDSync(),
-                    title: 'Root',
-                    content: '',
-                    entityType: 'Prompt',
-                    variables: {},
-                    children: [],
-                };
-                setDraftTree(newTree);
-                setDraftPath([newTree]);
+            if (treeId && nodeId && !rootNode) {
+                await loadTree(treeId);
             }
         })();
+    }, [treeId, nodeId]);
+
+    // ✅ Update draftTree and draftPath when rootNode changes
+    useEffect(() => {
+        if (rootNode && nodeId) {
+            const path = getNodePath(rootNode, nodeId);
+            if (path.length > 0) {
+                setDraftTree(rootNode);
+                setDraftPath(path);
+            }
+        }
+    }, [rootNode, nodeId]);
+
+    // ✅ Handle draft-only mode (no treeId)
+    useEffect(() => {
+        if (!treeId && !nodeId) {
+            const newTree: ComposerNode = {
+                id: generateUUIDSync(),
+                title: 'Root',
+                content: '',
+                entityType: 'Prompt',
+                variables: {},
+                children: [],
+            };
+            setDraftTree(newTree);
+            setDraftPath([newTree]);
+        }
     }, [treeId, nodeId]);
 
     function updateNode(updates: Partial<ComposerNode>) {
@@ -103,7 +108,7 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
         updateNode,
         insertChildNode,
         saveTree,
-        loadTree, // ✅ added so ComposerNodeScreen works
+        loadTree,
         rootNode: draftTree ?? rootNode,
     };
 }
