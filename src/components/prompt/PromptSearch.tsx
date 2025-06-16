@@ -11,7 +11,7 @@ import { useColors } from '../../hooks/useColors';
 import { RenderPreviewChunks } from './RenderPreviewChunks';
 import { getSharedStyles } from '../../styles/shared';
 import { supabase } from '../../lib/supabaseClient';
-import { ComposerTreeRecord } from '../../types/composer';
+import { IndexedEntity } from '../../types/entity';
 
 type SimplifiedPrompt = {
     id: string;
@@ -24,45 +24,41 @@ type Props = {
 };
 
 export default function PromptSearch({ onSelect }: Props) {
-    const [trees, setTrees] = useState<ComposerTreeRecord[]>([]);
+    const [entities, setEntities] = useState<IndexedEntity[]>([]);
     const [search, setSearch] = useState('');
     const [isFocused, setIsFocused] = useState(false);
     const colors = useColors();
     const styles = getStyles(colors);
     const sharedStyles = getSharedStyles(colors);
 
-    const [query, setQuery] = useState('');
-
-
     useEffect(() => {
         if (!isFocused) return;
 
-        async function fetchTrees() {
+        async function fetchEntities() {
             const { data, error } = await supabase
                 .from('indexed_entities')
                 .select('*');
 
             if (error) {
-                console.error('Error fetching trees:', error);
+                console.error('Error fetching indexed_entities:', error);
                 return;
             }
-            setTrees(data || []);
+
+            setEntities(data ?? []);
         }
 
-        fetchTrees();
-    }, [isFocused]); // ← only fetch when input is focused
-
+        fetchEntities();
+    }, [isFocused]);
 
     const filtered = !isFocused
         ? []
-        : trees.filter((tree) => {
+        : entities.filter((entity) => {
             const query = search.toLowerCase().trim();
             if (query === '') return true;
-            const { title = '', content = '', variables = {} } = tree.tree_data;
 
-            const titleMatch = title.toLowerCase().includes(query);
-            const contentMatch = content.toLowerCase().includes(query);
-            const variableText = Object.values(variables)
+            const titleMatch = entity.title?.toLowerCase().includes(query) ?? false;
+            const contentMatch = entity.content?.toLowerCase().includes(query) ?? false;
+            const variableText = Object.values(entity.variables ?? {})
                 .map((v: any) => {
                     if (v.type === 'string') return v.value?.toLowerCase?.() ?? '';
                     if (v.type === 'prompt') return v.promptTitle?.toLowerCase?.() ?? '';
@@ -70,6 +66,7 @@ export default function PromptSearch({ onSelect }: Props) {
                 })
                 .join(' ');
             const variableMatch = variableText.includes(query);
+
             return titleMatch || contentMatch || variableMatch;
         });
 
@@ -91,23 +88,23 @@ export default function PromptSearch({ onSelect }: Props) {
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {filtered.length > 0 ? (
-                    filtered.map((tree) => (
+                    filtered.map((entity) => (
                         <TouchableOpacity
-                            key={tree.id}
+                            key={entity.id}
                             onPress={() =>
                                 onSelect({
-                                    id: tree.id,
-                                    title: tree.tree_data.title,
-                                    content: tree.tree_data.content,
+                                    id: entity.id,
+                                    title: entity.title ?? '(Untitled)',
+                                    content: entity.content ?? '',
                                 })
                             }
                             style={styles.promptItem}
                         >
                             <Text style={styles.promptTitle}>
-                                {tree.tree_data.title || '(Untitled)'}
+                                {entity.title || '(Untitled)'}
                             </Text>
                             <View style={styles.previewRow}>
-                                <RenderPreviewChunks content={tree.tree_data.content} />
+                                <RenderPreviewChunks content={entity.content ?? ''} />
                             </View>
                         </TouchableOpacity>
                     ))

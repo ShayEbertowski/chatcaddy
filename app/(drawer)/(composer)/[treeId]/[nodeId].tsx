@@ -7,15 +7,19 @@ import { useColors } from '../../../../src/hooks/useColors';
 import { getParentNodeId } from '../../../../src/utils/composer/pathUtils';
 import { useComposerEditingState } from '../../../../src/stores/useComposerEditingState';
 import { ComposerEditorView } from '../../../../src/components/composer/ComposerEditorView';
-import { useEntityStore } from '../../../../src/stores/useEntityStore';
-import { useComposerStore } from '../../../../src/stores/useComposerStore'; // ✅ NEW
-import { supabase } from '../../../../src/lib/supabaseClient';
+import { useComposerStore } from '../../../../src/stores/useComposerStore';
+import SavePromptModal from '../../../../src/components/modals/SavePromptModal';
+import { generateSmartTitle } from '../../../../src/utils/prompt/generateSmartTitle';
 
 export default function ComposerNodeScreen() {
     const colors = useColors();
     const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
+    const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+    const [showSaveModal, setShowSaveModal] = useState(false);
+    const [saveTitle, setSaveTitle] = useState('');
+    const [saving, setSaving] = useState(false);
 
     const {
         rootNode,
@@ -35,30 +39,14 @@ export default function ComposerNodeScreen() {
 
     const readOnly = nodePath.length === 1 && !isNewTree;
 
-
-
-    useEffect(() => {
-        if (currentNode) {
-            console.log('✏️ currentNode.content from store:', currentNode.content);
-        }
-    }, [currentNode?.content]);
-
     useEffect(() => {
         const load = async () => {
             if (!treeId || typeof treeId !== 'string') return;
-
-            console.log('👽 Attempting to load tree:', treeId);
             try {
                 await loadTree(treeId);
-
-                // ✅ This is safe — no hook call here
                 const updated = useComposerStore.getState().rootNode;
-
                 if (!updated) {
-                    console.warn('⚠️ No tree found with ID:', treeId);
                     setNotFound(true);
-                } else {
-                    console.log('✅ Successfully loaded tree');
                 }
             } catch (err) {
                 console.error('❌ Error loading tree:', err);
@@ -67,24 +55,38 @@ export default function ComposerNodeScreen() {
                 setLoading(false);
             }
         };
-
         load();
     }, [treeId]);
 
-    const handleSave = async () => {
+    const handleSavePress = async () => {
+        if (!currentNode?.content?.trim()) return;
+        setIsGeneratingTitle(true);
         try {
-            await saveTree(currentNode.title || 'Untitled');
-            console.log('✅ Tree saved!');
+            const smartTitle = await generateSmartTitle(currentNode.content);
+            setSaveTitle(smartTitle || 'Untitled');
+            setShowSaveModal(true);
         } catch (err) {
-            console.error('❌ Failed to save tree:', err);
+            console.error('❌ Failed to generate title', err);
+            setSaveTitle('Untitled');
+            setShowSaveModal(true);
+        } finally {
+            setIsGeneratingTitle(false);
         }
     };
 
+    const handleConfirmSave = async () => {
+        setSaving(true);
+        try {
+            await saveTree(saveTitle.trim() || 'Untitled');
+            setShowSaveModal(false);
+        } catch (err) {
+            console.error('❌ Failed to save tree:', err);
+        } finally {
+            setSaving(false);
+        }
+    };
 
-
-    const parentId = getParentNodeId(nodePath);
-
-    if (loading) {
+    if (loading || !currentNode) {
         return (
             <ThemedSafeArea>
                 <ActivityIndicator size="large" color={colors.primary} />
@@ -92,7 +94,7 @@ export default function ComposerNodeScreen() {
         );
     }
 
-    if (notFound || !currentNode) {
+    if (notFound) {
         return (
             <ThemedSafeArea>
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -115,14 +117,6 @@ export default function ComposerNodeScreen() {
             </ThemedSafeArea>
         );
     }
-
-    console.log('🔍 isNewTree:', isNewTree);
-    console.log('🧠 activeTreeId:', activeTreeId);
-    console.log('🌳 rootNode.id:', rootNode?.id);
-    console.log('📛 rootNode.title:', rootNode?.title);
-    console.log('📦 nodePath:', nodePath);
-
-
 
     return (
         <ThemedSafeArea>
@@ -154,10 +148,21 @@ export default function ComposerNodeScreen() {
                     nodePath={nodePath}
                     onChangeNode={updateNode}
                     onChipPress={insertChildNode}
-                    readOnly={nodePath.length === 1 && !isNewTree}
-                    onSaveTree={!readOnly ? handleSave : undefined}
+                    readOnly={readOnly}
+                    onSaveTree={!readOnly ? handleSavePress : undefined}
                 />
             </View>
+
+            <SavePromptModal
+                visible={showSaveModal}
+                title={saveTitle}
+                prompt={currentNode.content}
+                onChangeTitle={setSaveTitle}
+                onCancel={() => setShowSaveModal(false)}
+                onConfirm={handleConfirmSave}
+                selectedFolder=""
+                loading={isGeneratingTitle}
+            />
         </ThemedSafeArea>
     );
 }

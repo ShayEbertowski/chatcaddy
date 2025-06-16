@@ -67,11 +67,14 @@ export const useComposerStore = create<ComposerStoreState>((set, get) => ({
 
         const treeId = activeTreeId ?? generateUUIDSync();
 
+        // 🛡 Ensure a non-empty title
+        const safeTitle = rootNode.title?.trim() || name?.trim() || 'Untitled';
+
         const { error: treeError } = await supabase
             .from('composer_trees')
             .upsert({
                 id: treeId,
-                name,
+                name: safeTitle, // 👍 also use the fallback for display name
                 tree_data: rootNode,
             });
 
@@ -82,7 +85,7 @@ export const useComposerStore = create<ComposerStoreState>((set, get) => ({
             .upsert({
                 id: rootNode.id,
                 tree_id: treeId,
-                title: rootNode.title,
+                title: safeTitle,
                 entity_type: rootNode.entityType,
                 updated_at: new Date().toISOString(),
             });
@@ -92,6 +95,8 @@ export const useComposerStore = create<ComposerStoreState>((set, get) => ({
         set({ activeTreeId: treeId });
         return treeId;
     },
+
+
 
     clearTree() {
         set({ rootNode: null, activeTreeId: null });

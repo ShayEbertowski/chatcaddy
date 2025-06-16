@@ -10,8 +10,6 @@ import { useRouter } from 'expo-router';
 import EntityCard from '../../../src/components/entity/EntityCard';
 import { IndexedEntity } from '../../../src/types/entity';
 
-
-
 const options: DropdownOption<IndexedEntity['entityType']>[] = [
     { label: 'Prompts', value: 'Prompt' },
     { label: 'Functions', value: 'Function' },
@@ -36,10 +34,11 @@ export default function EntityLibraryScreen() {
                 return;
             }
 
-            // Normalize shape to ensure type compatibility
+            // Normalize shape to match expected frontend structure
             const normalized = (data || []).map((item) => ({
                 ...item,
-                variables: item.variables ?? {}, // 👈 ensure it always exists
+                entityType: item.entity_type, // 🛠 normalize snake_case to camelCase
+                variables: item.variables ?? {},
             }));
 
             setEntities(normalized);
@@ -47,7 +46,6 @@ export default function EntityLibraryScreen() {
 
         loadEntities();
     }, []);
-
 
     const filteredEntities = useMemo(
         () => entities.filter((e) => e.entityType === category),
@@ -162,3 +160,5 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             backgroundColor: colors.background,
         },
     });
+
+    

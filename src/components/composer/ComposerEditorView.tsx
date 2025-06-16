@@ -32,8 +32,6 @@ export function ComposerEditorView({
             ? (currentNode.entityType as any)
             : 'Prompt';
 
-            console.log('🥶', readOnly)
-
     return (
         <View style={{ flex: 1, padding: 16 }}>
             <PromptPathNavigator

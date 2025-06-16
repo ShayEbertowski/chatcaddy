@@ -1,38 +1,49 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import PromptSearch from '../../../src/components/prompt/PromptSearch';
 import EmptyState from '../../../src/components/shared/EmptyState';
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { useColors } from '../../../src/hooks/useColors';
-import { useEntityStore } from '../../../src/stores/useEntityStore';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { v4 as uuidv4 } from 'uuid';
 import { useComposerStore } from '../../../src/stores/useComposerStore';
+import { supabase } from '../../../src/lib/supabaseClient';
+import { IndexedEntity } from '../../../src/types/entity';
 
 export default function ComposerIndexScreen() {
     const colors = useColors();
     const router = useRouter();
-    const entities = useEntityStore((state) => state.entities);
+    const [prompts, setPrompts] = useState<IndexedEntity[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const hasPrompts = entities.some((e) => e.entityType === 'Prompt');
+    useEffect(() => {
+        async function fetchPrompts() {
+            const { data, error } = await supabase
+                .from('indexed_entities')
+                .select('*')
+                .eq('entity_type', 'Prompt');
 
-    function createEmptyTree() {
-        throw new Error('Function not implemented.');
-    }
+            if (error) {
+                console.error('Error loading prompts:', error);
+                return;
+            }
+
+            setPrompts(data ?? []);
+            setLoading(false);
+        }
+
+        fetchPrompts();
+    }, []);
+
+    const hasPrompts = prompts.length > 0;
 
     return (
         <ThemedSafeArea disableTopInset>
             <View style={{ flex: 1, padding: 16 }}>
                 {hasPrompts ? (
                     <PromptSearch
-                        onSelect={async () => {
-                            try {
-                                const newId = await createEmptyTree();
-                                router.push(`/(drawer)/(composer)/${newId}/${newId}`);
-                            } catch (err) {
-                                console.error('❌ Failed to create tree', err);
-                            }
+                        onSelect={(prompt) => {
+                            router.push(`/(drawer)/(composer)/${prompt.id}/${prompt.id}`);
                         }}
                     />
                 ) : (
@@ -42,7 +53,7 @@ export default function ComposerIndexScreen() {
                         buttonLabel="New Prompt"
                         onButtonPress={async () => {
                             try {
-                                const newId = await useComposerStore.getState().createEmptyTree(); // 🛠️ This creates and persists
+                                const newId = await useComposerStore.getState().createEmptyTree();
                                 router.replace(`/(drawer)/(composer)/${newId}/${newId}`);
                             } catch (err) {
                                 console.error('❌ Failed to create new tree', err);
@@ -54,7 +65,7 @@ export default function ComposerIndexScreen() {
                 <TouchableOpacity
                     onPress={async () => {
                         try {
-                            const newId = await useComposerStore.getState().createEmptyTree(); // 🛠️ This creates and persists
+                            const newId = await useComposerStore.getState().createEmptyTree();
                             router.replace(`/(drawer)/(composer)/${newId}/${newId}`);
                         } catch (err) {
                             console.error('❌ Failed to create new tree', err);

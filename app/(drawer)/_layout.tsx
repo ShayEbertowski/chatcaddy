@@ -21,6 +21,18 @@ export function CustomDrawerContent(props: any) {
                 </Text>
 
                 <DrawerItem
+                    label="Home"
+                    onPress={() => props.navigation.navigate('(tabs)', { screen: 'library' })}
+                    icon={({ color, size }) => (
+                        <Ionicons name="home-outline" color={colors.accent} size={size} />
+                    )}
+                    labelStyle={{ color: colors.accent, fontWeight: '500', fontSize: 16 }}
+                    activeTintColor={colors.primary}
+                    inactiveTintColor={colors.text}
+                />
+
+
+                <DrawerItem
                     label="Settings"
                     onPress={() => props.navigation.navigate('settings')}
                     icon={({ color, size }) => (
@@ -30,31 +42,6 @@ export function CustomDrawerContent(props: any) {
                     activeTintColor={colors.primary}
                     inactiveTintColor={colors.text}
                 />
-
-                {/* <DrawerItem
-                    label="Playground"
-                    onPress={() => props.navigation.navigate('playground')}
-                    icon={({ color, size }) => (
-                        <Ionicons name="game-controller-outline" color={colors.accent} size={size} />
-                    )}
-                    labelStyle={{ color: colors.accent, fontWeight: '500', fontSize: 16 }}
-                    activeTintColor={colors.primary}
-                    inactiveTintColor={colors.text}
-                /> */}
-
-
-                <DrawerItem
-                    label="Playground"
-                    onPress={() => router.push('/playground')}
-                    icon={({ color, size }) => (
-                        <Ionicons name="game-controller-outline" color={colors.accent} size={size} />
-                    )}
-                    labelStyle={{ color: colors.accent, fontWeight: '500', fontSize: 16 }}
-                    activeTintColor={colors.primary}
-                    inactiveTintColor={colors.text}
-                />
-
-
 
                 <DrawerItem
                     label="Dev/Admin"

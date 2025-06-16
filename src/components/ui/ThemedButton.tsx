@@ -12,12 +12,23 @@ interface Props {
 export function ThemedButton({ title, onPress, colorKey = 'primary', style }: Props) {
     const colors = useColors();
 
+    const backgroundColor = colors[colorKey] as ColorValue;
+
+    const textColor =
+        colorKey === 'primary'
+            ? colors.onPrimary
+            : colorKey === 'accent'
+            ? colors.onAccent
+            : colors.text;
+
     return (
         <TouchableOpacity
             onPress={onPress}
-            style={[styles.button, { backgroundColor: colors[colorKey] as ColorValue }, style]}
+            style={[styles.button, { backgroundColor }, style]}
         >
-            <Text style={[styles.buttonText, { color: colors.background }]}>{title}</Text>
+            <Text style={[styles.buttonText, { color: textColor }]}>
+                {title}
+            </Text>
         </TouchableOpacity>
     );
 }
@@ -32,5 +43,6 @@ const styles = StyleSheet.create({
     buttonText: {
         fontWeight: 'bold',
         fontSize: 16,
+        textAlign: 'center',
     },
 });
