@@ -13,31 +13,28 @@ type ComposerEditorViewProps = {
     readOnly?: boolean;
     onChangeNode: (updates: Partial<ComposerNode>) => void;
     onChipPress: (chipText: string) => void;
-    onSaveTree?: () => void; // ✅ optional save handler
+    onSaveTree?: () => void;
 };
 
 export function ComposerEditorView({
     treeId,
     currentNode,
     nodePath,
-    readOnly,
+    readOnly = false,
     onChangeNode,
     onChipPress,
     onSaveTree,
 }: ComposerEditorViewProps) {
-
-    console.log('ComposerEditorView mounted');
+    console.log('🎯 ComposerEditorView mounted');
     console.log('TreeId:', treeId);
     console.log('Node:', currentNode);
     console.log('Content:', currentNode.content);
-
-    console.log("🎯 ComposerEditorView mounted");
+    console.log('ReadOnly:', readOnly);
 
     const allowedTypes = ['Prompt', 'Function', 'Snippet'] as const;
-    const fallbackType: 'Prompt' | 'Function' | 'Snippet' =
-        allowedTypes.includes(currentNode.entityType as any)
-            ? (currentNode.entityType as any)
-            : 'Prompt';
+    const fallbackType = allowedTypes.includes(currentNode.entityType as any)
+        ? (currentNode.entityType as typeof allowedTypes[number])
+        : 'Prompt';
 
     return (
         <View style={{ flex: 1, padding: 16 }}>
@@ -67,11 +64,7 @@ export function ComposerEditorView({
             />
 
             {!readOnly && onSaveTree && (
-                <ThemedButton
-                    title="Save Tree"
-                    onPress={onSaveTree}
-                    style={{ marginTop: 24 }}
-                />
+                <ThemedButton title="Save Tree" onPress={onSaveTree} style={{ marginTop: 24 }} />
             )}
         </View>
     );

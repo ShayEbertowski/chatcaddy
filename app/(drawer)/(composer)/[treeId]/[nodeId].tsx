@@ -1,4 +1,6 @@
-import React, { useRef, useState } from 'react';
+// app/(drawer)/(composer)/[treeId]/[nodeId].tsx
+
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
@@ -11,14 +13,12 @@ import SavePromptModal from '../../../../src/components/modals/SavePromptModal';
 import { generateSmartTitle } from '../../../../src/utils/prompt/generateSmartTitle';
 
 export default function ComposerNodeScreen() {
-    /**** ─── ROUTE PARAMS ────────────────────────────────────── */
     const { treeId, nodeId } = useLocalSearchParams<{
         treeId: string;
         nodeId: string;
     }>();
     const colors = useColors();
 
-    /**** ─── COMPOSER STATE (single load guard inside hook) ─── */
     const {
         rootNode,
         currentNode,
@@ -26,23 +26,31 @@ export default function ComposerNodeScreen() {
         updateNode,
         insertChildNode,
         saveTree,
-        loadTree, // <- will only be called once via hasLoaded ref
+        loadTree,
     } = useComposerEditingState(treeId, nodeId);
 
-    /* ----- ensure loadTree is invoked only once ----- */
-    const hasLoadedRef = useRef(false);
-    if (!hasLoadedRef.current && treeId) {
-        hasLoadedRef.current = true;
-        loadTree(treeId); // 🔒 never runs again for this mount
-    }
-
-    /**** ─── LOCAL UI STATE ─────────────────────────────────── */
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
     const [saveTitle, setSaveTitle] = useState('');
     const [saving, setSaving] = useState(false);
 
-    /**** ─── READ-ONLY + NEW TREE LOGIC ─────────────────────── */
+    // Only load the tree once
+    const hasLoadedRef = useRef(false);
+    useEffect(() => {
+        if (!treeId || hasLoadedRef.current) return;
+        hasLoadedRef.current = true;
+        loadTree(treeId).catch(console.error);
+    }, [treeId]);
+
+    // isNewTree logic
+    console.log('🧪 DEBUG isNewTree check', {
+        rootNode,
+        treeId,
+        title: rootNode?.title,
+        childrenLength: rootNode?.children?.length,
+        nodePathLength: nodePath.length,
+    });
+
     const isNewTree =
         rootNode?.id === treeId &&
         (!rootNode?.title || rootNode.title.trim() === '') &&
@@ -51,7 +59,6 @@ export default function ComposerNodeScreen() {
     const readOnly = nodePath.length === 1 && !isNewTree;
     const loading = !currentNode;
 
-    /**** ─── SAVE HANDLERS ──────────────────────────────────── */
     const handleSavePress = async () => {
         if (!currentNode?.content?.trim()) return;
         setIsGeneratingTitle(true);
@@ -80,7 +87,6 @@ export default function ComposerNodeScreen() {
         }
     };
 
-    /**** ─── LOADING / NOT-FOUND GUARDS ─────────────────────── */
     if (loading) {
         return (
             <ThemedSafeArea>
@@ -90,7 +96,6 @@ export default function ComposerNodeScreen() {
     }
 
     if (!currentNode) {
-        /* could not resolve nodeId inside tree */
         return (
             <ThemedSafeArea>
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -115,7 +120,6 @@ export default function ComposerNodeScreen() {
         );
     }
 
-    /**** ─── MAIN RENDER ────────────────────────────────────── */
     return (
         <ThemedSafeArea>
             <View style={{ flex: 1, paddingHorizontal: 16 }}>
