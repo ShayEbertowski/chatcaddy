@@ -1,40 +1,42 @@
+// src/stores/useComposerEditingState.ts
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { generateUUIDSync } from '../utils/uuid/generateUUIDSync';
 import { getNodePath } from '../utils/composer/pathUtils';
-import { useComposerStore } from './useComposerStore';
-import type { ComposerNode } from '../types/composer';
+import { useComposerStore, ComposerNode, ComposerTree } from './useComposerStore';
 
-/* ------------------------------------------------------------------ */
-/*  Main hook                                                         */
-/* ------------------------------------------------------------------ */
+type InflatedComposerNode = ComposerNode & {
+    children: InflatedComposerNode[];
+};
+
+
+/* ------------------------------------------------------------------
+   Main hook
+------------------------------------------------------------------ */
 export function useComposerEditingState(treeId?: string, nodeId?: string) {
     const composerTree = useComposerStore((s) => s.composerTree);
     const loadTree = useComposerStore((s) => s.loadTree);
     const saveTree = useComposerStore((s) => s.saveTree);
 
-    const hasLoadedRef = useRef(false);
+    const hasLoaded = useRef(false);
     useEffect(() => {
-        if (!treeId || hasLoadedRef.current) return;
-        hasLoadedRef.current = true;
+        if (!treeId || hasLoaded.current) return;
+        hasLoaded.current = true;
         loadTree(treeId).catch(console.error);
     }, [treeId]);
 
-    // safely coerce raw node into fully typed ComposerNode
-    const rootNode: ComposerNode | null = useMemo(() => {
+    const inflate = (n: ComposerNode, map: Record<string, ComposerNode>): InflatedComposerNode => ({
+        ...n,
+        children: n.childIds.map((id) => inflate(map[id], map)),
+    });
+
+    const rootNode: InflatedComposerNode | null = useMemo(() => {
         if (!composerTree || composerTree.id !== treeId) return null;
-
         const raw = composerTree.nodes[composerTree.rootId];
-        if (!raw) return null;
-
-        return {
-            ...raw,
-            variables: raw.variables as Record<string, any>, // optional: define Variable type properly
-            children: (raw as any).children ?? [], // temp fallback if using flat store
-        };
+        return raw ? inflate(raw, composerTree.nodes) : null;
     }, [composerTree, treeId]);
 
-    const [draftTree, setDraftTree] = useState<ComposerNode | null>(null);
-    const [draftPath, setDraftPath] = useState<ComposerNode[]>([]);
+    const [draftTree, setDraftTree] = useState<InflatedComposerNode | null>(null);
+    const [draftPath, setDraftPath] = useState<InflatedComposerNode[]>([]);
 
     useEffect(() => {
         if (!rootNode || !nodeId) return;
@@ -50,12 +52,14 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
     useEffect(() => {
         if (treeId || nodeId) return;
 
-        const root: ComposerNode = {
+        const root: InflatedComposerNode = {
             id: generateUUIDSync(),
             title: 'Root',
             content: '',
             entityType: 'Prompt',
             variables: {},
+            childIds: [],
+            updatedAt: new Date().toISOString(),
             children: [],
         };
 
@@ -71,7 +75,7 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
         setDraftPath([...draftPath.slice(0, -1), updated]);
 
         if (draftTree) {
-            const recurse = (n: ComposerNode): ComposerNode =>
+            const recurse = (n: InflatedComposerNode): InflatedComposerNode =>
                 n.id === updated.id
                     ? updated
                     : { ...n, children: n.children.map(recurse) };
@@ -84,17 +88,20 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
         if (!draftPath.length) return;
         const parent = draftPath[draftPath.length - 1];
 
-        const child: ComposerNode = {
+        const child: InflatedComposerNode = {
             id: generateUUIDSync(),
             title,
             content: '',
             entityType: 'Prompt',
             variables: {},
+            childIds: [],
+            updatedAt: new Date().toISOString(),
             children: [],
         };
 
         const updatedParent = {
             ...parent,
+            childIds: [...parent.childIds, child.id],
             children: [...parent.children, child],
         };
 
@@ -102,7 +109,7 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
         setDraftPath(newPath);
 
         if (draftTree) {
-            const recurse = (n: ComposerNode): ComposerNode =>
+            const recurse = (n: InflatedComposerNode): InflatedComposerNode =>
                 n.id === parent.id
                     ? updatedParent
                     : { ...n, children: n.children.map(recurse) };

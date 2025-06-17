@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
 import { router } from 'expo-router';
 import { generateUUIDSync } from '../../../src/utils/uuid/generateUUIDSync';
-import { ComposerNode } from '../../../src/types/composer';
-import { useComposerStore } from '../../../src/stores/useComposerStore';
+import { ComposerNode, useComposerStore } from '../../../src/stores/useComposerStore';
 
 export default function NewPromptComposerEntry() {
     useEffect(() => {
@@ -15,13 +14,21 @@ export default function NewPromptComposerEntry() {
                 content: '',
                 entityType: 'Prompt',
                 variables: {},
-                children: [],
+                childIds: [],
+                updatedAt: new Date().toISOString(),
             };
 
-            await useComposerStore.getState().createTree({
-                id: 'DRAFT',
-                name: 'Untitled',
-                rootNode,
+            await useComposerStore.getState().createEmptyTree(); // Optionally pass rootNode if createTree allows custom root
+
+            useComposerStore.setState({
+                activeTreeId: 'DRAFT',
+                composerTree: {
+                    id: 'DRAFT',
+                    name: 'Untitled',
+                    rootId,
+                    nodes: { [rootId]: rootNode },
+                    updatedAt: rootNode.updatedAt,
+                },
             });
 
             router.replace(`/(drawer)/(composer)/DRAFT/${rootId}`);
@@ -30,5 +37,5 @@ export default function NewPromptComposerEntry() {
         createDraft();
     }, []);
 
-    return null; // or loading spinner if you want
+    return null; // you could also return a loading spinner if desired
 }

@@ -3,8 +3,7 @@ import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native
 import { ThemedSafeArea } from '../shared/ThemedSafeArea';
 import { useColors } from '../../hooks/useColors';
 import { generateUUIDSync } from '../../utils/uuid/generateUUIDSync';
-import { useComposerStore } from '../../stores/useComposerStore';
-import { ComposerNode } from '../../types/composer';
+import { ComposerNode, useComposerStore } from '../../stores/useComposerStore';
 
 export function ComposerPersistenceTester() {
     const colors = useColors();
@@ -17,8 +16,9 @@ export function ComposerPersistenceTester() {
     }, []);
 
     async function refreshTreeList() {
-        const list = await useComposerStore.getState().listTrees();
-        setTrees(list);
+        await useComposerStore.getState().listTrees();
+        const available = useComposerStore.getState().availableTrees;
+        setTrees(available);
     }
 
     async function handleSave() {
@@ -30,12 +30,26 @@ export function ComposerPersistenceTester() {
                 title: 'Test Root',
                 content: '',
                 variables: {},
-                children: [],
+                childIds: [],
+                updatedAt: new Date().toISOString(),
             };
 
-            useComposerStore.getState().setRootNode(newRoot);
-            const id = await useComposerStore.getState().saveTree('Test Tree');
-            console.log('Saved with ID:', id);
+            const treeId = generateUUIDSync();
+            const tree = {
+                id: treeId,
+                name: 'Test Tree',
+                rootId: newRoot.id,
+                nodes: { [newRoot.id]: newRoot },
+                updatedAt: newRoot.updatedAt,
+            };
+
+            useComposerStore.setState({
+                activeTreeId: treeId,
+                composerTree: tree,
+            });
+
+            const id = await useComposerStore.getState().saveTree();
+            console.log('✅ Saved with ID:', id);
             await refreshTreeList();
         } finally {
             setSaving(false);
@@ -46,7 +60,7 @@ export function ComposerPersistenceTester() {
         try {
             setLoading(true);
             await useComposerStore.getState().loadTree(treeId);
-            console.log('Loaded tree:', treeId);
+            console.log('📥 Loaded tree:', treeId);
         } finally {
             setLoading(false);
         }

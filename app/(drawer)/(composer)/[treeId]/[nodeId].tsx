@@ -43,20 +43,27 @@ export default function ComposerNodeScreen() {
     }, [treeId]);
 
     // isNewTree logic
-    console.log('🧪 DEBUG isNewTree check', {
-        rootNode,
-        treeId,
-        title: rootNode?.title,
+    const activeTreeId = useComposerStore((s) => s.activeTreeId);
+
+
+    console.log("🧪 isNewTree DEBUG", {
+        activeTreeId,
+        rootTitle: rootNode?.title,
+        rootChildren: rootNode?.children,
         childrenLength: rootNode?.children?.length,
-        nodePathLength: nodePath.length,
+        result:
+            activeTreeId === 'DRAFT' &&
+            (!rootNode?.title || rootNode.title.trim() === '') &&
+            (!rootNode?.children || rootNode.children.length === 0),
     });
 
+
     const isNewTree =
-        rootNode?.id === treeId &&
         (!rootNode?.title || rootNode.title.trim() === '') &&
-        (!rootNode.children || rootNode.children.length === 0);
+        (!rootNode?.children || rootNode.children.length === 0);
 
     const readOnly = nodePath.length === 1 && !isNewTree;
+    
     const loading = !currentNode;
 
     const handleSavePress = async () => {

@@ -1,7 +1,7 @@
-import { ComposerNode } from '../../types/composer';
 import { supabase } from '../../lib/supabaseClient';
+import { ComposerNode, ComposerTree } from '../../stores/useComposerStore';
 
-export async function flattenAndSaveTree(treeId: string, root: ComposerNode) {
+export async function flattenAndSaveTree(tree: ComposerTree) {
     const flatNodes: {
         id: string;
         tree_id: string;
@@ -15,7 +15,7 @@ export async function flattenAndSaveTree(treeId: string, root: ComposerNode) {
     function walk(node: ComposerNode, parentId: string | null, path: string[]) {
         flatNodes.push({
             id: node.id,
-            tree_id: treeId,
+            tree_id: tree.id,
             parent_id: parentId,
             title: node.title,
             content: node.content,
@@ -23,14 +23,19 @@ export async function flattenAndSaveTree(treeId: string, root: ComposerNode) {
             path,
         });
 
-        node.children.forEach((child) => {
-            walk(child, node.id, [...path, node.id]);
+        node.childIds.forEach((childId) => {
+            const child = tree.nodes[childId];
+            if (child) {
+                walk(child, node.id, [...path, node.id]);
+            }
         });
     }
 
+    const root = tree.nodes[tree.rootId];
+    if (!root) throw new Error('Root node not found in tree');
+
     walk(root, null, []);
 
-    // Clear old + insert fresh
-    await supabase.from('composer_nodes').delete().eq('tree_id', treeId);
+    await supabase.from('composer_nodes').delete().eq('tree_id', tree.id);
     await supabase.from('composer_nodes').upsert(flatNodes);
 }

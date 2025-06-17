@@ -4,7 +4,7 @@ import PromptPathNavigator from './PromptPathNavigator';
 import RichPromptEditor from '../editor/RichPromptEditor';
 import { ThemedButton } from '../ui/ThemedButton';
 import { toEditorVariables, fromEditorVariables } from '../../utils/composer/variables';
-import { ComposerNode } from '../../types/composer';
+import { ComposerNode } from '../../stores/useComposerStore';
 
 type ComposerEditorViewProps = {
     treeId: string;
