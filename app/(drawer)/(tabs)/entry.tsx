@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useComposerStore } from '../../../src/stores/useComposerStore';
 import { supabase } from '../../../src/lib/supabaseClient';
 import { IndexedEntity } from '../../../src/types/entity';
+import { navigateToTree } from '../../../src/utils/composer/navigation';
 
 export default function ComposerIndexScreen() {
     const colors = useColors();
@@ -46,7 +47,7 @@ export default function ComposerIndexScreen() {
                             try {
                                 const { data, error } = await supabase
                                     .from('composer_trees')
-                                    .select('id, name, tree_data')
+                                    .select('id, name, tree_data, updated_at')
                                     .eq('id', prompt.treeId)
                                     .maybeSingle();
 
@@ -55,10 +56,15 @@ export default function ComposerIndexScreen() {
                                     return;
                                 }
 
-                                useComposerStore.getState().setComposerTree({
-                                    id: data.id,
-                                    name: data.name ?? 'Untitled',
-                                    rootNode: data.tree_data,
+                                useComposerStore.setState({
+                                    composerTree: {
+                                        id: data.id,
+                                        name: data.name ?? 'Untitled',
+                                        rootId: data.tree_data.rootId, // if your incoming data is shaped like a full tree
+                                        nodes: data.tree_data.nodes,
+                                        updatedAt: data.updated_at ?? new Date().toISOString(),
+                                    },
+                                    activeTreeId: data.id,
                                 });
 
                                 router.push(`/(drawer)/(composer)/${data.id}/${data.tree_data.id}`);
@@ -76,8 +82,8 @@ export default function ComposerIndexScreen() {
                         buttonLabel="New Prompt"
                         onButtonPress={async () => {
                             try {
-                                const newId = await useComposerStore.getState().createEmptyTree();
-                                router.replace(`/(drawer)/(composer)/${newId}/${newId}`);
+                                const { treeId, rootId } = await useComposerStore.getState().createEmptyTree();
+                                navigateToTree(treeId, rootId);
                             } catch (err) {
                                 console.error('❌ Failed to create new tree', err);
                             }
@@ -88,8 +94,8 @@ export default function ComposerIndexScreen() {
                 <TouchableOpacity
                     onPress={async () => {
                         try {
-                            const newId = await useComposerStore.getState().createEmptyTree();
-                            router.replace(`/(drawer)/(composer)/${newId}/${newId}`);
+                            const { treeId, rootId } = await useComposerStore.getState().createEmptyTree();
+                            navigateToTree(treeId, rootId);
                         } catch (err) {
                             console.error('❌ Failed to create new tree', err);
                         }

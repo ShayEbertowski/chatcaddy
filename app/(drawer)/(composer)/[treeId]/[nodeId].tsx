@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../../../src/components/ui/ThemedButton';
 import { useColors } from '../../../../src/hooks/useColors';
-import { getParentNodeId } from '../../../../src/utils/composer/pathUtils';
 import { useComposerEditingState } from '../../../../src/stores/useComposerEditingState';
 import { ComposerEditorView } from '../../../../src/components/composer/ComposerEditorView';
 import { useComposerStore } from '../../../../src/stores/useComposerStore';
@@ -12,15 +11,14 @@ import SavePromptModal from '../../../../src/components/modals/SavePromptModal';
 import { generateSmartTitle } from '../../../../src/utils/prompt/generateSmartTitle';
 
 export default function ComposerNodeScreen() {
+    /**** ─── ROUTE PARAMS ────────────────────────────────────── */
+    const { treeId, nodeId } = useLocalSearchParams<{
+        treeId: string;
+        nodeId: string;
+    }>();
     const colors = useColors();
-    const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
-    const [loading, setLoading] = useState(true);
-    const [notFound, setNotFound] = useState(false);
-    const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
-    const [showSaveModal, setShowSaveModal] = useState(false);
-    const [saveTitle, setSaveTitle] = useState('');
-    const [saving, setSaving] = useState(false);
 
+    /**** ─── COMPOSER STATE (single load guard inside hook) ─── */
     const {
         rootNode,
         currentNode,
@@ -28,45 +26,41 @@ export default function ComposerNodeScreen() {
         updateNode,
         insertChildNode,
         saveTree,
-        loadTree,
+        loadTree, // <- will only be called once via hasLoaded ref
     } = useComposerEditingState(treeId, nodeId);
 
-    const activeTreeId = useComposerStore((s) => s.activeTreeId);
+    /* ----- ensure loadTree is invoked only once ----- */
+    const hasLoadedRef = useRef(false);
+    if (!hasLoadedRef.current && treeId) {
+        hasLoadedRef.current = true;
+        loadTree(treeId); // 🔒 never runs again for this mount
+    }
+
+    /**** ─── LOCAL UI STATE ─────────────────────────────────── */
+    const [showSaveModal, setShowSaveModal] = useState(false);
+    const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
+    const [saveTitle, setSaveTitle] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    /**** ─── READ-ONLY + NEW TREE LOGIC ─────────────────────── */
     const isNewTree =
         rootNode?.id === treeId &&
         (!rootNode?.title || rootNode.title.trim() === '') &&
         (!rootNode.children || rootNode.children.length === 0);
 
     const readOnly = nodePath.length === 1 && !isNewTree;
+    const loading = !currentNode;
 
-    useEffect(() => {
-        const load = async () => {
-            if (!treeId || typeof treeId !== 'string') return;
-            try {
-                await loadTree(treeId);
-                const updated = useComposerStore.getState().rootNode;
-                if (!updated) {
-                    setNotFound(true);
-                }
-            } catch (err) {
-                console.error('❌ Error loading tree:', err);
-                setNotFound(true);
-            } finally {
-                setLoading(false);
-            }
-        };
-        load();
-    }, [treeId]);
-
+    /**** ─── SAVE HANDLERS ──────────────────────────────────── */
     const handleSavePress = async () => {
         if (!currentNode?.content?.trim()) return;
         setIsGeneratingTitle(true);
         try {
-            const smartTitle = await generateSmartTitle(currentNode.content);
-            setSaveTitle(smartTitle || 'Untitled');
+            const smart = await generateSmartTitle(currentNode.content);
+            setSaveTitle(smart || 'Untitled');
             setShowSaveModal(true);
         } catch (err) {
-            console.error('❌ Failed to generate title', err);
+            console.error('❌ Title generation failed', err);
             setSaveTitle('Untitled');
             setShowSaveModal(true);
         } finally {
@@ -77,16 +71,17 @@ export default function ComposerNodeScreen() {
     const handleConfirmSave = async () => {
         setSaving(true);
         try {
-            await saveTree(saveTitle.trim() || 'Untitled');
+            await saveTree();
             setShowSaveModal(false);
         } catch (err) {
-            console.error('❌ Failed to save tree:', err);
+            console.error('❌ Save failed', err);
         } finally {
             setSaving(false);
         }
     };
 
-    if (loading || !currentNode) {
+    /**** ─── LOADING / NOT-FOUND GUARDS ─────────────────────── */
+    if (loading) {
         return (
             <ThemedSafeArea>
                 <ActivityIndicator size="large" color={colors.primary} />
@@ -94,7 +89,8 @@ export default function ComposerNodeScreen() {
         );
     }
 
-    if (notFound) {
+    if (!currentNode) {
+        /* could not resolve nodeId inside tree */
         return (
             <ThemedSafeArea>
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -105,8 +101,9 @@ export default function ComposerNodeScreen() {
                         title="New Prompt"
                         onPress={async () => {
                             try {
-                                const newId = await useComposerStore.getState().createEmptyTree();
-                                router.replace(`/(drawer)/(composer)/${newId}/${newId}`);
+                                const { treeId: newTree, rootId } =
+                                    await useComposerStore.getState().createEmptyTree();
+                                router.replace(`/(drawer)/(composer)/${newTree}/${rootId}`);
                             } catch (err) {
                                 console.error('❌ Failed to create new tree', err);
                             }
@@ -118,6 +115,7 @@ export default function ComposerNodeScreen() {
         );
     }
 
+    /**** ─── MAIN RENDER ────────────────────────────────────── */
     return (
         <ThemedSafeArea>
             <View style={{ flex: 1, paddingHorizontal: 16 }}>
@@ -161,7 +159,7 @@ export default function ComposerNodeScreen() {
                 onCancel={() => setShowSaveModal(false)}
                 onConfirm={handleConfirmSave}
                 selectedFolder=""
-                loading={isGeneratingTitle}
+                loading={isGeneratingTitle || saving}
             />
         </ThemedSafeArea>
     );

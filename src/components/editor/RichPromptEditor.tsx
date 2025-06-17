@@ -57,6 +57,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
     const [dropdownVisible, setDropdownVisible] = useState(false);
 
     const parts = useMemo(() => parsePromptParts(text), [text]);
+    
 
     const usedVars = useMemo(() => {
         return Array.from(new Set(parts.filter(p => p.type === 'variable').map(p => p.name)));
@@ -106,6 +107,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
         { label: 'Function', value: 'Function' },
         { label: 'Snippet', value: 'Snippet' },
     ];
+    
     return (
         <View style={styles.container}>
             <View style={styles.headerRow}>

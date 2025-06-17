@@ -1,114 +1,117 @@
-import { useEffect, useState } from 'react';
+// src/stores/useComposerEditingState.ts
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { generateUUIDSync } from '../utils/uuid/generateUUIDSync';
 import { getNodePath } from '../utils/composer/pathUtils';
-import { router } from 'expo-router';
-import { ComposerNode } from '../types/composer';
 import { useComposerStore } from './useComposerStore';
+import type { ComposerNode } from '../types/composer';
 
+/* ------------------------------------------------------------------ */
+/*  Main hook                                                         */
+/* ------------------------------------------------------------------ */
 export function useComposerEditingState(treeId?: string, nodeId?: string) {
-    const [draftTree, setDraftTree] = useState<ComposerNode | null>(null);
-    const [draftPath, setDraftPath] = useState<ComposerNode[]>([]);
+  /* -------- Zustand selectors (avoid full-object tracking) --------- */
+  const composerTree   = useComposerStore((s) => s.composerTree);
+  const loadTree       = useComposerStore((s) => s.loadTree);
+  const saveTree       = useComposerStore((s) => s.saveTree);
 
-    const rootNode = useComposerStore((s) => s.rootNode);
-    const loadTree = useComposerStore((s) => s.loadTree);
-    const saveTree = useComposerStore((s) => s.saveTree);
+  /* ------------------- one-time load guard ------------------------- */
+  const hasLoadedRef = useRef(false);
+  useEffect(() => {
+    if (!treeId || hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
+    loadTree(treeId).catch(console.error);
+  }, [treeId]);
 
-    const currentNode = draftPath[draftPath.length - 1] ?? null;
+  /* ---------------- stable rootNode (memoised) --------------------- */
+  const rootNode: ComposerNode | null = useMemo(() => {
+    if (!composerTree || composerTree.id !== treeId) return null;
+    const raw = composerTree.nodes[composerTree.rootId];
+    // assure children array so editor logic is safe
+    return raw ? { ...raw, children: (raw as any).children ?? [] } : null;
+  }, [composerTree, treeId]);
 
-    // ✅ Load on mount if not loaded
-    useEffect(() => {
-        (async () => {
-            if (treeId && nodeId && !rootNode) {
-                await loadTree(treeId);
-            }
-        })();
-    }, [treeId, nodeId]);
+  /* ---------------- local draft state ------------------------------ */
+  const [draftTree, setDraftTree] = useState<ComposerNode | null>(null);
+  const [draftPath, setDraftPath] = useState<ComposerNode[]>([]);
 
-    // ✅ Update draftTree and draftPath when rootNode changes
-    useEffect(() => {
-        if (rootNode && nodeId) {
-            const path = getNodePath(rootNode, nodeId);
-            if (path.length > 0) {
-                setDraftTree(rootNode);
-                setDraftPath(path);
-            }
-        }
-    }, [rootNode, nodeId]);
+  /* ------- build path only when rootNode/nodeId changes ------------ */
+  useEffect(() => {
+    if (!rootNode || !nodeId) return;
 
-    // ✅ Handle draft-only mode (no treeId)
-    useEffect(() => {
-        if (!treeId && !nodeId) {
-            const newTree: ComposerNode = {
-                id: generateUUIDSync(),
-                title: 'Root',
-                content: '',
-                entityType: 'Prompt',
-                variables: {},
-                children: [],
-            };
-            setDraftTree(newTree);
-            setDraftPath([newTree]);
-        }
-    }, [treeId, nodeId]);
+    // Already have correct path → skip
+    if (draftPath.length && draftPath[draftPath.length - 1].id === nodeId) return;
 
-    function updateNode(updates: Partial<ComposerNode>) {
-        if (!currentNode) return;
-
-        const updated = { ...currentNode, ...updates };
-        const newPath = [...draftPath.slice(0, -1), updated];
-        setDraftPath(newPath);
-
-        if (draftTree) {
-            const updateRecursive = (node: ComposerNode): ComposerNode =>
-                node.id === updated.id
-                    ? updated
-                    : { ...node, children: node.children.map(updateRecursive) };
-
-            setDraftTree(updateRecursive(draftTree));
-        }
+    const path = getNodePath(rootNode, nodeId);
+    if (path.length) {
+      setDraftTree(rootNode);        // memoised rootNode reference
+      setDraftPath(path);
     }
+  }, [rootNode, nodeId]);
 
-    function insertChildNode(title: string) {
-        if (!currentNode) return;
+  /* ------------ create brand-new draft tree when no IDs ------------ */
+  useEffect(() => {
+    if (treeId || nodeId) return;
 
-        const newChild: ComposerNode = {
-            id: generateUUIDSync(),
-            title,
-            content: '',
-            entityType: 'Prompt',
-            variables: {},
-            children: [],
-        };
-
-        const updatedCurrent = {
-            ...currentNode,
-            children: [...currentNode.children, newChild],
-        };
-
-        const newPath = [...draftPath.slice(0, -1), updatedCurrent, newChild];
-        setDraftPath(newPath);
-
-        if (draftTree) {
-            const updateRecursive = (node: ComposerNode): ComposerNode =>
-                node.id === updatedCurrent.id
-                    ? updatedCurrent
-                    : { ...node, children: node.children.map(updateRecursive) };
-
-            setDraftTree(updateRecursive(draftTree));
-        }
-
-        setTimeout(() => {
-            router.push(`/(drawer)/(composer)/${treeId ?? 'DRAFT'}/${newChild.id}`);
-        }, 50);
-    }
-
-    return {
-        currentNode,
-        nodePath: draftPath,
-        updateNode,
-        insertChildNode,
-        saveTree,
-        loadTree,
-        rootNode: draftTree ?? rootNode,
+    const root: ComposerNode = {
+      id: generateUUIDSync(),
+      title: 'Root',
+      content: '',
+      entityType: 'Prompt',
+      variables: {},
+      childIds: [],
+      updatedAt: new Date().toISOString(),
     };
+
+    setDraftTree(root);
+    setDraftPath([root]);
+  }, [treeId, nodeId]);
+
+  /* ------------------ mutators ------------------------------------- */
+  function updateNode(patch: Partial<ComposerNode>) {
+    if (!draftPath.length) return;
+    const current = draftPath[draftPath.length - 1];
+    const updated = { ...current, ...patch, updatedAt: new Date().toISOString() };
+
+    // replace last in path
+    setDraftPath([...draftPath.slice(0, -1), updated]);
+
+    // deep-update draftTree if present
+    if (draftTree) {
+      const recurse = (n: ComposerNode): ComposerNode =>
+        n.id === updated.id
+          ? updated
+          : { ...n, children: n.childIds.map((cid) => recurse(draftTree!.nodes[cid])) };
+      setDraftTree(recurse(draftTree));
+    }
+  }
+
+  function insertChildNode(title: string) {
+    if (!draftPath.length) return;
+    const parent = draftPath[draftPath.length - 1];
+
+    const child: ComposerNode = {
+      id: generateUUIDSync(),
+      title,
+      content: '',
+      entityType: 'Prompt',
+      variables: {},
+      childIds: [],
+      updatedAt: new Date().toISOString(),
+    };
+
+    parent.childIds.push(child.id);
+    updateNode({});                     // refresh tree/path
+    setDraftPath([...draftPath, child]);
+  }
+
+  /* ------------------- public API ---------------------------------- */
+  return {
+    currentNode : draftPath[draftPath.length - 1] ?? null,
+    nodePath    : draftPath,
+    rootNode    : draftTree ?? rootNode,
+    updateNode,
+    insertChildNode,
+    saveTree,
+    loadTree,
+  };
 }

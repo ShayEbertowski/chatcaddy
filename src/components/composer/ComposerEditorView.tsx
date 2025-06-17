@@ -26,6 +26,13 @@ export function ComposerEditorView({
     onSaveTree,
 }: ComposerEditorViewProps) {
 
+    console.log('ComposerEditorView mounted');
+    console.log('TreeId:', treeId);
+    console.log('Node:', currentNode);
+    console.log('Content:', currentNode.content);
+
+    console.log("🎯 ComposerEditorView mounted");
+
     const allowedTypes = ['Prompt', 'Function', 'Snippet'] as const;
     const fallbackType: 'Prompt' | 'Function' | 'Snippet' =
         allowedTypes.includes(currentNode.entityType as any)
