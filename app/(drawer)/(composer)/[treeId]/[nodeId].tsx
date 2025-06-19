@@ -1,8 +1,8 @@
 // app/(drawer)/(composer)/[treeId]/[nodeId].tsx
-
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
+
 import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../../../src/components/ui/ThemedButton';
 import { useColors } from '../../../../src/hooks/useColors';
@@ -13,10 +13,7 @@ import SavePromptModal from '../../../../src/components/modals/SavePromptModal';
 import { generateSmartTitle } from '../../../../src/utils/prompt/generateSmartTitle';
 
 export default function ComposerNodeScreen() {
-    const { treeId, nodeId } = useLocalSearchParams<{
-        treeId: string;
-        nodeId: string;
-    }>();
+    const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
     const colors = useColors();
 
     const {
@@ -34,7 +31,7 @@ export default function ComposerNodeScreen() {
     const [saveTitle, setSaveTitle] = useState('');
     const [saving, setSaving] = useState(false);
 
-    // Only load the tree once
+    // Load once on mount
     const hasLoadedRef = useRef(false);
     useEffect(() => {
         if (!treeId || hasLoadedRef.current) return;
@@ -42,49 +39,39 @@ export default function ComposerNodeScreen() {
         loadTree(treeId).catch(console.error);
     }, [treeId]);
 
-    // isNewTree logic
     const activeTreeId = useComposerStore((s) => s.activeTreeId);
 
-
-    console.log("🧪 isNewTree DEBUG", {
-        activeTreeId,
-        rootTitle: rootNode?.title,
-        rootChildren: rootNode?.children,
-        childrenLength: rootNode?.children?.length,
-        result:
-            activeTreeId === 'DRAFT' &&
-            (!rootNode?.title || rootNode.title.trim() === '') &&
-            (!rootNode?.children || rootNode.children.length === 0),
-    });
-
-
+    /** A new tree is "empty": no title and no childIds on root */
     const isNewTree =
-        (!rootNode?.title || rootNode.title.trim() === '') &&
-        (!rootNode?.children || rootNode.children.length === 0);
+        !rootNode?.title?.trim() && (!rootNode?.childIds?.length || rootNode.childIds.length === 0);
 
     const readOnly = nodePath.length === 1 && !isNewTree;
-    
     const loading = !currentNode;
 
+    /* ─── Save-flow helpers ──────────────────────────────── */
     const handleSavePress = async () => {
         if (!currentNode?.content?.trim()) return;
         setIsGeneratingTitle(true);
         try {
             const smart = await generateSmartTitle(currentNode.content);
             setSaveTitle(smart || 'Untitled');
-            setShowSaveModal(true);
         } catch (err) {
             console.error('❌ Title generation failed', err);
             setSaveTitle('Untitled');
-            setShowSaveModal(true);
         } finally {
             setIsGeneratingTitle(false);
+            setShowSaveModal(true);
         }
     };
 
     const handleConfirmSave = async () => {
+        if (!currentNode) return;
         setSaving(true);
         try {
+            /* 1️⃣ Patch title into the node before saving */
+            updateNode({ title: saveTitle });
+
+            /* 2️⃣ Persist tree */
             await saveTree();
             setShowSaveModal(false);
         } catch (err) {
@@ -94,6 +81,7 @@ export default function ComposerNodeScreen() {
         }
     };
 
+    /* ─── Render states ──────────────────────────────────── */
     if (loading) {
         return (
             <ThemedSafeArea>
@@ -113,8 +101,9 @@ export default function ComposerNodeScreen() {
                         title="New Prompt"
                         onPress={async () => {
                             try {
-                                const { treeId: newTree, rootId } =
-                                    await useComposerStore.getState().createEmptyTree();
+                                const { treeId: newTree, rootId } = await useComposerStore
+                                    .getState()
+                                    .createEmptyTree();
                                 router.replace(`/(drawer)/(composer)/${newTree}/${rootId}`);
                             } catch (err) {
                                 console.error('❌ Failed to create new tree', err);
@@ -155,7 +144,7 @@ export default function ComposerNodeScreen() {
                     treeId={treeId}
                     currentNode={currentNode}
                     nodePath={nodePath}
-                    onChangeNode={updateNode}
+                    onChangeNode={(patch) => updateNode(patch)}
                     onChipPress={insertChildNode}
                     readOnly={readOnly}
                     onSaveTree={!readOnly ? handleSavePress : undefined}

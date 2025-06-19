@@ -5,9 +5,8 @@ import { v4 as uuid } from 'uuid';
 import { supabase } from '../lib/supabaseClient';
 
 //
-// ─── TYPES ────────────────────────────────────────────────────────────────────
+// ─── TYPES ────────────────────────────────────────────────────────────────
 //
-
 export type NodeKind = 'Prompt' | 'Function' | 'Snippet';
 
 export interface ComposerNode {
@@ -16,7 +15,7 @@ export interface ComposerNode {
     content: string;
     entityType: NodeKind;
     variables: Record<string, unknown>;
-    childIds: string[];           // explicitly reference children
+    childIds: string[];
     updatedAt: string;
 }
 
@@ -43,11 +42,9 @@ export interface ComposerStoreState {
     addChild: (parentId: string, child: ComposerNode) => void;
 }
 
-
 //
-// ─── STORE ───────────────────────────────────────────────────────────────────
+// ─── STORE ────────────────────────────────────────────────────────────────
 //
-
 export const useComposerStore = create<ComposerStoreState>()(
     devtools(
         subscribeWithSelector((set, get) => ({
@@ -55,25 +52,59 @@ export const useComposerStore = create<ComposerStoreState>()(
             composerTree: null,
             availableTrees: [],
 
-            // ── Load entire tree ───────────────────────────────
-            async loadTree(id) {
-                console.log("📥 loadTree called with:", id);
+            // ── Load full tree ───────────────────────────────────
+            async loadTree(treeId) {
                 const { data, error } = await supabase
                     .from('composer_trees')
                     .select('*')
-                    .eq('id', id)
+                    .eq('id', treeId)
                     .maybeSingle();
 
                 if (error) throw new Error(error.message);
-                if (!data) return;
+                if (!data) throw new Error('Tree not found');
+
+                // 🔀 Try to pull from new schema first
+                let nodes = data.nodes ?? {};
+                let rootId = data.root_id ?? null;
+
+                // 🔙 If missing, try legacy schema
+                if ((!rootId || Object.keys(nodes).length === 0) && data.tree_data) {
+                    try {
+                        const legacy = typeof data.tree_data === 'string'
+                            ? JSON.parse(data.tree_data)
+                            : data.tree_data;
+
+                        nodes = legacy.nodes ?? nodes;
+                        rootId = legacy.rootId ?? rootId;
+                    } catch (err) {
+                        console.warn('⚠️ Failed to parse legacy tree_data JSON:', err);
+                    }
+                }
+
+                // 🛡️ Final safety check
+                if (!rootId || !nodes[rootId]) {
+                    throw new Error(
+                        `Invalid tree structure: missing root_id or root node.\n` +
+                        `Available node IDs: ${Object.keys(nodes).join(', ') || '(none)'}\n` +
+                        `Raw rootId: ${rootId}`
+                    );
+                }
 
                 set({
                     activeTreeId: data.id,
-                    composerTree: data as unknown as ComposerTree,
+                    composerTree: {
+                        id: data.id,
+                        name: data.name,
+                        rootId,
+                        nodes,
+                        updatedAt: data.updated_at,
+                    },
                 });
             },
 
-            // ── Save composer_tree + indexed_entity ────────────
+
+
+            // ── Save tree + index root ───────────────────────────
             async saveTree() {
                 const { composerTree, activeTreeId } = get();
                 if (!composerTree) throw new Error('Nothing to save');
@@ -85,42 +116,49 @@ export const useComposerStore = create<ComposerStoreState>()(
                     updatedAt: now,
                 };
 
-                // 1️⃣ Upsert full tree
-                const { error: treeErr } = await supabase
-                    .from('composer_trees')
-                    .upsert({
-                        id: treeToSave.id,
-                        name: treeToSave.name,
-                        root_id: treeToSave.rootId,
-                        nodes: treeToSave.nodes,
-                        updated_at: now,
-                    });
+                // 🛡️ Validate / auto-fix rootId ↔ nodes mismatch
+                let root = treeToSave.nodes[treeToSave.rootId];
+                if (!root) {
+                    const fallbackId = Object.keys(treeToSave.nodes)[0];
+                    if (!fallbackId) throw new Error('No nodes found in tree to save');
+                    console.warn('⚠️ rootId invalid — falling back to:', fallbackId);
+                    treeToSave.rootId = fallbackId;
+                    root = treeToSave.nodes[fallbackId];
+                }
 
+                // 📝 Auto-title the tree from root node
+                treeToSave.name = root.title?.trim() || 'Untitled';
+
+                // 1️⃣ Upsert composer_trees
+                const { error: treeErr } = await supabase.from('composer_trees').upsert({
+                    id: treeToSave.id,
+                    name: treeToSave.name,
+                    root_id: treeToSave.rootId,
+                    nodes: treeToSave.nodes,
+                    updated_at: now,
+                });
                 if (treeErr) throw new Error(treeErr.message);
 
-                // 2️⃣ Upsert index entry for root node
-                const root = treeToSave.nodes[treeToSave.rootId];
-                const { error: idxErr } = await supabase
-                    .from('indexed_entities')
-                    .upsert({
-                        id: root.id,
-                        tree_id: treeToSave.id,
-                        title: root.title || 'Untitled',
-                        entity_type: root.entityType,
-                        content_preview: root.content.slice(0, 160),
-                        updated_at: now,
-                    });
-
+                // 2️⃣ Upsert indexed_entities for the root
+                const { error: idxErr } = await supabase.from('indexed_entities').upsert({
+                    id: root.id,
+                    tree_id: treeToSave.id,
+                    title: root.title || 'Untitled',
+                    entity_type: root.entityType,
+                    content_preview: root.content.slice(0, 160),
+                    updated_at: now,
+                });
                 if (idxErr) throw new Error(idxErr.message);
 
                 set({ activeTreeId: treeToSave.id, composerTree: treeToSave });
                 return treeToSave.id;
             },
 
-            // ── Create brand-new empty tree ────────────────────
+            // ── Create empty tree ────────────────────────────────
             async createEmptyTree() {
                 const id = uuid();
                 const rootId = uuid();
+                const now = new Date().toISOString();
 
                 const root: ComposerNode = {
                     id: rootId,
@@ -129,7 +167,7 @@ export const useComposerStore = create<ComposerStoreState>()(
                     entityType: 'Prompt',
                     variables: {},
                     childIds: [],
-                    updatedAt: new Date().toISOString(),
+                    updatedAt: now,
                 };
 
                 const freshTree: ComposerTree = {
@@ -137,7 +175,7 @@ export const useComposerStore = create<ComposerStoreState>()(
                     name: 'Untitled',
                     rootId,
                     nodes: { [rootId]: root },
-                    updatedAt: root.updatedAt,
+                    updatedAt: now,
                 };
 
                 await supabase.from('composer_trees').insert({
@@ -145,16 +183,14 @@ export const useComposerStore = create<ComposerStoreState>()(
                     name: freshTree.name,
                     root_id: rootId,
                     nodes: freshTree.nodes,
-                    updated_at: freshTree.updatedAt,
+                    updated_at: now,
                 });
 
                 set({ activeTreeId: id, composerTree: freshTree });
-
-                return { treeId: id, rootId }; // ✅ return both!
+                return { treeId: id, rootId };
             },
 
-
-            // ── Fetch list of trees for sidebar/search ─────────
+            // ── List trees ───────────────────────────────────────
             async listTrees() {
                 const { data, error } = await supabase
                     .from('composer_trees')
@@ -165,11 +201,15 @@ export const useComposerStore = create<ComposerStoreState>()(
                 set({ availableTrees: data ?? [] });
             },
 
-            // ── Update a single node (merge patch) ─────────────
+            // ── Update node ──────────────────────────────────────
             updateNode(id, patch) {
                 set((s) => {
                     if (!s.composerTree) return s;
-                    const node = { ...s.composerTree.nodes[id], ...patch, updatedAt: new Date().toISOString() };
+                    const node = {
+                        ...s.composerTree.nodes[id],
+                        ...patch,
+                        updatedAt: new Date().toISOString(),
+                    };
                     return {
                         composerTree: {
                             ...s.composerTree,
@@ -180,12 +220,16 @@ export const useComposerStore = create<ComposerStoreState>()(
                 });
             },
 
-            // ── Add child node to parent ───────────────────────
+            // ── Add child ────────────────────────────────────────
             addChild(parentId, child) {
                 set((s) => {
                     if (!s.composerTree) return s;
                     const parent = s.composerTree.nodes[parentId];
-                    const updatedParent = { ...parent, childIds: [...parent.childIds, child.id], updatedAt: new Date().toISOString() };
+                    const updatedParent = {
+                        ...parent,
+                        childIds: [...parent.childIds, child.id],
+                        updatedAt: new Date().toISOString(),
+                    };
                     return {
                         composerTree: {
                             ...s.composerTree,
@@ -200,7 +244,7 @@ export const useComposerStore = create<ComposerStoreState>()(
                 });
             },
 
-            // ── Clear everything (used on logout) ──────────────
+            // ── Clear (logout) ───────────────────────────────────
             clearTree() {
                 set({ activeTreeId: null, composerTree: null });
             },

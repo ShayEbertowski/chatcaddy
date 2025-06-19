@@ -12,19 +12,10 @@ import { RenderPreviewChunks } from './RenderPreviewChunks';
 import { getSharedStyles } from '../../styles/shared';
 import { supabase } from '../../lib/supabaseClient';
 import { IndexedEntity } from '../../types/entity';
+import { useComposerStore } from '../../stores/useComposerStore';
+import { router } from 'expo-router';
 
-type SimplifiedPrompt = {
-    nodeId: string;
-    treeId: string;
-    title: string;
-    content: string;
-};
-
-type Props = {
-    onSelect: (prompt: SimplifiedPrompt) => void;
-};;
-
-export default function PromptSearch({ onSelect }: Props) {
+export default function PromptSearch() {
     const [entities, setEntities] = useState<IndexedEntity[]>([]);
     const [search, setSearch] = useState('');
     const [isFocused, setIsFocused] = useState(false);
@@ -50,6 +41,36 @@ export default function PromptSearch({ onSelect }: Props) {
 
         fetchEntities();
     }, [isFocused]);
+
+   const handleSelect = async (entity: IndexedEntity) => {
+  try {
+    const { tree_id: treeId, id: targetNodeId } = entity;
+
+    const store = useComposerStore.getState();
+    await store.loadTree(treeId);
+
+    const freshTree = useComposerStore.getState().composerTree;
+    if (!freshTree) {
+      console.error('❌ Tree failed to load');
+      return;
+    }
+
+    // Prefer rootId if valid, otherwise fall back to the tapped node
+    const rootId   = freshTree.rootId;
+    const nodeIdToShow =
+      rootId && freshTree.nodes[rootId] ? rootId : targetNodeId;
+
+    if (!freshTree.nodes[nodeIdToShow]) {
+      console.error('❌ Chosen node not found in loaded tree');
+      return;
+    }
+
+    router.push(`/(drawer)/(composer)/${treeId}/${nodeIdToShow}`);
+  } catch (err) {
+    console.error('❌ Failed to load and navigate:', err);
+  }
+};
+
 
     const filtered = !isFocused
         ? []
@@ -92,14 +113,7 @@ export default function PromptSearch({ onSelect }: Props) {
                     filtered.map((entity) => (
                         <TouchableOpacity
                             key={entity.id}
-                            onPress={() =>
-                                onSelect({
-                                    treeId: entity.tree_id,
-                                    nodeId: entity.id,
-                                    title: entity.title ?? '(Untitled)',
-                                    content: entity.content ?? '',
-                                })
-                            }
+                            onPress={() => handleSelect(entity)}
                             style={styles.promptItem}
                         >
                             <Text style={styles.promptTitle}>
