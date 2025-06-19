@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { v4 as uuid } from 'uuid';
 import { supabase } from '../lib/supabaseClient';
+import { IndexedEntity } from '../types/entity';
 
 //
 // ─── TYPES ────────────────────────────────────────────────────────────────
@@ -37,6 +38,7 @@ export interface ComposerStoreState {
     clearTree: () => void;
     listTrees: () => Promise<void>;
     createEmptyTree: () => Promise<{ treeId: string; rootId: string }>;
+    forkTreeFromEntity: (entity: IndexedEntity) => Promise<{ treeId: string; rootId: string }>;
 
     updateNode: (id: string, patch: Partial<ComposerNode>) => void;
     addChild: (parentId: string, child: ComposerNode) => void;
@@ -248,6 +250,42 @@ export const useComposerStore = create<ComposerStoreState>()(
             clearTree() {
                 set({ activeTreeId: null, composerTree: null });
             },
+
+            forkTreeFromEntity: async (entity: IndexedEntity) => {
+                const id = uuid();
+                const rootId = uuid();
+                const now = new Date().toISOString();
+
+                const root: ComposerNode = {
+                    id: rootId,
+                    title: entity.title || 'Untitled',
+                    content: entity.content || '',
+                    entityType: entity.entityType as NodeKind,
+                    variables: {}, // you can optionally pull from entity.variables if stored
+                    childIds: [],
+                    updatedAt: now,
+                };
+
+                const forkedTree: ComposerTree = {
+                    id,
+                    name: root.title,
+                    rootId,
+                    nodes: { [rootId]: root },
+                    updatedAt: now,
+                };
+
+                await supabase.from('composer_trees').insert({
+                    id,
+                    name: forkedTree.name,
+                    root_id: rootId,
+                    nodes: forkedTree.nodes,
+                    updated_at: now,
+                });
+
+                set({ activeTreeId: id, composerTree: forkedTree });
+                return { treeId: id, rootId };
+            },
+
         }))
     )
 );

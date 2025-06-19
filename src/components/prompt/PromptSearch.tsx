@@ -42,36 +42,6 @@ export default function PromptSearch() {
         fetchEntities();
     }, [isFocused]);
 
-   const handleSelect = async (entity: IndexedEntity) => {
-  try {
-    const { tree_id: treeId, id: targetNodeId } = entity;
-
-    const store = useComposerStore.getState();
-    await store.loadTree(treeId);
-
-    const freshTree = useComposerStore.getState().composerTree;
-    if (!freshTree) {
-      console.error('❌ Tree failed to load');
-      return;
-    }
-
-    // Prefer rootId if valid, otherwise fall back to the tapped node
-    const rootId   = freshTree.rootId;
-    const nodeIdToShow =
-      rootId && freshTree.nodes[rootId] ? rootId : targetNodeId;
-
-    if (!freshTree.nodes[nodeIdToShow]) {
-      console.error('❌ Chosen node not found in loaded tree');
-      return;
-    }
-
-    router.push(`/(drawer)/(composer)/${treeId}/${nodeIdToShow}`);
-  } catch (err) {
-    console.error('❌ Failed to load and navigate:', err);
-  }
-};
-
-
     const filtered = !isFocused
         ? []
         : entities.filter((entity) => {
@@ -113,7 +83,14 @@ export default function PromptSearch() {
                     filtered.map((entity) => (
                         <TouchableOpacity
                             key={entity.id}
-                            onPress={() => handleSelect(entity)}
+                            onPress={async () => {
+                                try {
+                                    const { treeId, rootId } = await useComposerStore.getState().forkTreeFromEntity(entity);
+                                    router.push(`/(drawer)/(composer)/${treeId}/${rootId}`);
+                                } catch (err) {
+                                    console.error('❌ Failed to fork and navigate:', err);
+                                }
+                            }}
                             style={styles.promptItem}
                         >
                             <Text style={styles.promptTitle}>

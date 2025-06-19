@@ -10,6 +10,7 @@ import { useComposerStore } from '../../../src/stores/useComposerStore';
 import { supabase } from '../../../src/lib/supabaseClient';
 import { IndexedEntity } from '../../../src/types/entity';
 import { navigateToTree } from '../../../src/utils/composer/navigation';
+import { forkTreeFrom } from '../../../src/utils/composer/forkTreeFrom';
 
 export default function ComposerIndexScreen() {
     const colors = useColors();
@@ -42,38 +43,7 @@ export default function ComposerIndexScreen() {
         <ThemedSafeArea disableTopInset>
             <View style={{ flex: 1, padding: 16 }}>
                 {hasPrompts ? (
-                    <PromptSearch
-                        onSelect={async (prompt) => {
-                            try {
-                                const { data, error } = await supabase
-                                    .from('composer_trees')
-                                    .select('id, name, tree_data, updated_at')
-                                    .eq('id', prompt.treeId)
-                                    .maybeSingle();
-
-                                if (error || !data) {
-                                    console.error('❌ Failed to load full tree:', error);
-                                    return;
-                                }
-
-                                useComposerStore.setState({
-                                    composerTree: {
-                                        id: data.id,
-                                        name: data.name ?? 'Untitled',
-                                        rootId: data.tree_data.rootId, // if your incoming data is shaped like a full tree
-                                        nodes: data.tree_data.nodes,
-                                        updatedAt: data.updated_at ?? new Date().toISOString(),
-                                    },
-                                    activeTreeId: data.id,
-                                });
-
-                                router.push(`/(drawer)/(composer)/${data.id}/${data.tree_data.id}`);
-                            } catch (err) {
-                                console.error('❌ Prompt selection error:', err);
-                            }
-                        }}
-
-                    />
+                    <PromptSearch/>
 
                 ) : (
                     <EmptyState

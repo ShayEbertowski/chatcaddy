@@ -1,3 +1,4 @@
+// src/components/composer/ComposerEditorView.tsx
 import React from 'react';
 import { View, Text } from 'react-native';
 import PromptPathNavigator from './PromptPathNavigator';
@@ -10,7 +11,6 @@ type ComposerEditorViewProps = {
     treeId: string;
     currentNode: ComposerNode;
     nodePath: ComposerNode[];
-    readOnly?: boolean;
     onChangeNode: (updates: Partial<ComposerNode>) => void;
     onChipPress: (chipText: string) => void;
     onSaveTree?: () => void;
@@ -20,7 +20,6 @@ export function ComposerEditorView({
     treeId,
     currentNode,
     nodePath,
-    readOnly = false,
     onChangeNode,
     onChipPress,
     onSaveTree,
@@ -29,7 +28,6 @@ export function ComposerEditorView({
     console.log('TreeId:', treeId);
     console.log('Node:', currentNode);
     console.log('Content:', currentNode.content);
-    console.log('ReadOnly:', readOnly);
 
     const allowedTypes = ['Prompt', 'Function', 'Snippet'] as const;
     const fallbackType = allowedTypes.includes(currentNode.entityType as any)
@@ -42,7 +40,7 @@ export function ComposerEditorView({
                 treeId={treeId}
                 nodePath={nodePath}
                 currentNode={currentNode}
-                readOnly={readOnly}
+                readOnly={false}
                 scrollIntoLast={true}
             />
 
@@ -60,10 +58,9 @@ export function ComposerEditorView({
                     onChangeNode({ variables: fromEditorVariables(vars) })
                 }
                 onChipPress={onChipPress}
-                readOnly={readOnly}
             />
 
-            {!readOnly && onSaveTree && (
+            {onSaveTree && (
                 <ThemedButton title="Save Tree" onPress={onSaveTree} style={{ marginTop: 24 }} />
             )}
         </View>

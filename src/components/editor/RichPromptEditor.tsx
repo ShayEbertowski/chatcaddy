@@ -1,3 +1,4 @@
+// src/components/editor/RichPromptEditor.tsx
 import React, { useMemo, useState } from 'react';
 import {
     View,
@@ -29,15 +30,19 @@ export interface RichPromptEditorProps {
     onChangeEntityType: (newType: 'Prompt' | 'Function' | 'Snippet') => void;
     variables: Record<string, Variable>;
     onChangeVariables: (newVars: Record<string, Variable>) => void;
-    readOnly?: boolean; // 👈 optional read-only mode
     onChipPress: (name: string) => void;
 }
-
 
 export const uiEntityTypes = ['Prompt', 'Function', 'Snippet'] as const;
 export type UIEntityType = typeof uiEntityTypes[number];
 
-export default function RichPromptEditor({ text, onChangeText, entityType, onChangeEntityType, readOnly, onChipPress }: RichPromptEditorProps) {
+export default function RichPromptEditor({
+    text,
+    onChangeText,
+    entityType,
+    onChangeEntityType,
+    onChipPress,
+}: RichPromptEditorProps) {
     const [selection, setSelection] = useState({ start: 0, end: 0 });
     const [showInsertModal, setShowInsertModal] = useState(false);
     const [isEditingVariable, setIsEditingVariable] = useState(false);
@@ -54,16 +59,23 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
 
     const [showVariables, setShowVariables] = useState(true);
     const [showPreview, setShowPreview] = useState(true);
-    const [dropdownVisible, setDropdownVisible] = useState(false);
 
     const parts = useMemo(() => parsePromptParts(text), [text]);
-    
 
-    const usedVars = useMemo(() => {
-        return Array.from(new Set(parts.filter(p => p.type === 'variable').map(p => p.name)));
-    }, [parts]);
+    const usedVars = useMemo(
+        () => Array.from(new Set(parts.filter((p) => p.type === 'variable').map((p) => p.name))),
+        [parts]
+    );
 
-    const handleInsert = (mode: 'Function' | 'Snippet' | 'Variable', name: string, value: string) => {
+    /* ─────────────────────────────────────────────────── */
+    /*  Handlers                                           */
+    /* ─────────────────────────────────────────────────── */
+
+    const handleInsert = (
+        mode: 'Function' | 'Snippet' | 'Variable',
+        name: string,
+        value: string
+    ) => {
         if (mode === 'Variable') {
             if (isEditingVariable) removeVariable(name);
             setVariable(name, { type: 'string', value, richCapable: false });
@@ -75,31 +87,28 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                 content: value,
                 variables: {},
             };
-
-            if (isEditingVariable) {
-                entityStore.deleteEntity(name);
-            }
-
+            if (isEditingVariable) entityStore.deleteEntity(name);
             entityStore.upsertEntity(newEntity);
         }
 
+        // Insert {{name}} into prompt at current cursor position
         if (!isEditingVariable) {
             const before = text.slice(0, selection.start);
             const after = text.slice(selection.end);
             const insert = `{{${name}}}`;
             const newText = before + insert + after;
             onChangeText(newText);
-            setSelection({ start: before.length + insert.length, end: before.length + insert.length });
+            setSelection({
+                start: before.length + insert.length,
+                end: before.length + insert.length,
+            });
         }
 
+        // Reset modal state
         setIsEditingVariable(false);
         setTempVariableName('');
         setTempVariableValue('');
         setShowInsertModal(false);
-    };
-
-    const handleChipPress = (name: string) => {
-        onChipPress(name);
     };
 
     const options: DropdownOption<UIEntityType>[] = [
@@ -107,38 +116,40 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
         { label: 'Function', value: 'Function' },
         { label: 'Snippet', value: 'Snippet' },
     ];
-    
+
+    /* ─────────────────────────────────────────────────── */
+    /*  Render                                             */
+    /* ─────────────────────────────────────────────────── */
+
     return (
         <View style={styles.container}>
+            {/* Header with “insert” button */}
             <View style={styles.headerRow}>
                 <View style={{ flex: 1 }} />
-                {!readOnly && (
-                    <TouchableOpacity onPress={() => setShowInsertModal(true)} style={styles.insertIconButton}>
-                        <Ionicons name="add" size={20} color={colors.accent} />
-                    </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                    onPress={() => setShowInsertModal(true)}
+                    style={styles.insertIconButton}
+                >
+                    <Ionicons name="add" size={20} color={colors.accent} />
+                </TouchableOpacity>
             </View>
 
-            {/* Dropdown Selector */}
+            {/* Entity-type dropdown */}
             <View style={{ marginBottom: 16 }}>
-                {!readOnly && (
-                    <DropdownSelector
-                        value={entityType}
-                        options={options}
-                        onSelect={onChangeEntityType}
-                        readOnly={readOnly}
-                    />
-                )}
+                <DropdownSelector
+                    value={entityType}
+                    options={options}
+                    onSelect={onChangeEntityType}
+                />
             </View>
 
-
+            {/* Prompt input */}
             <TextInput
                 value={text}
-                editable={!readOnly}
                 onChangeText={onChangeText}
-                onSelectionChange={(e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) =>
-                    setSelection(e.nativeEvent.selection)
-                }
+                onSelectionChange={(
+                    e: NativeSyntheticEvent<TextInputSelectionChangeEventData>
+                ) => setSelection(e.nativeEvent.selection)}
                 selection={selection}
                 multiline
                 style={[styles.input, { borderColor: colors.borderThin }]}
@@ -146,6 +157,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                 placeholderTextColor={colors.secondaryText}
             />
 
+            {/* Variables */}
             <CollapsibleSection
                 title="Variables"
                 isOpen={showVariables}
@@ -153,48 +165,58 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
             >
                 <View style={styles.chipContainer}>
                     {usedVars.length === 0 ? (
-                        <Text style={{ color: colors.secondaryText, fontStyle: 'italic', paddingVertical: 6 }}>
-                            No variables yet. {readOnly ? '' : 'Add one above.'}
+                        <Text
+                            style={{
+                                color: colors.secondaryText,
+                                fontStyle: 'italic',
+                                paddingVertical: 6,
+                            }}
+                        >
+                            No variables yet. Add one above.
                         </Text>
                     ) : (
-                        usedVars.map((varName, i) => {
-                            const chip = (
-                                <View key={i} style={sharedStyles.chip}>
-                                    <Text style={sharedStyles.chipText}>{varName}</Text>
-                                </View>
-                            );
-
-                            if (readOnly) {
-                                return chip;
-                            }
-
-                            return (
-                                <TouchableOpacity key={i} onPress={() => handleChipPress(varName)} style={sharedStyles.chip}>
-                                    <Text style={sharedStyles.chipText}>{varName}</Text>
-                                </TouchableOpacity>
-                            );
-                        })
+                        usedVars.map((varName, i) => (
+                            <TouchableOpacity
+                                key={i}
+                                onPress={() => onChipPress(varName)}
+                                style={sharedStyles.chip}
+                            >
+                                <Text style={sharedStyles.chipText}>{varName}</Text>
+                            </TouchableOpacity>
+                        ))
                     )}
                 </View>
             </CollapsibleSection>
 
-
             <View style={sharedStyles.divider} />
 
-            <CollapsibleSection title="Preview" isOpen={showPreview} onToggle={() => setShowPreview(!showPreview)}>
+            {/* Preview */}
+            <CollapsibleSection
+                title="Preview"
+                isOpen={showPreview}
+                onToggle={() => setShowPreview(!showPreview)}
+            >
                 <View style={styles.section}>
                     {text.trim() === '' ? (
-                        <Text style={sharedStyles.placeholderText}>Preview will appear here as you type your prompt.</Text>
+                        <Text style={sharedStyles.placeholderText}>
+                            Preview will appear here as you type your prompt.
+                        </Text>
                     ) : (
                         <View style={styles.previewContainer}>
                             <Text style={sharedStyles.previewVariable}>
-                                {parts.map((chunk, i) => {
-                                    if (chunk.type === 'variable') {
-                                        const variable = getVariable(chunk.name) ?? { type: 'string', value: '', richCapable: false };
-                                        return resolveVariableDisplayValue(variable);
-                                    }
-                                    return chunk.value;
-                                }).join('')}
+                                {parts
+                                    .map((chunk) =>
+                                        chunk.type === 'variable'
+                                            ? resolveVariableDisplayValue(
+                                                  getVariable(chunk.name) ?? {
+                                                      type: 'string',
+                                                      value: '',
+                                                      richCapable: false,
+                                                  }
+                                              )
+                                            : chunk.value
+                                    )
+                                    .join('')}
                             </Text>
                         </View>
                     )}
@@ -203,6 +225,7 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
 
             <View style={sharedStyles.divider} />
 
+            {/* Insert Modal */}
             <InsertModal
                 visible={showInsertModal}
                 mode={editMode}
@@ -217,37 +240,25 @@ export default function RichPromptEditor({ text, onChangeText, entityType, onCha
                 }}
                 onInsert={handleInsert}
             />
-        </View >
+        </View>
     );
 }
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
         container: { padding: 4 },
-        headerRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 },
-        addButton: {
+        headerRow: {
+            flexDirection: 'row',
+            justifyContent: 'flex-end',
+            marginBottom: 8,
+        },
+        insertIconButton: {
             backgroundColor: colors.surface,
+            borderColor: colors.borderThin,
             borderWidth: 1,
-            borderColor: colors.borderThin,  // use your thin variant here
-            paddingHorizontal: 10,
-            paddingVertical: 5,
+            padding: 8,
             borderRadius: 6,
         },
-
-        addButtonText: { color: colors.text, fontWeight: '600' },
-
-        dropdownContainer: { marginBottom: 12 },
-        dropdownButton: {
-            borderWidth: 1, borderColor: colors.border, borderRadius: 6,
-            paddingHorizontal: 10, paddingVertical: 10, backgroundColor: colors.card,
-        },
-        dropdownButtonText: { fontSize: 16, color: colors.text, fontWeight: '600' },
-        modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)' },
-        modalContent: { backgroundColor: colors.surface, padding: 16, borderRadius: 10, width: 250 },
-        dropdownItem: { paddingVertical: 10 },
-        dropdownItemText: { fontSize: 16, color: colors.text },
-        dropdownItemActive: { backgroundColor: colors.accent, borderRadius: 6 },
-        dropdownItemTextActive: { color: colors.onAccent, fontWeight: '600' },
 
         input: {
             backgroundColor: colors.card,
@@ -260,16 +271,20 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             color: colors.text,
         },
 
+        chipContainer: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginTop: 10,
+        },
 
-        chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
-        section: { backgroundColor: colors.card, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16, marginBottom: 12 },
+        section: {
+            backgroundColor: colors.card,
+            borderRadius: 12,
+            paddingVertical: 10,
+            paddingHorizontal: 16,
+            marginBottom: 12,
+        },
+
         previewContainer: { paddingVertical: 12, paddingHorizontal: 8 },
-        insertIconButton: {
-            backgroundColor: colors.surface,
-            borderColor: colors.borderThin,
-            borderWidth: 1,
-            padding: 8,
-            borderRadius: 6,
-        }
-
     });

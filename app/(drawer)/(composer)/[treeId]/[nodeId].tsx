@@ -31,7 +31,6 @@ export default function ComposerNodeScreen() {
     const [saveTitle, setSaveTitle] = useState('');
     const [saving, setSaving] = useState(false);
 
-    // Load once on mount
     const hasLoadedRef = useRef(false);
     useEffect(() => {
         if (!treeId || hasLoadedRef.current) return;
@@ -39,16 +38,8 @@ export default function ComposerNodeScreen() {
         loadTree(treeId).catch(console.error);
     }, [treeId]);
 
-    const activeTreeId = useComposerStore((s) => s.activeTreeId);
-
-    /** A new tree is "empty": no title and no childIds on root */
-    const isNewTree =
-        !rootNode?.title?.trim() && (!rootNode?.childIds?.length || rootNode.childIds.length === 0);
-
-    const readOnly = nodePath.length === 1 && !isNewTree;
     const loading = !currentNode;
 
-    /* ─── Save-flow helpers ──────────────────────────────── */
     const handleSavePress = async () => {
         if (!currentNode?.content?.trim()) return;
         setIsGeneratingTitle(true);
@@ -68,10 +59,7 @@ export default function ComposerNodeScreen() {
         if (!currentNode) return;
         setSaving(true);
         try {
-            /* 1️⃣ Patch title into the node before saving */
             updateNode({ title: saveTitle });
-
-            /* 2️⃣ Persist tree */
             await saveTree();
             setShowSaveModal(false);
         } catch (err) {
@@ -81,7 +69,6 @@ export default function ComposerNodeScreen() {
         }
     };
 
-    /* ─── Render states ──────────────────────────────────── */
     if (loading) {
         return (
             <ThemedSafeArea>
@@ -119,35 +106,13 @@ export default function ComposerNodeScreen() {
     return (
         <ThemedSafeArea>
             <View style={{ flex: 1, paddingHorizontal: 16 }}>
-                {nodePath.length === 1 && readOnly && (
-                    <View
-                        style={{
-                            padding: 8,
-                            marginBottom: 8,
-                            borderRadius: 6,
-                            backgroundColor: 'rgba(255,255,255,0.05)',
-                        }}
-                    >
-                        <Text
-                            style={{
-                                color: colors.secondaryText,
-                                fontStyle: 'italic',
-                                textAlign: 'center',
-                            }}
-                        >
-                            Viewing root node – read-only
-                        </Text>
-                    </View>
-                )}
-
                 <ComposerEditorView
                     treeId={treeId}
                     currentNode={currentNode}
                     nodePath={nodePath}
                     onChangeNode={(patch) => updateNode(patch)}
                     onChipPress={insertChildNode}
-                    readOnly={readOnly}
-                    onSaveTree={!readOnly ? handleSavePress : undefined}
+                    onSaveTree={handleSavePress}
                 />
             </View>
 
