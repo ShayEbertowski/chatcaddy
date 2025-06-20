@@ -22,7 +22,7 @@ export default function ComposerIndexScreen() {
         async function fetchPrompts() {
             const { data, error } = await supabase
                 .from('indexed_entities')
-                .select('*')
+                .select('*') 
                 .eq('entity_type', 'Prompt');
 
             if (error) {
