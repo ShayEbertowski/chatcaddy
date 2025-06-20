@@ -1,25 +1,26 @@
-// app/(drawer)/(composer)/[treeId]/[nodeId].tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, startTransition } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Snackbar } from 'react-native-paper';
 
-
 import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
-import { ThemedButton } from '../../../../src/components/ui/ThemedButton';
 import { useColors } from '../../../../src/hooks/useColors';
 import { useComposerEditingState } from '../../../../src/stores/useComposerEditingState';
 import { ComposerEditorView } from '../../../../src/components/composer/ComposerEditorView';
-import { useComposerStore } from '../../../../src/stores/useComposerStore';
 import SavePromptModal from '../../../../src/components/modals/SavePromptModal';
 import { generateSmartTitle } from '../../../../src/utils/prompt/generateSmartTitle';
+
+function navigateToComposerIndex() {
+    startTransition(() => {
+        router.replace('/entry'); // 👈 this is the actual Composer index screen
+    });
+}
 
 export default function ComposerNodeScreen() {
     const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
     const colors = useColors();
 
     const {
-        rootNode,
         currentNode,
         nodePath,
         updateNode,
@@ -32,18 +33,16 @@ export default function ComposerNodeScreen() {
     const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
     const [saveTitle, setSaveTitle] = useState('');
     const [saving, setSaving] = useState(false);
-
-    const [snackbarVisible, setSnackbarVisible] = useState(false);
-
+    const [snackOpen, setSnackOpen] = useState(false);
 
     const hasLoadedRef = useRef(false);
+    const redirectingRef = useRef(false);
+
     useEffect(() => {
-        if (!treeId || hasLoadedRef.current) return;
+        if (!treeId || hasLoadedRef.current || redirectingRef.current) return;
         hasLoadedRef.current = true;
         loadTree(treeId).catch(console.error);
     }, [treeId]);
-
-    const loading = !currentNode;
 
     const handleSavePress = async () => {
         if (!currentNode?.content?.trim()) return;
@@ -67,12 +66,7 @@ export default function ComposerNodeScreen() {
             updateNode({ title: saveTitle });
             await saveTree();
             setShowSaveModal(false);
-            setSnackbarVisible(true);
-            setTimeout(() => {
-                setSnackbarVisible(false);
-                console.log('Routing to /new');
-                router.replace('/new');
-            }, 1200); // enough time to notice before navigating
+            setSnackOpen(true); // show snackbar
         } catch (err) {
             console.error('❌ Save failed', err);
         } finally {
@@ -80,20 +74,19 @@ export default function ComposerNodeScreen() {
         }
     };
 
+    useEffect(() => {
+        if (!currentNode && !redirectingRef.current) {
+            redirectingRef.current = true;
+            navigateToComposerIndex();
+        }
+    }, [currentNode]);
 
-    if (loading) {
+    if (!currentNode) {
         return (
             <ThemedSafeArea>
                 <ActivityIndicator size="large" color={colors.primary} />
             </ThemedSafeArea>
         );
-    }
-
-    if (!currentNode) {
-        useEffect(() => {
-            router.replace('/new');
-        }, []);
-        return null;
     }
 
     return (
@@ -103,7 +96,7 @@ export default function ComposerNodeScreen() {
                     treeId={treeId}
                     currentNode={currentNode}
                     nodePath={nodePath}
-                    onChangeNode={(patch) => updateNode(patch)}
+                    onChangeNode={updateNode}
                     onChipPress={insertChildNode}
                     onSaveTree={handleSavePress}
                 />
@@ -121,9 +114,13 @@ export default function ComposerNodeScreen() {
             />
 
             <Snackbar
-                visible={snackbarVisible}
-                onDismiss={() => setSnackbarVisible(false)}
-                duration={1500}
+                visible={snackOpen}
+                onDismiss={() => {
+                    setSnackOpen(false);
+                    redirectingRef.current = true;
+                    navigateToComposerIndex(); // 🎯 go back to /entry
+                }}
+                duration={1200}
                 style={{
                     backgroundColor: colors.surface,
                     borderColor: colors.accentSoft,
@@ -138,8 +135,6 @@ export default function ComposerNodeScreen() {
                     Tree saved!
                 </Text>
             </Snackbar>
-
-
         </ThemedSafeArea>
     );
 }
