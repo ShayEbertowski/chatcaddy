@@ -70,7 +70,8 @@ export default function ComposerNodeScreen() {
             setSnackbarVisible(true);
             setTimeout(() => {
                 setSnackbarVisible(false);
-                router.back(); // or replace() if needed
+                console.log('Routing to /new');
+                router.replace('/new');
             }, 1200); // enough time to notice before navigating
         } catch (err) {
             console.error('❌ Save failed', err);
@@ -89,29 +90,10 @@ export default function ComposerNodeScreen() {
     }
 
     if (!currentNode) {
-        return (
-            <ThemedSafeArea>
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <Text style={{ color: colors.secondaryText, fontSize: 16 }}>
-                        ⚠️ Prompt not found. Try creating a new one.
-                    </Text>
-                    <ThemedButton
-                        title="New Prompt"
-                        onPress={async () => {
-                            try {
-                                const { treeId: newTree, rootId } = await useComposerStore
-                                    .getState()
-                                    .createEmptyTree();
-                                router.replace(`/(drawer)/(composer)/${newTree}/${rootId}`);
-                            } catch (err) {
-                                console.error('❌ Failed to create new tree', err);
-                            }
-                        }}
-                        style={{ marginTop: 16 }}
-                    />
-                </View>
-            </ThemedSafeArea>
-        );
+        useEffect(() => {
+            router.replace('/new');
+        }, []);
+        return null;
     }
 
     return (

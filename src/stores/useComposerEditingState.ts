@@ -20,7 +20,6 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
     const saveTree = useComposerStore((s) => s.saveTree);
     const updateNodeInStore = useComposerStore((s) => s.updateNode);
     const addChild = useComposerStore((s) => s.addChild);
-    const createEmptyTree = useComposerStore((s) => s.createEmptyTree);
 
     /* ---------- Load tree once on mount ---------- */
     const hasLoaded = useRef(false);
@@ -70,17 +69,6 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
 
         addChild(currentNode.id, child);
     }
-
-    /* ---------- Fallback for brand-new trees ---------- */
-    useEffect(() => {
-        if (composerTree || treeId) return;
-
-        // No tree loaded yet – create an empty one on the fly
-        (async () => {
-            const { treeId: newId, rootId } = await createEmptyTree();
-            await loadTree(newId);
-        })().catch(console.error);
-    }, [composerTree, treeId]);
 
     return {
         rootNode,
