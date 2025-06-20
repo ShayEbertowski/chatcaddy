@@ -2,6 +2,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
+import { Snackbar } from 'react-native-paper';
+
 
 import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
 import { ThemedButton } from '../../../../src/components/ui/ThemedButton';
@@ -30,6 +32,9 @@ export default function ComposerNodeScreen() {
     const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
     const [saveTitle, setSaveTitle] = useState('');
     const [saving, setSaving] = useState(false);
+
+    const [snackbarVisible, setSnackbarVisible] = useState(false);
+
 
     const hasLoadedRef = useRef(false);
     useEffect(() => {
@@ -62,12 +67,18 @@ export default function ComposerNodeScreen() {
             updateNode({ title: saveTitle });
             await saveTree();
             setShowSaveModal(false);
+            setSnackbarVisible(true);
+            setTimeout(() => {
+                setSnackbarVisible(false);
+                router.back(); // or replace() if needed
+            }, 1200); // enough time to notice before navigating
         } catch (err) {
             console.error('❌ Save failed', err);
         } finally {
             setSaving(false);
         }
     };
+
 
     if (loading) {
         return (
@@ -126,6 +137,27 @@ export default function ComposerNodeScreen() {
                 selectedFolder=""
                 loading={isGeneratingTitle || saving}
             />
+
+            <Snackbar
+                visible={snackbarVisible}
+                onDismiss={() => setSnackbarVisible(false)}
+                duration={1500}
+                style={{
+                    backgroundColor: colors.surface,
+                    borderColor: colors.accentSoft,
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    marginHorizontal: 16,
+                }}
+            >
+                <Text style={{ color: colors.onSurface }}>
+                    Tree saved!
+                </Text>
+            </Snackbar>
+
+
         </ThemedSafeArea>
     );
 }

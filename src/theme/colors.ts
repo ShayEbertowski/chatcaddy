@@ -1,5 +1,3 @@
-// theme/colors.ts
-
 export const light = (() => {
     const accent = '#2463A8';
     return {
@@ -7,6 +5,7 @@ export const light = (() => {
         onPrimary: '#f8f9fa',
         background: '#ebebec',
         surface: '#f6f6f7',
+        onSurface: '#1c1c1e', // ✅ added: text on surface
         placeholder: '#999999',
         accent,
         onAccent: '#ffffff',
@@ -46,6 +45,7 @@ export const dark = (() => {
         onPrimary: '#ffffff',
         background: '#0e0e0e',
         surface: '#1a1a1a',
+        onSurface: '#ffffff', // ✅ added: text on surface
         placeholder: '#AAAAAA',
         accent,
         onAccent: '#000000',
@@ -75,6 +75,5 @@ export const dark = (() => {
         nodeBorder: '#333333',
         chipBackground: '#2C2C2C',
         chipText: '#FFFFFF',
-
     };
 })();
