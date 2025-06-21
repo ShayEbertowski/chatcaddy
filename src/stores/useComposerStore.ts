@@ -1,9 +1,9 @@
-// stores/useComposerStore.ts
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { v4 as uuid } from 'uuid';
 import { supabase } from '../lib/supabaseClient';
 import { IndexedEntity } from '../types/entity';
+import { forkTreeFrom } from '../utils/composer/forkTreeFrom';
 
 //
 // ─── TYPES ────────────────────────────────────────────────────────────────
@@ -39,6 +39,7 @@ export interface ComposerStoreState {
     listTrees: () => Promise<void>;
     createEmptyTree: () => Promise<{ treeId: string; rootId: string }>;
     forkTreeFromEntity: (entity: IndexedEntity) => Promise<{ treeId: string; rootId: string }>;
+    forkTreeFromTreeId: (sourceTreeId: string) => Promise<{ treeId: string; rootId: string }>; // ⬅️ NEW
 
     updateNode: (id: string, patch: Partial<ComposerNode>) => void;
     addChild: (parentId: string, child: ComposerNode) => void;
@@ -54,8 +55,10 @@ export const useComposerStore = create<ComposerStoreState>()(
             composerTree: null,
             availableTrees: [],
 
-            // ── Load full tree ───────────────────────────────────
+            /* ── Load full tree ─────────────────────────────────── */
             async loadTree(treeId) {
+                console.log('🧪 loadTree() called with:', treeId);
+
                 const { data, error } = await supabase
                     .from('composer_trees')
                     .select('*')
@@ -65,11 +68,11 @@ export const useComposerStore = create<ComposerStoreState>()(
                 if (error) throw new Error(error.message);
                 if (!data) throw new Error('Tree not found');
 
-                // 🔀 Try to pull from new schema first
+                // 🔀 Try new schema first
                 let nodes = data.nodes ?? {};
                 let rootId = data.root_id ?? null;
 
-                // 🔙 If missing, try legacy schema
+                // 🔙 Fallback to legacy schema if needed
                 if ((!rootId || Object.keys(nodes).length === 0) && data.tree_data) {
                     try {
                         const legacy = typeof data.tree_data === 'string'
@@ -78,18 +81,14 @@ export const useComposerStore = create<ComposerStoreState>()(
 
                         nodes = legacy.nodes ?? nodes;
                         rootId = legacy.rootId ?? rootId;
-                    } catch (err) {
-                        console.warn('⚠️ Failed to parse legacy tree_data JSON:', err);
+                    } catch {
+                        console.warn('⚠️ Failed to parse legacy tree_data JSON');
                     }
                 }
 
-                // 🛡️ Final safety check
+                // 🛡️ Safety check
                 if (!rootId || !nodes[rootId]) {
-                    throw new Error(
-                        `Invalid tree structure: missing root_id or root node.\n` +
-                        `Available node IDs: ${Object.keys(nodes).join(', ') || '(none)'}\n` +
-                        `Raw rootId: ${rootId}`
-                    );
+                    throw new Error('Invalid tree structure: missing root node.');
                 }
 
                 set({
@@ -104,9 +103,7 @@ export const useComposerStore = create<ComposerStoreState>()(
                 });
             },
 
-
-
-            // ── Save tree + index root ───────────────────────────
+            /* ── Save tree + index root ─────────────────────────── */
             async saveTree() {
                 const { composerTree, activeTreeId } = get();
                 if (!composerTree) throw new Error('Nothing to save');
@@ -118,31 +115,26 @@ export const useComposerStore = create<ComposerStoreState>()(
                     updatedAt: now,
                 };
 
-                // 🛡️ Validate / auto-fix rootId ↔ nodes mismatch
+                // 🛡️ rootId check
                 let root = treeToSave.nodes[treeToSave.rootId];
                 if (!root) {
                     const fallbackId = Object.keys(treeToSave.nodes)[0];
                     if (!fallbackId) throw new Error('No nodes found in tree to save');
-                    console.warn('⚠️ rootId invalid — falling back to:', fallbackId);
                     treeToSave.rootId = fallbackId;
                     root = treeToSave.nodes[fallbackId];
                 }
 
-                // 📝 Auto-title the tree from root node
                 treeToSave.name = root.title?.trim() || 'Untitled';
 
-                // 1️⃣ Upsert composer_trees
-                const { error: treeErr } = await supabase.from('composer_trees').upsert({
+                await supabase.from('composer_trees').upsert({
                     id: treeToSave.id,
                     name: treeToSave.name,
                     root_id: treeToSave.rootId,
                     nodes: treeToSave.nodes,
                     updated_at: now,
                 });
-                if (treeErr) throw new Error(treeErr.message);
 
-                // 2️⃣ Upsert indexed_entities for the root
-                const { error: idxErr } = await supabase.from('indexed_entities').upsert({
+                await supabase.from('indexed_entities').upsert({
                     id: root.id,
                     tree_id: treeToSave.id,
                     title: root.title || 'Untitled',
@@ -150,13 +142,12 @@ export const useComposerStore = create<ComposerStoreState>()(
                     content_preview: root.content.slice(0, 160),
                     updated_at: now,
                 });
-                if (idxErr) throw new Error(idxErr.message);
 
                 set({ activeTreeId: treeToSave.id, composerTree: treeToSave });
                 return treeToSave.id;
             },
 
-            // ── Create empty tree ────────────────────────────────
+            /* ── Create empty tree ──────────────────────────────── */
             async createEmptyTree() {
                 const id = uuid();
                 const rootId = uuid();
@@ -192,7 +183,7 @@ export const useComposerStore = create<ComposerStoreState>()(
                 return { treeId: id, rootId };
             },
 
-            // ── List trees ───────────────────────────────────────
+            /* ── List trees ─────────────────────────────────────── */
             async listTrees() {
                 const { data, error } = await supabase
                     .from('composer_trees')
@@ -203,7 +194,7 @@ export const useComposerStore = create<ComposerStoreState>()(
                 set({ availableTrees: data ?? [] });
             },
 
-            // ── Update node ──────────────────────────────────────
+            /* ── Update node ────────────────────────────────────── */
             updateNode(id, patch) {
                 set((s) => {
                     if (!s.composerTree) return s;
@@ -222,7 +213,7 @@ export const useComposerStore = create<ComposerStoreState>()(
                 });
             },
 
-            // ── Add child ────────────────────────────────────────
+            /* ── Add child ──────────────────────────────────────── */
             addChild(parentId, child) {
                 set((s) => {
                     if (!s.composerTree) return s;
@@ -246,11 +237,12 @@ export const useComposerStore = create<ComposerStoreState>()(
                 });
             },
 
-            // ── Clear (logout) ───────────────────────────────────
+            /* ── Clear (logout) ─────────────────────────────────── */
             clearTree() {
                 set({ activeTreeId: null, composerTree: null });
             },
 
+            /* ── Shallow fork from indexed entity (still useful) ── */
             forkTreeFromEntity: async (entity: IndexedEntity) => {
                 const id = uuid();
                 const rootId = uuid();
@@ -258,10 +250,10 @@ export const useComposerStore = create<ComposerStoreState>()(
 
                 const root: ComposerNode = {
                     id: rootId,
-                    title: entity.title || 'Untitled',
-                    content: entity.content || '',
-                    entityType: entity.entityType as NodeKind,
-                    variables: {}, // you can optionally pull from entity.variables if stored
+                    title: entity.title?.trim() || 'Untitled',
+                    content: entity.content?.trim() ?? 'Template content goes here...',
+                    entityType: (entity.entityType as NodeKind) ?? 'Prompt',
+                    variables: {}, // Optionally parse from entity.variables if needed
                     childIds: [],
                     updatedAt: now,
                 };
@@ -282,10 +274,25 @@ export const useComposerStore = create<ComposerStoreState>()(
                     updated_at: now,
                 });
 
+                console.log('✅ Forked from entity:', {
+                    id,
+                    rootId,
+                    title: root.title,
+                    content: root.content,
+                    entityType: root.entityType,
+                });
+
                 set({ activeTreeId: id, composerTree: forkedTree });
                 return { treeId: id, rootId };
             },
 
+
+            /* ── 🔥 Full fork from existing tree ID + hydrate ───── */
+            forkTreeFromTreeId: async (sourceTreeId) => {
+                const { treeId, rootId } = await forkTreeFrom(sourceTreeId);
+                await get().loadTree(treeId);           // hydrate Zustand
+                return { treeId, rootId };
+            },
         }))
     )
 );

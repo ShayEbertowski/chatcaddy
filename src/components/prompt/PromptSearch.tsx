@@ -3,7 +3,7 @@ import {
     View,
     Text,
     TextInput,
-    TouchableOpacity, 
+    TouchableOpacity,
     StyleSheet,
     ScrollView,
 } from 'react-native';
@@ -26,45 +26,39 @@ export default function PromptSearch() {
     useEffect(() => {
         if (!isFocused) return;
 
-        async function fetchEntities() {
+        (async () => {
             const { data, error } = await supabase
                 .from('indexed_entities')
                 .select('*');
-
-            if (error) {
-                console.error('Error fetching indexed_entities:', error);
-                return;
-            }
-
+            if (error) console.error('Error fetching indexed_entities:', error);
             setEntities(data ?? []);
-        }
-
-        fetchEntities();
+        })();
     }, [isFocused]);
 
     const filtered = !isFocused
         ? []
         : entities.filter((entity) => {
-            const query = search.toLowerCase().trim();
-            if (query === '') return true;
-
-            const titleMatch = entity.title?.toLowerCase().includes(query) ?? false;
-            const contentMatch = entity.content?.toLowerCase().includes(query) ?? false;
-            const variableText = Object.values(entity.variables ?? {})
-                .map((v: any) => {
-                    if (v.type === 'string') return v.value?.toLowerCase?.() ?? '';
-                    if (v.type === 'prompt') return v.promptTitle?.toLowerCase?.() ?? '';
-                    return '';
-                })
-                .join(' ');
-            const variableMatch = variableText.includes(query);
-
-            return titleMatch || contentMatch || variableMatch;
+            const q = search.toLowerCase().trim();
+            if (!q) return true;
+            return (
+                entity.title?.toLowerCase().includes(q) ||
+                entity.content?.toLowerCase().includes(q) ||
+                Object.values(entity.variables ?? {})
+                    .map((v: any) =>
+                        v.type === 'string'
+                            ? v.value?.toLowerCase?.() ?? ''
+                            : v.promptTitle?.toLowerCase?.() ?? ''
+                    )
+                    .join(' ')
+                    .includes(q)
+            );
         });
 
     return (
         <View style={styles.container}>
-            <Text style={[sharedStyles.label, { color: colors.accent }]}>Search for a prompt</Text>
+            <Text style={[sharedStyles.label, { color: colors.accent }]}>
+                Search for a prompt
+            </Text>
 
             <TextInput
                 placeholder="Type to search..."
@@ -79,19 +73,29 @@ export default function PromptSearch() {
             />
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                {filtered.length > 0 ? (
+                {filtered.length ? (
                     filtered.map((entity) => (
                         <TouchableOpacity
                             key={entity.id}
+                            style={styles.promptItem}
                             onPress={async () => {
                                 try {
-                                    const { treeId, rootId } = await useComposerStore.getState().forkTreeFromEntity(entity);
+                                    const { treeId, rootId } = await useComposerStore
+                                        .getState()
+                                        .forkTreeFromEntity(entity);
+
+                                    console.log('🧪 Forked tree:', {
+                                        treeId,
+                                        rootId,
+                                        fromEntity: entity.id,
+                                    });
+
                                     router.push(`/(drawer)/(composer)/${treeId}/${rootId}`);
                                 } catch (err) {
                                     console.error('❌ Failed to fork and navigate:', err);
                                 }
                             }}
-                            style={styles.promptItem}
+
                         >
                             <Text style={styles.promptTitle}>
                                 {entity.title || '(Untitled)'}
@@ -103,9 +107,9 @@ export default function PromptSearch() {
                     ))
                 ) : (
                     <Text style={styles.emptyState}>
-                        {search.trim() === ''
-                            ? 'Start typing to find prompts...'
-                            : 'No matching prompts found.'}
+                        {search.trim()
+                            ? 'No matching prompts found.'
+                            : 'Start typing to find prompts...'}
                     </Text>
                 )}
             </ScrollView>
@@ -115,10 +119,7 @@ export default function PromptSearch() {
 
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
-        container: {
-            flex: 1,
-            padding: 20,
-        },
+        container: { flex: 1, padding: 20 },
         searchInput: {
             borderWidth: 1,
             borderRadius: 8,
@@ -144,9 +145,7 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             flexWrap: 'wrap',
             alignItems: 'center',
         },
-        scrollContent: {
-            paddingBottom: 100,
-        },
+        scrollContent: { paddingBottom: 100 },
         emptyState: {
             textAlign: 'center',
             color: colors.secondaryText,

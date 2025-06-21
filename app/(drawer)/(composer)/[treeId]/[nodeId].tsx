@@ -12,7 +12,7 @@ import { generateSmartTitle } from '../../../../src/utils/prompt/generateSmartTi
 
 function navigateToComposerIndex() {
     startTransition(() => {
-        router.replace('/entry'); // 👈 this is the actual Composer index screen
+        router.replace('/entry');
     });
 }
 
@@ -44,6 +44,13 @@ export default function ComposerNodeScreen() {
         loadTree(treeId).catch(console.error);
     }, [treeId]);
 
+    useEffect(() => {
+        if (!currentNode && !redirectingRef.current) {
+            redirectingRef.current = true;
+            navigateToComposerIndex();
+        }
+    }, [currentNode]);
+
     const handleSavePress = async () => {
         if (!currentNode?.content?.trim()) return;
         setIsGeneratingTitle(true);
@@ -66,20 +73,13 @@ export default function ComposerNodeScreen() {
             updateNode({ title: saveTitle });
             await saveTree();
             setShowSaveModal(false);
-            setSnackOpen(true); // show snackbar
+            setSnackOpen(true);
         } catch (err) {
             console.error('❌ Save failed', err);
         } finally {
             setSaving(false);
         }
     };
-
-    useEffect(() => {
-        if (!currentNode && !redirectingRef.current) {
-            redirectingRef.current = true;
-            navigateToComposerIndex();
-        }
-    }, [currentNode]);
 
     if (!currentNode) {
         return (
@@ -118,7 +118,7 @@ export default function ComposerNodeScreen() {
                 onDismiss={() => {
                     setSnackOpen(false);
                     redirectingRef.current = true;
-                    navigateToComposerIndex(); // 🎯 go back to /entry
+                    navigateToComposerIndex();
                 }}
                 duration={1200}
                 style={{
