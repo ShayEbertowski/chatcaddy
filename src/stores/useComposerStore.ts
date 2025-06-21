@@ -139,13 +139,15 @@ export const useComposerStore = create<ComposerStoreState>()(
                     tree_id: treeToSave.id,
                     title: root.title || 'Untitled',
                     entity_type: root.entityType,
-                    content_preview: root.content.slice(0, 160),
+                    content: root.content,                    // ✅ full content now saved
+                    preview: root.content.slice(0, 160),      // 🧪 optional preview snippet
                     updated_at: now,
                 });
 
                 set({ activeTreeId: treeToSave.id, composerTree: treeToSave });
                 return treeToSave.id;
             },
+
 
             /* ── Create empty tree ──────────────────────────────── */
             async createEmptyTree() {
@@ -248,10 +250,13 @@ export const useComposerStore = create<ComposerStoreState>()(
                 const rootId = uuid();
                 const now = new Date().toISOString();
 
+                console.log('📦 entity.content:', entity.content); // ← Add this
+
+
                 const root: ComposerNode = {
                     id: rootId,
                     title: entity.title?.trim() || 'Untitled',
-                    content: entity.content?.trim() ?? 'Template content goes here...',
+                    content: entity.content?.trim(),
                     entityType: (entity.entityType as NodeKind) ?? 'Prompt',
                     variables: {}, // Optionally parse from entity.variables if needed
                     childIds: [],

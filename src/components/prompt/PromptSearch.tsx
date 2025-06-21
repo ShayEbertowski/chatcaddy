@@ -80,6 +80,8 @@ export default function PromptSearch() {
                             style={styles.promptItem}
                             onPress={async () => {
                                 try {
+                                    console.log('📦 Entity selected:', entity);
+
                                     const { treeId, rootId } = await useComposerStore
                                         .getState()
                                         .forkTreeFromEntity(entity);
