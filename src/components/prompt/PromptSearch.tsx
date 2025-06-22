@@ -80,17 +80,10 @@ export default function PromptSearch() {
                             style={styles.promptItem}
                             onPress={async () => {
                                 try {
-                                    console.log('📦 Entity selected:', entity);
-
                                     const { treeId, rootId } = await useComposerStore
                                         .getState()
                                         .forkTreeFromEntity(entity);
 
-                                    console.log('🧪 Forked tree:', {
-                                        treeId,
-                                        rootId,
-                                        fromEntity: entity.id,
-                                    });
 
                                     router.push(`/(drawer)/(composer)/${treeId}/${rootId}`);
                                 } catch (err) {

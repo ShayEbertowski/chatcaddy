@@ -4,6 +4,7 @@ import { v4 as uuid } from 'uuid';
 import { supabase } from '../lib/supabaseClient';
 import { IndexedEntity } from '../types/entity';
 import { forkTreeFrom } from '../utils/composer/forkTreeFrom';
+import { router } from 'expo-router';
 
 //
 // ─── TYPES ────────────────────────────────────────────────────────────────
@@ -39,10 +40,11 @@ export interface ComposerStoreState {
     listTrees: () => Promise<void>;
     createEmptyTree: () => Promise<{ treeId: string; rootId: string }>;
     forkTreeFromEntity: (entity: IndexedEntity) => Promise<{ treeId: string; rootId: string }>;
-    forkTreeFromTreeId: (sourceTreeId: string) => Promise<{ treeId: string; rootId: string }>; // ⬅️ NEW
+    forkTreeFromTreeId: (sourceTreeId: string) => Promise<{ treeId: string; rootId: string }>;
 
     updateNode: (id: string, patch: Partial<ComposerNode>) => void;
     addChild: (parentId: string, child: ComposerNode) => void;
+    insertChildNode: (parentId: string, name: string) => void;
 }
 
 //
@@ -55,7 +57,6 @@ export const useComposerStore = create<ComposerStoreState>()(
             composerTree: null,
             availableTrees: [],
 
-            /* ── Load full tree ─────────────────────────────────── */
             async loadTree(treeId) {
                 console.log('🧪 loadTree() called with:', treeId);
 
@@ -68,11 +69,9 @@ export const useComposerStore = create<ComposerStoreState>()(
                 if (error) throw new Error(error.message);
                 if (!data) throw new Error('Tree not found');
 
-                // 🔀 Try new schema first
                 let nodes = data.nodes ?? {};
                 let rootId = data.root_id ?? null;
 
-                // 🔙 Fallback to legacy schema if needed
                 if ((!rootId || Object.keys(nodes).length === 0) && data.tree_data) {
                     try {
                         const legacy = typeof data.tree_data === 'string'
@@ -86,7 +85,6 @@ export const useComposerStore = create<ComposerStoreState>()(
                     }
                 }
 
-                // 🛡️ Safety check
                 if (!rootId || !nodes[rootId]) {
                     throw new Error('Invalid tree structure: missing root node.');
                 }
@@ -103,7 +101,6 @@ export const useComposerStore = create<ComposerStoreState>()(
                 });
             },
 
-            /* ── Save tree + index root ─────────────────────────── */
             async saveTree() {
                 const { composerTree, activeTreeId } = get();
                 if (!composerTree) throw new Error('Nothing to save');
@@ -115,7 +112,6 @@ export const useComposerStore = create<ComposerStoreState>()(
                     updatedAt: now,
                 };
 
-                // 🛡️ rootId check
                 let root = treeToSave.nodes[treeToSave.rootId];
                 if (!root) {
                     const fallbackId = Object.keys(treeToSave.nodes)[0];
@@ -139,8 +135,8 @@ export const useComposerStore = create<ComposerStoreState>()(
                     tree_id: treeToSave.id,
                     title: root.title || 'Untitled',
                     entity_type: root.entityType,
-                    content: root.content,                    // ✅ full content now saved
-                    preview: root.content.slice(0, 160),      // 🧪 optional preview snippet
+                    content: root.content,
+                    preview: root.content.slice(0, 160),
                     updated_at: now,
                 });
 
@@ -148,8 +144,6 @@ export const useComposerStore = create<ComposerStoreState>()(
                 return treeToSave.id;
             },
 
-
-            /* ── Create empty tree ──────────────────────────────── */
             async createEmptyTree() {
                 const id = uuid();
                 const rootId = uuid();
@@ -185,7 +179,6 @@ export const useComposerStore = create<ComposerStoreState>()(
                 return { treeId: id, rootId };
             },
 
-            /* ── List trees ─────────────────────────────────────── */
             async listTrees() {
                 const { data, error } = await supabase
                     .from('composer_trees')
@@ -196,7 +189,6 @@ export const useComposerStore = create<ComposerStoreState>()(
                 set({ availableTrees: data ?? [] });
             },
 
-            /* ── Update node ────────────────────────────────────── */
             updateNode(id, patch) {
                 set((s) => {
                     if (!s.composerTree) return s;
@@ -215,7 +207,6 @@ export const useComposerStore = create<ComposerStoreState>()(
                 });
             },
 
-            /* ── Add child ──────────────────────────────────────── */
             addChild(parentId, child) {
                 set((s) => {
                     if (!s.composerTree) return s;
@@ -239,26 +230,49 @@ export const useComposerStore = create<ComposerStoreState>()(
                 });
             },
 
-            /* ── Clear (logout) ─────────────────────────────────── */
+            insertChildNode(parentId, name) {
+                const state = get();
+                const tree = structuredClone(state.composerTree);
+                if (!tree) return;
+
+                const childId = uuid();
+                const now = new Date().toISOString();
+
+                const newNode: ComposerNode = {
+                    id: childId,
+                    title: name,
+                    content: '',
+                    entityType: 'Prompt',
+                    variables: {},
+                    childIds: [],
+                    updatedAt: now,
+                };
+
+                tree.nodes[childId] = newNode;
+                tree.nodes[parentId].childIds.push(childId);
+                tree.updatedAt = now;
+
+                set({ composerTree: tree });
+                router.push(`/(drawer)/(composer)/${tree.id}/${childId}`);
+            },
+
             clearTree() {
                 set({ activeTreeId: null, composerTree: null });
             },
 
-            /* ── Shallow fork from indexed entity (still useful) ── */
             forkTreeFromEntity: async (entity: IndexedEntity) => {
                 const id = uuid();
                 const rootId = uuid();
                 const now = new Date().toISOString();
 
-                console.log('📦 entity.content:', entity.content); // ← Add this
-
+                console.log('📦 entity.content:', entity.content);
 
                 const root: ComposerNode = {
                     id: rootId,
                     title: entity.title?.trim() || 'Untitled',
                     content: entity.content?.trim(),
                     entityType: (entity.entityType as NodeKind) ?? 'Prompt',
-                    variables: {}, // Optionally parse from entity.variables if needed
+                    variables: {},
                     childIds: [],
                     updatedAt: now,
                 };
@@ -279,23 +293,13 @@ export const useComposerStore = create<ComposerStoreState>()(
                     updated_at: now,
                 });
 
-                console.log('✅ Forked from entity:', {
-                    id,
-                    rootId,
-                    title: root.title,
-                    content: root.content,
-                    entityType: root.entityType,
-                });
-
                 set({ activeTreeId: id, composerTree: forkedTree });
                 return { treeId: id, rootId };
             },
 
-
-            /* ── 🔥 Full fork from existing tree ID + hydrate ───── */
             forkTreeFromTreeId: async (sourceTreeId) => {
                 const { treeId, rootId } = await forkTreeFrom(sourceTreeId);
-                await get().loadTree(treeId);           // hydrate Zustand
+                await get().loadTree(treeId);
                 return { treeId, rootId };
             },
         }))

@@ -1,62 +1,65 @@
 // src/stores/useComposerEditingState.ts
 import { useEffect, useMemo, useRef } from 'react';
+import { router } from 'expo-router';
 import { generateUUIDSync } from '../utils/uuid/generateUUIDSync';
 import { getNodePath } from '../utils/composer/pathUtils';
+
 import {
     useComposerStore,
     ComposerNode,
-    ComposerTree,
 } from './useComposerStore';
 
 /**
- * A *thin* wrapper around useComposerStore that exposes exactly
- * what ComposerNodeScreen needs, without maintaining a separate
- * “draft” state that can drift out of sync.
+ * Very thin wrapper around Zustand – no draft state.
  */
 export function useComposerEditingState(treeId?: string, nodeId?: string) {
-    /* ---------- Store Selectors ---------- */
+    /* ---------- Store helpers ---------- */
     const composerTree = useComposerStore((s) => s.composerTree);
     const loadTree = useComposerStore((s) => s.loadTree);
     const saveTree = useComposerStore((s) => s.saveTree);
-    const updateNodeInStore = useComposerStore((s) => s.updateNode);
+    const updateNodeRaw = useComposerStore((s) => s.updateNode);
     const addChild = useComposerStore((s) => s.addChild);
 
-    /* ---------- Load tree once on mount ---------- */
     const hasLoaded = useRef(false);
+
+    /* ---------- Load tree (only if needed) ---------- */
     useEffect(() => {
         if (!treeId || hasLoaded.current) return;
+
+        const cached = useComposerStore.getState().composerTree;
+        const cacheOK =
+            cached?.id === treeId &&
+            (!nodeId || !!cached.nodes[nodeId]);
+
+        if (cacheOK) {
+            hasLoaded.current = true;              // already hydrated
+            return;
+        }
+
         hasLoaded.current = true;
         loadTree(treeId).catch(console.error);
-    }, [treeId]);
+    }, [treeId, nodeId]);
 
-    /* ---------- Derive current node & path ---------- */
-    const currentNode = useMemo<ComposerNode | null>(() => {
-        if (!composerTree || !nodeId) return null;
-        return composerTree.nodes[nodeId] ?? null;
-    }, [composerTree, nodeId]);
-
+    /* ---------- Derive path (breadcrumb) ---------- */
     const nodePath = useMemo(() => {
         if (!composerTree || !nodeId) return [];
         const root = composerTree.nodes[composerTree.rootId];
-        if (!root) return [];
-        return getNodePath(root as any, nodeId);
+        return root ? getNodePath(root as any, nodeId) : [];
     }, [composerTree, nodeId]);
-
-    const rootNode = composerTree
-        ? composerTree.nodes[composerTree.rootId] ?? null
-        : null;
 
     /* ---------- Update helpers ---------- */
     function updateNode(patch: Partial<ComposerNode>) {
-        if (!currentNode) return;
-        updateNodeInStore(currentNode.id, patch);
+        if (!nodeId) return;
+        updateNodeRaw(nodeId, patch);
     }
 
-    /** Insert a new child under the current node */
+    /** Create child then navigate */
     function insertChildNode(title: string) {
-        if (!currentNode) return;
+        if (!nodeId || !treeId) return;
 
         const childId = generateUUIDSync();
+        const now = new Date().toISOString();
+
         const child: ComposerNode = {
             id: childId,
             title,
@@ -64,15 +67,14 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
             entityType: 'Prompt',
             variables: {},
             childIds: [],
-            updatedAt: new Date().toISOString(),
+            updatedAt: now,
         };
 
-        addChild(currentNode.id, child);
+        addChild(nodeId, child);                         // adds + links
+        router.push(`/(drawer)/(composer)/${treeId}/${childId}`);
     }
 
     return {
-        rootNode,
-        currentNode,
         nodePath,
         updateNode,
         insertChildNode,

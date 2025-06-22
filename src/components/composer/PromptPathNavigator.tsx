@@ -11,9 +11,9 @@ import Animated, {
     withTiming,
     useAnimatedStyle,
 } from 'react-native-reanimated';
-import { ComposerNode } from '../../core/types/composer';
 import { useColors } from '../../hooks/useColors';
 import { router } from 'expo-router';
+import { ComposerNode } from '../../stores/useComposerStore';
 
 type Props = {
     treeId: string;
@@ -59,7 +59,6 @@ export default function PromptPathNavigator({
         paddingHorizontal: 4,
     }));
 
-    console.log('🐒')
 
     return (
         <View style={styles.container}>

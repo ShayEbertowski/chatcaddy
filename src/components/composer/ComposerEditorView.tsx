@@ -24,10 +24,6 @@ export function ComposerEditorView({
     onChipPress,
     onSaveTree,
 }: ComposerEditorViewProps) {
-    console.log('🎯 ComposerEditorView mounted');
-    console.log('TreeId:', treeId);
-    console.log('Node:', currentNode);
-    console.log('Content:', currentNode.content);
 
     const allowedTypes = ['Prompt', 'Function', 'Snippet'] as const;
     const fallbackType = allowedTypes.includes(currentNode.entityType as any)
@@ -40,7 +36,7 @@ export function ComposerEditorView({
                 treeId={treeId}
                 nodePath={nodePath}
                 currentNode={currentNode}
-                readOnly={false}
+                readOnly={false} 
                 scrollIntoLast={true}
             />
 
