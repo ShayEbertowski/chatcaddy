@@ -22,7 +22,7 @@ export function CustomDrawerContent(props: any) {
 
                 <DrawerItem
                     label="Home"
-                    onPress={() => props.navigation.navigate('(tabs)', { screen: 'library' })}
+                    onPress={() => props.navigation.navigate('(tabs)', { screen: 'composer' })}
                     icon={({ color, size }) => (
                         <Ionicons name="home-outline" color={colors.accent} size={size} />
                     )}

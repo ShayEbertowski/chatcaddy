@@ -4,8 +4,6 @@ import { View, TouchableOpacity } from 'react-native';
 import UserAvatar from '../../../src/components/shared/UserAvatar';
 import { useColors } from '../../../src/hooks/useColors';
 import { useThemeStore } from '../../../src/stores/useThemeStore';
-import { useEditorStore } from '../../../src/stores/useEditorStore';
-import { useVariableStore } from '../../../src/stores/useVariableStore';
 
 export default function TabLayout() {
     const router = useRouter();
@@ -13,17 +11,16 @@ export default function TabLayout() {
     const toggle = useThemeStore((s) => s.toggle);
 
     const icons = {
-        library: 'library-outline',
+        entry: 'rocket-outline',
         sandbox: 'flask-outline',
-        'entry': 'rocket-outline',
+        library: 'library-outline',
     } as const;
 
     const labels = {
-        library: 'Library',
+        entry: 'Composer',
         sandbox: 'Sandbox',
-        'entry': 'Composer',
+        library: 'Library',
     } as const;
-
 
     return (
         <Tabs
@@ -54,22 +51,17 @@ export default function TabLayout() {
                 ),
             })}
         >
-            <Tabs.Screen
-                name="library"
-            />
+            <Tabs.Screen name="entry" />
             <Tabs.Screen
                 name="sandbox"
                 listeners={{
                     tabPress: (e) => {
                         e.preventDefault();
-                        useEditorStore.getState().clearEditingEntity();
-                        useVariableStore.getState().clearAll();
                         router.replace('/(drawer)/(tabs)/2-sandbox');
                     },
                 }}
             />
-            <Tabs.Screen name="entry" />
-
+            <Tabs.Screen name="library" />
         </Tabs>
     );
 }

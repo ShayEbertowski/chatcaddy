@@ -1,3 +1,5 @@
+// src/components/composer/PromptPathNavigator.tsx
+
 import React, { useRef, useEffect } from 'react';
 import {
     View,
@@ -59,7 +61,6 @@ export default function PromptPathNavigator({
         paddingHorizontal: 4,
     }));
 
-
     return (
         <View style={styles.container}>
             <ScrollView
@@ -74,10 +75,12 @@ export default function PromptPathNavigator({
                     return (
                         <View key={node.id} style={styles.pathItem}>
                             <TouchableOpacity
-                                disabled={isLast || readOnly}
-                                onPress={() =>
-                                    router.push(`/(drawer)/(composer)/${treeId}/${node.id}`)
-                                }
+                                disabled={readOnly}
+                                onPress={() => {
+                                    if (!isLast) {
+                                        router.push(`/(drawer)/(composer)/${treeId}/${node.id}`);
+                                    }
+                                }}
                             >
                                 {isLast ? (
                                     <Animated.View style={animatedFlashStyle}>
@@ -103,7 +106,7 @@ export default function PromptPathNavigator({
 const getStyles = (colors: ReturnType<typeof useColors>) =>
     StyleSheet.create({
         container: {
-            marginTop: 8, // ⬅️ New: adds breathing room under notch/header
+            marginTop: 8,
             marginBottom: 12,
         },
         label: {

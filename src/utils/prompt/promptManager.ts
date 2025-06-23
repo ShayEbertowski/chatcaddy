@@ -1,20 +1,22 @@
 import { v4 as uuidv4 } from 'uuid';
-import { PromptPart, Variable, VariableValue } from '../../types/prompt';
+import { PromptPart, Variable } from '../../types/prompt';
 import { cleanPromptVariables } from './cleanPrompt';
 import { useVariableStore } from '../../stores/useVariableStore';
 import { generateSmartTitle } from './generateSmartTitle';
 import { Entity } from '../../types/entity';
 
-// Normalize variables: ensure richCapable is always set for string types
-export function normalizeVariables(variables: Record<string, Variable>): Record<string, Variable> {
+/* ──────────────────────────────────────────────────────────── */
+/*  Helpers: variables                                          */
+/* ──────────────────────────────────────────────────────────── */
+
+export function normalizeVariables(
+    variables: Record<string, Variable>
+): Record<string, Variable> {
     const result: Record<string, Variable> = {};
 
     Object.entries(variables).forEach(([name, variable]) => {
         if (variable.type === 'string') {
-            result[name] = {
-                ...variable,
-                richCapable: variable.richCapable ?? true, // default to true
-            };
+            result[name] = { ...variable, richCapable: variable.richCapable ?? true };
         } else {
             result[name] = variable;
         }
@@ -23,7 +25,10 @@ export function normalizeVariables(variables: Record<string, Variable>): Record<
     return result;
 }
 
-// Prepare a new or updated prompt entity for saving
+/* ──────────────────────────────────────────────────────────── */
+/*  Prompt save utilities                                       */
+/* ──────────────────────────────────────────────────────────── */
+
 export function preparePromptToSave({
     id,
     inputText,
@@ -50,28 +55,40 @@ export function preparePromptToSave({
     };
 }
 
-// Generate smart title from content
 export async function getSmartTitle(inputText: string): Promise<string> {
     const raw = await generateSmartTitle(inputText);
     return raw.trim().replace(/^["']+|["']+$/g, '');
 }
 
-// Parse {{variable}} chunks out of raw prompt content
-export function parsePromptParts(raw: string): PromptPart[] {
+/* ──────────────────────────────────────────────────────────── */
+/*  Prompt parsing                                              */
+/* ──────────────────────────────────────────────────────────── */
+
+/**
+ * Break raw prompt text into chunks of `{ type: 'text' } | { type: 'variable' }`
+ * Guards against undefined or empty input.
+ */
+export function parsePromptParts(raw: string | undefined): PromptPart[] {
+    if (!raw) return [];
+
     const splitParts = raw.split(/({{.*?}})/g);
 
-    return splitParts.map(part => {
+    return splitParts.map<PromptPart>((part) => {
         const match = part.match(/^{{\s*(.*?)\s*}}$/);
         if (match) {
-            const name = match[1]!;
-            return { type: 'variable', name };
+            return { type: 'variable', name: match[1] };
         }
         return { type: 'text', value: part };
     });
 }
 
-// Extract initial values from variable definitions (for UI hydration)
-export function extractInitialValues(variables: Record<string, Variable>): Record<string, string> {
+/* ──────────────────────────────────────────────────────────── */
+/*  Variable helpers                                            */
+/* ──────────────────────────────────────────────────────────── */
+
+export function extractInitialValues(
+    variables: Record<string, Variable>
+): Record<string, string> {
     const result: Record<string, string> = {};
 
     Object.entries(variables).forEach(([name, variable]) => {
@@ -85,42 +102,33 @@ export function extractInitialValues(variables: Record<string, Variable>): Recor
     return result;
 }
 
-// Factory: create a new string variable
 export function createVariable(
-    value: string = '',
-    richCapable: boolean = true
+    value = '',
+    richCapable = true
 ): Variable {
-    return {
-        type: 'string',
-        value,
-        richCapable,
-    };
+    return { type: 'string', value, richCapable };
 }
 
-// Utility: load variables into variable store for editing
-export function loadVariablesIntoStore(variables: Record<string, Variable> | undefined) {
+export function loadVariablesIntoStore(
+    variables: Record<string, Variable> | undefined
+) {
     if (!variables) return;
-
-    const setVariable = useVariableStore.getState().setVariable;
-    Object.entries(variables).forEach(([name, variable]) => {
-        setVariable(name, variable);
-    });
+    const { setVariable } = useVariableStore.getState();
+    Object.entries(variables).forEach(([name, variable]) =>
+        setVariable(name, variable)
+    );
 }
 
-// Utility: pull variables from store for saving
 export function extractVariablesFromStore(): Record<string, Variable> {
     return useVariableStore.getState().values;
 }
 
-// Factory: create default blank variables from list of names
-export function createDefaultVariables(variableNames: string[]): Record<string, Variable> {
+export function createDefaultVariables(
+    variableNames: string[]
+): Record<string, Variable> {
     const result: Record<string, Variable> = {};
     variableNames.forEach((name) => {
-        result[name] = {
-            type: 'string',
-            value: '',
-            richCapable: true,
-        };
+        result[name] = { type: 'string', value: '', richCapable: true };
     });
     return result;
 }

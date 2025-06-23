@@ -230,6 +230,7 @@ export const useComposerStore = create<ComposerStoreState>()(
                 });
             },
 
+
             insertChildNode(parentId, name) {
                 const state = get();
                 const tree = structuredClone(state.composerTree);

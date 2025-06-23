@@ -7,22 +7,22 @@ import { Snackbar } from 'react-native-paper';
 import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
 import { useColors } from '../../../../src/hooks/useColors';
 import { useComposerEditingState } from '../../../../src/stores/useComposerEditingState';
-import { useComposerStore } from '../../../../src/stores/useComposerStore';
+import { useComposerStore, ComposerNode } from '../../../../src/stores/useComposerStore';
 import { ComposerEditorView } from '../../../../src/components/composer/ComposerEditorView';
 import SavePromptModal from '../../../../src/components/modals/SavePromptModal';
 import { generateSmartTitle } from '../../../../src/utils/prompt/generateSmartTitle';
-import { ComposerNode } from '../../../../src/stores/useComposerStore';
 
 const goHome = () => startTransition(() => router.replace('/entry'));
 
 export default function ComposerNodeScreen() {
-    /* ─── Route params ───────────────────────────────────── */
-    const { treeId, nodeId } =
-        useLocalSearchParams<{ treeId: string; nodeId: string }>();
+    const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
+    const screenKey = `${treeId}-${nodeId}`;
+    return <ComposerNodeScreenInner key={screenKey} treeId={treeId} nodeId={nodeId} />;
+}
 
+function ComposerNodeScreenInner({ treeId, nodeId }: { treeId: string; nodeId: string }) {
     const colors = useColors();
 
-    /* ─── Editing helpers (create child, save, etc.) ─────── */
     const {
         nodePath,
         updateNode,
@@ -31,10 +31,8 @@ export default function ComposerNodeScreen() {
         loadTree,
     } = useComposerEditingState(treeId, nodeId);
 
-    /* ─── Global state ───────────────────────────────────── */
     const composerTree = useComposerStore((s) => s.composerTree);
 
-    /* ─── UI state ───────────────────────────────────────── */
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
     const [saveTitle, setSaveTitle] = useState('');
@@ -43,7 +41,6 @@ export default function ComposerNodeScreen() {
 
     const loadedOnce = useRef(false);
 
-    /* ─── Initial tree load (skip if already cached) ─────── */
     useEffect(() => {
         if (!treeId || loadedOnce.current) return;
 
@@ -57,11 +54,7 @@ export default function ComposerNodeScreen() {
         loadTree(treeId).catch(console.error);
     }, [treeId]);
 
-    /* ─── Spinner guard: wait for tree + node ─────────────── */
-    if (
-        !composerTree ||                     // tree not yet in Zustand
-        (nodeId && !composerTree.nodes[nodeId]) // node not present yet
-    ) {
+    if (!composerTree || (nodeId && !composerTree.nodes[nodeId])) {
         return (
             <ThemedSafeArea>
                 <ActivityIndicator size="large" color={colors.primary} />
@@ -69,10 +62,8 @@ export default function ComposerNodeScreen() {
         );
     }
 
-    /* By this point, currentNode is definitely defined */
-    const node = composerTree.nodes[nodeId!] as ComposerNode;
+    const node = composerTree.nodes[nodeId] as ComposerNode;
 
-    /* ─── Save helpers ───────────────────────────────────── */
     const handleSavePress = async () => {
         if (!node.content.trim()) return;
         setIsGeneratingTitle(true);
@@ -99,7 +90,6 @@ export default function ComposerNodeScreen() {
         }
     };
 
-    /* ─── Render ─────────────────────────────────────────── */
     return (
         <ThemedSafeArea>
             <View style={{ flex: 1, paddingHorizontal: 16 }}>
