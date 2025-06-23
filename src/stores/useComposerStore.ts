@@ -10,280 +10,289 @@ import { router } from 'expo-router';
 export type NodeKind = 'Prompt' | 'Function' | 'Snippet';
 
 export interface ComposerNode {
-  id: string;
-  title: string;
-  content: string;
-  entityType: NodeKind;
-  variables: Record<string, unknown>;
-  childIds: string[];
-  updatedAt: string;
+    id: string;
+    title: string;
+    content: string;
+    entityType: NodeKind;
+    variables: Record<string, unknown>;
+    childIds: string[];
+    updatedAt: string;
 }
 
 export interface ComposerTree {
-  id: string;
-  name: string;
-  rootId: string;
-  nodes: Record<string, ComposerNode>;
-  updatedAt: string;
+    id: string;
+    name: string;
+    rootId: string;
+    nodes: Record<string, ComposerNode>;
+    updatedAt: string;
 }
 
 export interface ComposerStoreState {
-  activeTreeId: string | null;
-  composerTree: ComposerTree | null;
-  availableTrees: { id: string; name: string }[];
+    activeTreeId: string | null;
+    composerTree: ComposerTree | null;
+    availableTrees: { id: string; name: string }[];
 
-  loadTree: (treeId: string) => Promise<void>;
-  saveTree: () => Promise<string>;
-  clearTree: () => void;
-  listTrees: () => Promise<void>;
-  createEmptyTree: () => Promise<{ treeId: string; rootId: string }>;
-  forkTreeFromEntity: (
-    entity: IndexedEntity
-  ) => Promise<{ treeId: string; rootId: string }>;
-  forkTreeFromTreeId: (
-    sourceTreeId: string
-  ) => Promise<{ treeId: string; rootId: string }>;
+    loadTree: (treeId: string) => Promise<void>;
+    saveTree: () => Promise<string>;
 
-  updateNode: (id: string, patch: Partial<ComposerNode>) => void;
-  addChild: (parentId: string, child: ComposerNode) => void;
-  insertChildNode: (parentId: string, name: string) => void;
+    clearTree: () => void;
+    listTrees: () => Promise<void>;
+    createEmptyTree: () => Promise<{ treeId: string; rootId: string }>;
+
+    forkTreeFromEntity: (e: IndexedEntity) => Promise<{ treeId: string; rootId: string }>;
+    forkTreeFromTreeId: (id: string) => Promise<{ treeId: string; rootId: string }>;
+
+    updateNode: (id: string, patch: Partial<ComposerNode>) => void;
+    addChild: (parentId: string, child: ComposerNode) => void;
+    insertChildNode: (parentId: string, name: string, initialContent?: string) => Promise<void>;
 }
 
 /* ─── STORE ─────────────────────────────────────────── */
 export const useComposerStore = create<ComposerStoreState>()(
-  devtools(
-    subscribeWithSelector((set, get) => ({
-      activeTreeId: null,
-      composerTree: null,
-      availableTrees: [],
+    devtools(
+        subscribeWithSelector((set, get) => ({
+            activeTreeId: null,
+            composerTree: null,
+            availableTrees: [],
 
-      /* ── Load full tree (from composer_trees) ───────── */
-      async loadTree(treeId) {
-        const { data, error } = await supabase
-          .from('composer_trees')
-          .select('*')
-          .eq('id', treeId)
-          .maybeSingle();
+            async loadTree(treeId) {
+                const { data, error } = await supabase
+                    .from('composer_trees')
+                    .select('*')
+                    .eq('id', treeId)
+                    .maybeSingle();
 
-        if (error) throw new Error(error.message);
-        if (!data) throw new Error('Tree not found');
+                if (error) throw error;
+                if (!data) throw new Error('Tree not found');
 
-        const nodes = data.nodes ?? {};
-        const rootId = data.root_id;
+                const { id, name, root_id, nodes, updated_at } = data;
+                if (!root_id || !nodes[root_id]) throw new Error('Bad tree blob');
 
-        if (!rootId || !nodes[rootId]) {
-          throw new Error('Invalid tree: missing root');
-        }
-
-        set({
-          activeTreeId: data.id,
-          composerTree: {
-            id: data.id,
-            name: data.name,
-            rootId,
-            nodes,
-            updatedAt: data.updated_at,
-          },
-        });
-      },
-
-      /* ── Save tree + upsert every node ──────────────── */
-      async saveTree() {
-        const { composerTree, activeTreeId } = get();
-        if (!composerTree) throw new Error('Nothing to save');
-
-        const now = new Date().toISOString();
-        const treeToSave: ComposerTree = {
-          ...composerTree,
-          id: activeTreeId ?? composerTree.id ?? uuid(),
-          updatedAt: now,
-        };
-
-        /* Upsert composer_trees (full blob) */
-        const { error: treeErr } = await supabase.from('composer_trees').upsert({
-          id: treeToSave.id,
-          name: treeToSave.name || 'Untitled',
-          root_id: treeToSave.rootId,
-          nodes: treeToSave.nodes,
-          updated_at: now,
-        });
-        if (treeErr) throw treeErr;
-
-        /* 🔧 NEW: upsert EVERY node to indexed_entities */
-        const nodeList = Object.values(treeToSave.nodes);
-        const nodeResults = await Promise.all(
-          nodeList.map((node) =>
-            supabase.from('indexed_entities').upsert({
-              id: node.id,
-              tree_id: treeToSave.id,
-              title: node.title || 'Untitled',
-              entity_type: node.entityType,
-              content: node.content,
-              updated_at: node.updatedAt || now,
-            })
-          )
-        );
-        const nodeError = nodeResults.find((r) => r.error)?.error;
-        if (nodeError) throw nodeError;
-
-        set({ activeTreeId: treeToSave.id, composerTree: treeToSave });
-        return treeToSave.id;
-      },
-
-      /* ── Create empty tree (root only) ──────────────── */
-      async createEmptyTree() {
-        const id = uuid();
-        const rootId = uuid();
-        const now = new Date().toISOString();
-
-        const root: ComposerNode = {
-          id: rootId,
-          title: '',
-          content: '',
-          entityType: 'Prompt',
-          variables: {},
-          childIds: [],
-          updatedAt: now,
-        };
-
-        const freshTree: ComposerTree = {
-          id,
-          name: 'Untitled',
-          rootId,
-          nodes: { [rootId]: root },
-          updatedAt: now,
-        };
-
-        await supabase.from('composer_trees').insert({
-          id,
-          name: freshTree.name,
-          root_id: rootId,
-          nodes: freshTree.nodes,
-          updated_at: now,
-        });
-
-        set({ activeTreeId: id, composerTree: freshTree });
-        return { treeId: id, rootId };
-      },
-
-      /* ── Misc helpers (list, update, etc.) ──────────── */
-      async listTrees() {
-        const { data, error } = await supabase
-          .from('composer_trees')
-          .select('id, name')
-          .order('updated_at', { ascending: false });
-        if (error) throw error;
-        set({ availableTrees: data ?? [] });
-      },
-
-      updateNode(id, patch) {
-        set((s) => {
-          if (!s.composerTree) return s;
-          const node = {
-            ...s.composerTree.nodes[id],
-            ...patch,
-            updatedAt: new Date().toISOString(),
-          };
-          return {
-            composerTree: {
-              ...s.composerTree,
-              nodes: { ...s.composerTree.nodes, [id]: node },
-              updatedAt: node.updatedAt,
+                set({
+                    activeTreeId: id,
+                    composerTree: {
+                        id,
+                        name,
+                        rootId: root_id,
+                        nodes,
+                        updatedAt: updated_at,
+                    },
+                });
             },
-          };
-        });
-      },
 
-      addChild(parentId, child) {
-        set((s) => {
-          if (!s.composerTree) return s;
-          const parent = s.composerTree.nodes[parentId];
-          const updatedParent = {
-            ...parent,
-            childIds: [...parent.childIds, child.id],
-            updatedAt: new Date().toISOString(),
-          };
-          return {
-            composerTree: {
-              ...s.composerTree,
-              nodes: {
-                ...s.composerTree.nodes,
-                [parentId]: updatedParent,
-                [child.id]: child,
-              },
-              updatedAt: updatedParent.updatedAt,
+            async saveTree() {
+                const { composerTree } = get();
+                if (!composerTree) throw new Error('Nothing to save');
+
+                const now = new Date().toISOString();
+                const treeId = composerTree.id || uuid();
+                const nodes = composerTree.nodes;
+                const rootId = composerTree.rootId;
+                const treeName = nodes[rootId].title?.trim() || 'Untitled';
+
+                const { error: treeErr } = await supabase.from('composer_trees').upsert({
+                    id: treeId,
+                    name: treeName,
+                    root_id: rootId,
+                    nodes,
+                    updated_at: now,
+                });
+                if (treeErr) throw treeErr;
+
+                const nodeList = Object.values(nodes);
+                const promises = nodeList.map((n) =>
+                    supabase.from('indexed_entities').upsert({
+                        id: n.id,
+                        tree_id: treeId,
+                        is_root: n.id === rootId,
+                        title: n.title || 'Untitled',
+                        entity_type: n.entityType,
+                        content: n.content,
+                        updated_at: n.updatedAt || now,
+                    })
+                );
+                const nodeErr = (await Promise.all(promises)).find((r) => r.error)?.error;
+                if (nodeErr) throw nodeErr;
+
+                set({
+                    activeTreeId: treeId,
+                    composerTree: { ...composerTree, id: treeId, updatedAt: now },
+                });
+                return treeId;
             },
-          };
-        });
-      },
 
-      insertChildNode(parentId, name) {
-        const now = new Date().toISOString();
-        const childId = uuid();
-        const newNode: ComposerNode = {
-          id: childId,
-          title: name,
-          content: '',
-          entityType: 'Prompt',
-          variables: {},
-          childIds: [],
-          updatedAt: now,
-        };
+            async listTrees() {
+                const { data, error } = await supabase
+                    .from('indexed_entities')
+                    .select('tree_id,title')
+                    .eq('is_root', true)
+                    .order('updated_at', { ascending: false });
 
-        get().addChild(parentId, newNode);
+                if (error) throw error;
+                set({
+                    availableTrees: data?.map((d) => ({ id: d.tree_id, name: d.title })) ?? [],
+                });
+            },
 
-        /* 🔧 ALWAYS navigate, even if already on that node */
-        const treeId = get().composerTree?.id;
-        if (treeId) {
-          router.push(`/(drawer)/(composer)/${treeId}/${childId}`);
-        }
-      },
+            async createEmptyTree() {
+                const id = uuid();
+                const rootId = uuid();
+                const now = new Date().toISOString();
 
-      clearTree() {
-        set({ activeTreeId: null, composerTree: null });
-      },
+                const root: ComposerNode = {
+                    id: rootId,
+                    title: '',
+                    content: '',
+                    entityType: 'Prompt',
+                    variables: {},
+                    childIds: [],
+                    updatedAt: now,
+                };
 
-      /* ── Fork helpers unchanged ─────────────────────── */
-      forkTreeFromEntity: async (entity) => {
-        const id = uuid();
-        const rootId = uuid();
-        const now = new Date().toISOString();
+                const freshTree: ComposerTree = {
+                    id,
+                    name: 'Untitled',
+                    rootId,
+                    nodes: { [rootId]: root },
+                    updatedAt: now,
+                };
 
-        const root: ComposerNode = {
-          id: rootId,
-          title: entity.title?.trim() || 'Untitled',
-          content: entity.content?.trim(),
-          entityType: (entity.entityType as NodeKind) ?? 'Prompt',
-          variables: {},
-          childIds: [],
-          updatedAt: now,
-        };
+                await supabase.from('composer_trees').insert({
+                    id,
+                    name: freshTree.name,
+                    root_id: rootId,
+                    nodes: freshTree.nodes,
+                    updated_at: now,
+                });
 
-        const forkedTree: ComposerTree = {
-          id,
-          name: root.title,
-          rootId,
-          nodes: { [rootId]: root },
-          updatedAt: now,
-        };
+                await supabase.from('indexed_entities').insert({
+                    id: rootId,
+                    tree_id: id,
+                    is_root: true,
+                    title: '',
+                    entity_type: 'Prompt',
+                    content: '',
+                    updated_at: now,
+                });
 
-        await supabase.from('composer_trees').insert({
-          id,
-          name: forkedTree.name,
-          root_id: rootId,
-          nodes: forkedTree.nodes,
-          updated_at: now,
-        });
+                set({ activeTreeId: id, composerTree: freshTree });
+                return { treeId: id, rootId };
+            },
 
-        set({ activeTreeId: id, composerTree: forkedTree });
-        return { treeId: id, rootId };
-      },
+            updateNode(id, patch) {
+                const tree = get().composerTree;
+                if (!tree) return;
 
-      forkTreeFromTreeId: async (sourceTreeId) => {
-        const { treeId, rootId } = await forkTreeFrom(sourceTreeId);
-        await get().loadTree(treeId);
-        return { treeId, rootId };
-      },
-    }))
-  )
+                const node = tree.nodes[id];
+                if (!node) return;
+
+                const updatedNode: ComposerNode = {
+                    ...node,
+                    ...patch,
+                    updatedAt: new Date().toISOString(),
+                };
+
+                set({
+                    composerTree: {
+                        ...tree,
+                        nodes: {
+                            ...tree.nodes,
+                            [id]: updatedNode,
+                        },
+                    },
+                });
+            },
+
+            addChild(parentId, child) {
+                const tree = get().composerTree;
+                if (!tree) return;
+
+                const parent = tree.nodes[parentId];
+                if (!parent) return;
+
+                set({
+                    composerTree: {
+                        ...tree,
+                        nodes: {
+                            ...tree.nodes,
+                            [child.id]: child,
+                            [parentId]: {
+                                ...parent,
+                                childIds: [...parent.childIds, child.id],
+                            },
+                        },
+                    },
+                });
+            },
+
+            async insertChildNode(parentId, name, initialContent = '') {
+                const tree = get().composerTree;
+                if (!tree) throw new Error('No active tree');
+
+                const childId = uuid();
+                const now = new Date().toISOString();
+
+                const newNode: ComposerNode = {
+                    id: childId,
+                    title: name,
+                    content: initialContent,
+                    entityType: 'Prompt',
+                    variables: {},
+                    childIds: [],
+                    updatedAt: now,
+                };
+
+                get().addChild(parentId, newNode);
+
+                try {
+                    const { error } = await supabase.from('indexed_entities').upsert({
+                        id: childId,
+                        tree_id: tree.id,
+                        is_root: false,
+                        title: name,
+                        entity_type: 'Prompt',
+                        content: initialContent,
+                        updated_at: now,
+                    });
+
+                    if (error) {
+                        console.error('⚠️ Failed to upsert child node:', error);
+                    }
+                } catch (err) {
+                    console.error('⚠️ Unexpected error during child node upsert:', err);
+                }
+
+                router.push(`/(drawer)/(composer)/${tree.id}/${childId}`);
+            },
+
+            forkTreeFromEntity: async (e) => {
+                const { treeId, rootId } = await forkTreeFrom(e.tree_id);
+                await get().loadTree(treeId);
+
+                const tree = get().composerTree;
+                console.log('🌳 Forked tree:', {
+                    treeId,
+                    rootId,
+                    hasRoot: !!tree?.nodes?.[rootId],
+                    nodeKeys: Object.keys(tree?.nodes ?? {}),
+                });
+
+                setTimeout(() => {
+                    router.push(`/(drawer)/(composer)/${treeId}/${rootId}`);
+                }, 0);
+
+                return { treeId, rootId };
+            },
+
+            forkTreeFromTreeId: async (id) => {
+                const { treeId, rootId } = await forkTreeFrom(id);
+                await get().loadTree(treeId);
+                return { treeId, rootId };
+            },
+
+            clearTree() {
+                set({ activeTreeId: null, composerTree: null });
+            },
+        }))
+    )
 );

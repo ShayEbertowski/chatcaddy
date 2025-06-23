@@ -15,13 +15,17 @@ import { generateSmartTitle } from '../../../../src/utils/prompt/generateSmartTi
 const goHome = () => startTransition(() => router.replace('/entry'));
 
 export default function ComposerNodeScreen() {
-    const { treeId, nodeId } = useLocalSearchParams<{ treeId: string; nodeId: string }>();
+    const rawParams = useLocalSearchParams();
+    const treeId = String(rawParams.treeId);
+    const nodeId = String(rawParams.nodeId);
     const screenKey = `${treeId}-${nodeId}`;
+
     return <ComposerNodeScreenInner key={screenKey} treeId={treeId} nodeId={nodeId} />;
 }
 
 function ComposerNodeScreenInner({ treeId, nodeId }: { treeId: string; nodeId: string }) {
     const colors = useColors();
+    console.log('🧭 Params:', { treeId, nodeId, type: typeof nodeId });
 
     const {
         nodePath,
@@ -54,15 +58,25 @@ function ComposerNodeScreenInner({ treeId, nodeId }: { treeId: string; nodeId: s
         loadTree(treeId).catch(console.error);
     }, [treeId]);
 
-    if (!composerTree || (nodeId && !composerTree.nodes[nodeId])) {
+    if (!composerTree) {
         return (
             <ThemedSafeArea>
                 <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={{ textAlign: 'center', marginTop: 10 }}>Loading tree...</Text>
             </ThemedSafeArea>
         );
     }
 
-    const node = composerTree.nodes[nodeId] as ComposerNode;
+    const node = composerTree.nodes?.[nodeId];
+    if (!node) {
+        return (
+            <ThemedSafeArea>
+                <Text style={{ padding: 20, color: colors.error }}>
+                    ⚠️ Node not found in this tree.
+                </Text>
+            </ThemedSafeArea>
+        );
+    }
 
     const handleSavePress = async () => {
         if (!node.content.trim()) return;

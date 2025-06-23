@@ -1,75 +1,70 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import PromptSearch from '../../../src/components/prompt/PromptSearch';
-import EmptyState from '../../../src/components/shared/EmptyState';
+import { View, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { useColors } from '../../../src/hooks/useColors';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useComposerStore } from '../../../src/stores/useComposerStore';
 import { supabase } from '../../../src/lib/supabaseClient';
 import { IndexedEntity } from '../../../src/types/entity';
 import { navigateToTree } from '../../../src/utils/composer/navigation';
-import { forkTreeFrom } from '../../../src/utils/composer/forkTreeFrom';
+
+import PromptSearch from '../../../src/components/prompt/PromptSearch';
+import EmptyState from '../../../src/components/shared/EmptyState';
 
 export default function ComposerIndexScreen() {
     const colors = useColors();
     const router = useRouter();
-    const [prompts, setPrompts] = useState<IndexedEntity[]>([]);
+
+    const [rootPrompts, setRootPrompts] = useState<IndexedEntity[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function fetchPrompts() {
+        const fetchRootPrompts = async () => {
             const { data, error } = await supabase
                 .from('indexed_entities')
-                .select('*') 
-                .eq('entity_type', 'Prompt');
+                .select('*')
+                .eq('entity_type', 'Prompt')
+                .eq('is_root', true);
 
             if (error) {
-                console.error('Error loading prompts:', error);
+                console.error('Failed to load prompts:', error.message);
                 return;
             }
 
-            setPrompts(data ?? []);
+            setRootPrompts(data ?? []);
             setLoading(false);
-        }
+        };
 
-        fetchPrompts();
+        fetchRootPrompts();
     }, []);
 
-    const hasPrompts = prompts.length > 0;
+    const createNewPrompt = async () => {
+        try {
+            const { treeId, rootId } = await useComposerStore.getState().createEmptyTree();
+            navigateToTree(treeId, rootId);
+        } catch (err) {
+            console.error('❌ Failed to create new tree:', err);
+        }
+    };
 
     return (
         <ThemedSafeArea disableTopInset>
             <View style={{ flex: 1, padding: 16 }}>
-                {hasPrompts ? (
-                    <PromptSearch/>
-
+                {rootPrompts.length > 0 ? (
+                    <PromptSearch />
                 ) : (
                     <EmptyState
                         title="No Prompts Yet"
                         subtitle="Create your first prompt to begin composing."
                         buttonLabel="New Prompt"
-                        onButtonPress={async () => {
-                            try {
-                                const { treeId, rootId } = await useComposerStore.getState().createEmptyTree();
-                                navigateToTree(treeId, rootId);
-                            } catch (err) {
-                                console.error('❌ Failed to create new tree', err);
-                            }
-                        }}
+                        onButtonPress={createNewPrompt}
                     />
                 )}
 
                 <TouchableOpacity
-                    onPress={async () => {
-                        try {
-                            const { treeId, rootId } = await useComposerStore.getState().createEmptyTree();
-                            navigateToTree(treeId, rootId);
-                        } catch (err) {
-                            console.error('❌ Failed to create new tree', err);
-                        }
-                    }}
+                    onPress={createNewPrompt}
                     style={{
                         position: 'absolute',
                         bottom: 24,

@@ -6,6 +6,7 @@ import {
     TouchableOpacity,
     StyleSheet,
     ScrollView,
+    ActivityIndicator,
 } from 'react-native';
 import { useColors } from '../../hooks/useColors';
 import { RenderPreviewChunks } from './RenderPreviewChunks';
@@ -13,17 +14,16 @@ import { getSharedStyles } from '../../styles/shared';
 import { supabase } from '../../lib/supabaseClient';
 import { IndexedEntity } from '../../types/entity';
 import { useComposerStore } from '../../stores/useComposerStore';
-import { router } from 'expo-router';
 
 export default function PromptSearch() {
     const [entities, setEntities] = useState<IndexedEntity[]>([]);
     const [search, setSearch] = useState('');
+    const [loadingId, setLoadingId] = useState<string | null>(null);
     const colors = useColors();
     const styles = getStyles(colors);
     const sharedStyles = getSharedStyles(colors);
 
     useEffect(() => {
-        // Always fetch all entities on mount
         (async () => {
             const { data, error } = await supabase
                 .from('indexed_entities')
@@ -72,22 +72,28 @@ export default function PromptSearch() {
                             style={styles.promptItem}
                             onPress={async () => {
                                 try {
-                                    const { treeId, rootId } = await useComposerStore
+                                    setLoadingId(entity.id);
+                                    await useComposerStore
                                         .getState()
                                         .forkTreeFromEntity(entity);
-
-                                    router.push(`/(drawer)/(composer)/${treeId}/${rootId}`);
+                                    // router.push happens inside the store now
                                 } catch (err) {
                                     console.error('❌ Failed to fork and navigate:', err);
+                                } finally {
+                                    setLoadingId(null);
                                 }
                             }}
                         >
                             <Text style={styles.promptTitle}>
                                 {entity.title || '(Untitled)'}
                             </Text>
-                            <View style={styles.previewRow}>
-                                <RenderPreviewChunks content={entity.content ?? ''} />
-                            </View>
+                            {loadingId === entity.id ? (
+                                <ActivityIndicator size="small" color={colors.primary} />
+                            ) : (
+                                <View style={styles.previewRow}>
+                                    <RenderPreviewChunks content={entity.content ?? ''} />
+                                </View>
+                            )}
                         </TouchableOpacity>
                     ))
                 ) : (
