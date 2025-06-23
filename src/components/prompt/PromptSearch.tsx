@@ -18,14 +18,12 @@ import { router } from 'expo-router';
 export default function PromptSearch() {
     const [entities, setEntities] = useState<IndexedEntity[]>([]);
     const [search, setSearch] = useState('');
-    const [isFocused, setIsFocused] = useState(false);
     const colors = useColors();
     const styles = getStyles(colors);
     const sharedStyles = getSharedStyles(colors);
 
     useEffect(() => {
-        if (!isFocused) return;
-
+        // Always fetch all entities on mount
         (async () => {
             const { data, error } = await supabase
                 .from('indexed_entities')
@@ -33,26 +31,24 @@ export default function PromptSearch() {
             if (error) console.error('Error fetching indexed_entities:', error);
             setEntities(data ?? []);
         })();
-    }, [isFocused]);
+    }, []);
 
-    const filtered = !isFocused
-        ? []
-        : entities.filter((entity) => {
-            const q = search.toLowerCase().trim();
-            if (!q) return true;
-            return (
-                entity.title?.toLowerCase().includes(q) ||
-                entity.content?.toLowerCase().includes(q) ||
-                Object.values(entity.variables ?? {})
-                    .map((v: any) =>
-                        v.type === 'string'
-                            ? v.value?.toLowerCase?.() ?? ''
-                            : v.promptTitle?.toLowerCase?.() ?? ''
-                    )
-                    .join(' ')
-                    .includes(q)
-            );
-        });
+    const filtered = entities.filter((entity) => {
+        const q = search.toLowerCase().trim();
+        if (!q) return true;
+        return (
+            entity.title?.toLowerCase().includes(q) ||
+            entity.content?.toLowerCase().includes(q) ||
+            Object.values(entity.variables ?? {})
+                .map((v: any) =>
+                    v.type === 'string'
+                        ? v.value?.toLowerCase?.() ?? ''
+                        : v.promptTitle?.toLowerCase?.() ?? ''
+                )
+                .join(' ')
+                .includes(q)
+        );
+    });
 
     return (
         <View style={styles.container}>
@@ -64,10 +60,6 @@ export default function PromptSearch() {
                 placeholder="Type to search..."
                 value={search}
                 onChangeText={setSearch}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => {
-                    if (search.trim() === '') setIsFocused(false);
-                }}
                 style={styles.searchInput}
                 placeholderTextColor={colors.placeholder}
             />
@@ -84,13 +76,11 @@ export default function PromptSearch() {
                                         .getState()
                                         .forkTreeFromEntity(entity);
 
-
                                     router.push(`/(drawer)/(composer)/${treeId}/${rootId}`);
                                 } catch (err) {
                                     console.error('❌ Failed to fork and navigate:', err);
                                 }
                             }}
-
                         >
                             <Text style={styles.promptTitle}>
                                 {entity.title || '(Untitled)'}
@@ -102,9 +92,7 @@ export default function PromptSearch() {
                     ))
                 ) : (
                     <Text style={styles.emptyState}>
-                        {search.trim()
-                            ? 'No matching prompts found.'
-                            : 'Start typing to find prompts...'}
+                        No matching prompts found.
                     </Text>
                 )}
             </ScrollView>

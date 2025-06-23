@@ -135,13 +135,13 @@ export default function RichPromptEditor({
             </View>
 
             {/* Entity-type dropdown */}
-            <View style={{ marginBottom: 16 }}>
+            {/* <View style={{ marginBottom: 16 }}>
                 <DropdownSelector
                     value={entityType}
                     options={options}
                     onSelect={onChangeEntityType}
                 />
-            </View>
+            </View> */}
 
             {/* Prompt input */}
             <TextInput
