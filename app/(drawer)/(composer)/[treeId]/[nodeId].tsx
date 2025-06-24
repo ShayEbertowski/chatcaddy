@@ -17,14 +17,39 @@ export default function ComposerNodeScreen() {
     const rawParams = useLocalSearchParams();
     const treeId = String(rawParams.treeId);
     const nodeId = String(rawParams.nodeId);
+    const rawPath = rawParams.path;
+
+    // 🧠 Parse incoming path (optional)
+    const initialPathIds = Array.isArray(rawPath)
+        ? JSON.parse(rawPath[0])
+        : rawPath
+            ? JSON.parse(rawPath)
+            : undefined;
+
     const screenKey = `${treeId}-${nodeId}`;
 
-    return <ComposerNodeScreenInner key={screenKey} treeId={treeId} nodeId={nodeId} />;
+    return (
+        <ComposerNodeScreenInner
+            key={screenKey}
+            treeId={treeId}
+            nodeId={nodeId}
+            initialPathIds={initialPathIds}
+        />
+    );
 }
 
-function ComposerNodeScreenInner({ treeId, nodeId }: { treeId: string; nodeId: string }) {
+function ComposerNodeScreenInner({
+    treeId,
+    nodeId,
+    initialPathIds,
+}: {
+    treeId: string;
+    nodeId: string;
+    initialPathIds?: string[];
+}) {
     const colors = useColors();
-    console.log('🧭 Params:', { treeId, nodeId, type: typeof nodeId });
+    console.log('🧭 Params:', { treeId, nodeId });
+    console.log('📌 initialPathIds:', initialPathIds);
 
     const {
         nodePath,
@@ -32,7 +57,7 @@ function ComposerNodeScreenInner({ treeId, nodeId }: { treeId: string; nodeId: s
         insertChildNode,
         saveTree,
         loadTree,
-    } = useComposerEditingState(treeId, nodeId);
+    } = useComposerEditingState(treeId, nodeId, { initialPathIds });
 
     const composerTree = useComposerStore((s) => s.composerTree);
 
@@ -111,7 +136,6 @@ function ComposerNodeScreenInner({ treeId, nodeId }: { treeId: string; nodeId: s
                     currentNode={node}
                     nodePath={nodePath}
                     onChangeNode={updateNode}
-
                     onChipPress={insertChildNode}
                     onSaveTree={handleSavePress}
                 />

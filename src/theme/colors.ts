@@ -5,7 +5,7 @@ export const light = (() => {
         onPrimary: '#f8f9fa',
         background: '#ebebec',
         surface: '#f6f6f7',
-        onSurface: '#1c1c1e', // ✅ added: text on surface
+        onSurface: '#1c1c1e',
         placeholder: '#999999',
         accent,
         onAccent: '#ffffff',
@@ -35,6 +35,11 @@ export const light = (() => {
         nodeBorder: '#E0E0E0',
         chipBackground: '#EFEFEF',
         chipText: '#333333',
+
+        // ➕ Navigation additions
+        navigation: '#c4c4c4',
+        onNavigation: '#1c1c1e',
+        navigationSoft: '#c4c4c488',
     };
 })();
 
@@ -45,7 +50,7 @@ export const dark = (() => {
         onPrimary: '#ffffff',
         background: '#0e0e0e',
         surface: '#1a1a1a',
-        onSurface: '#ffffff', // ✅ added: text on surface
+        onSurface: '#ffffff',
         placeholder: '#AAAAAA',
         accent,
         onAccent: '#000000',
@@ -75,5 +80,10 @@ export const dark = (() => {
         nodeBorder: '#333333',
         chipBackground: '#2C2C2C',
         chipText: '#FFFFFF',
+
+        // ➕ Navigation additions
+        navigation: '#444444',
+        onNavigation: '#ffffff',
+        navigationSoft: '#44444488',
     };
 })();

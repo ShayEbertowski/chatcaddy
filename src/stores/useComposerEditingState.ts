@@ -1,4 +1,3 @@
-// src/stores/useComposerEditingState.ts
 import { useEffect, useMemo, useRef } from 'react';
 import { router } from 'expo-router';
 import { generateUUIDSync } from '../utils/uuid/generateUUIDSync';
@@ -9,11 +8,20 @@ import {
     ComposerNode,
 } from './useComposerStore';
 
+interface UseComposerEditingStateOptions {
+    initialPathIds?: string[]; // 👈 new
+}
+
 /**
  * Very thin wrapper around Zustand – no draft state.
  */
-export function useComposerEditingState(treeId?: string, nodeId?: string) {
-    /* ---------- Store helpers ---------- */
+export function useComposerEditingState(
+    treeId?: string,
+    nodeId?: string,
+    options: UseComposerEditingStateOptions = {}
+) {
+    const { initialPathIds } = options;
+
     const composerTree = useComposerStore((s) => s.composerTree);
     const loadTree = useComposerStore((s) => s.loadTree);
     const saveTree = useComposerStore((s) => s.saveTree);
@@ -32,7 +40,7 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
             (!nodeId || !!cached.nodes[nodeId]);
 
         if (cacheOK) {
-            hasLoaded.current = true;              // already hydrated
+            hasLoaded.current = true;
             return;
         }
 
@@ -44,7 +52,7 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
     const nodePath = useMemo(() => {
         if (!composerTree || !nodeId) return [];
         const root = composerTree.nodes[composerTree.rootId];
-        return root ? getNodePath(root as any, nodeId) : [];
+        return root ? getNodePath(root, nodeId, composerTree.nodes) : [];
     }, [composerTree, nodeId]);
 
     /* ---------- Update helpers ---------- */
@@ -88,7 +96,6 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
         addChild(nodeId, child); // adds and links it in store
         router.push(`/(drawer)/(composer)/${treeId}/${childId}`);
     }
-
 
     return {
         nodePath,

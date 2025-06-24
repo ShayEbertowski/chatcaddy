@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import PromptPathNavigator from './PromptPathNavigator';
+import { router } from 'expo-router';
 import RichPromptEditor from '../editor/RichPromptEditor';
 import { ThemedButton } from '../ui/ThemedButton';
+import { NavigationButton } from '../ui/NavigationButton';
 import { toEditorVariables, fromEditorVariables } from '../../utils/composer/variables';
 import { ComposerNode } from '../../stores/useComposerStore';
 import { useComposerStore } from '../../stores/useComposerStore';
-import { router } from 'expo-router';
 
 type ComposerEditorViewProps = {
     treeId: string;
@@ -35,17 +35,48 @@ export function ComposerEditorView({
 
     return (
         <View style={{ flex: 1, padding: 16 }}>
-            <PromptPathNavigator
-                treeId={treeId}
-                nodePath={nodePath}
-                currentNode={currentNode}
-                readOnly={false}
-                scrollIntoLast={true}
-            />
+            {/* Commented out breadcrumb UI for now */}
+            {/* 
+      <PromptPathNavigator
+        treeId={treeId}
+        nodePath={nodePath}
+        currentNode={currentNode}
+        readOnly={false}
+        scrollIntoLast={true}
+      />
+      */}
 
             <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 12, color: 'white' }}>
                 {currentNode.title?.trim() || '(Untitled Node)'}
             </Text>
+
+            {/* Minimalist forward/backward buttons */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 12 }}>
+                <View style={{ flex: 1 }}>
+                    {nodePath.length > 1 && (
+                        <NavigationButton
+                            icon="chevron-back"
+                            onPress={() => {
+                                const prev = nodePath.at(-2);
+                                if (prev) router.push(`/(drawer)/(composer)/${treeId}/${prev.id}`);
+                            }}
+                        />
+                    )}
+                </View>
+
+                <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                    {currentNode.childIds?.length > 0 && (
+                        <NavigationButton
+                            icon="chevron-forward"
+                            onPress={() => {
+                                const nextId = currentNode.childIds?.[0];
+                                if (nextId) router.push(`/(drawer)/(composer)/${treeId}/${nextId}`);
+                            }}
+                        />
+                    )}
+                </View>
+            </View>
+
 
             <RichPromptEditor
                 text={currentNode.content}
@@ -53,9 +84,7 @@ export function ComposerEditorView({
                 entityType={fallbackType}
                 onChangeEntityType={(entityType) => onChangeNode({ entityType })}
                 variables={toEditorVariables(currentNode.variables)}
-                onChangeVariables={(vars) =>
-                    onChangeNode({ variables: fromEditorVariables(vars) })
-                }
+                onChangeVariables={(vars) => onChangeNode({ variables: fromEditorVariables(vars) })}
                 onChipPress={onChipPress}
             />
 
