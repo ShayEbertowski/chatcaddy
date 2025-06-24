@@ -100,19 +100,16 @@ export const useComposerStore = create<ComposerStoreState>()(
                 if (treeErr) throw treeErr;
 
                 const nodeList = Object.values(nodes);
-                const promises = nodeList.map((n) =>
-                    supabase.from('indexed_entities').upsert({
-                        id: n.id,
-                        tree_id: treeId,
-                        is_root: n.id === rootId,
-                        title: n.title || 'Untitled',
-                        entity_type: n.entityType,
-                        content: n.content,
-                        updated_at: n.updatedAt || now,
-                    })
-                );
-                const nodeErr = (await Promise.all(promises)).find((r) => r.error)?.error;
-                if (nodeErr) throw nodeErr;
+                const rootNode = nodes[rootId];
+                await supabase.from('indexed_entities').upsert({
+                    id: rootId,
+                    tree_id: treeId,
+                    is_root: true,
+                    title: rootNode.title || 'Untitled',
+                    entity_type: rootNode.entityType,
+                    content: rootNode.content,
+                    updated_at: now
+                });
 
                 set({
                     activeTreeId: treeId,

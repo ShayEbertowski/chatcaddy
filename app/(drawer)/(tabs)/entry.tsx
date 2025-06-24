@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { useColors } from '../../../src/hooks/useColors';
@@ -20,25 +20,28 @@ export default function ComposerIndexScreen() {
     const [rootPrompts, setRootPrompts] = useState<IndexedEntity[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchRootPrompts = async () => {
-            const { data, error } = await supabase
-                .from('indexed_entities')
-                .select('*')
-                .eq('entity_type', 'Prompt')
-                .eq('is_root', true);
+    const fetchRootPrompts = useCallback(async () => {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('indexed_entities')
+            .select('*')
+            .eq('entity_type', 'Prompt')
+            .eq('is_root', true);
 
-            if (error) {
-                console.error('Failed to load prompts:', error.message);
-                return;
-            }
+        if (error) {
+            console.error('Failed to load prompts:', error.message);
+            return;
+        }
 
-            setRootPrompts(data ?? []);
-            setLoading(false);
-        };
-
-        fetchRootPrompts();
+        setRootPrompts(data ?? []);
+        setLoading(false);
     }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchRootPrompts(); // Fire and forget
+        }, [fetchRootPrompts])
+    );
 
     const createNewPrompt = async () => {
         try {

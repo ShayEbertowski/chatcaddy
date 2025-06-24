@@ -1,4 +1,3 @@
-// src/components/composer/ComposerEditorView.tsx
 import React from 'react';
 import { View, Text } from 'react-native';
 import PromptPathNavigator from './PromptPathNavigator';
@@ -6,6 +5,8 @@ import RichPromptEditor from '../editor/RichPromptEditor';
 import { ThemedButton } from '../ui/ThemedButton';
 import { toEditorVariables, fromEditorVariables } from '../../utils/composer/variables';
 import { ComposerNode } from '../../stores/useComposerStore';
+import { useComposerStore } from '../../stores/useComposerStore';
+import { router } from 'expo-router';
 
 type ComposerEditorViewProps = {
     treeId: string;
@@ -24,6 +25,8 @@ export function ComposerEditorView({
     onChipPress,
     onSaveTree,
 }: ComposerEditorViewProps) {
+    const composerTree = useComposerStore((s) => s.composerTree);
+    const isAtRoot = composerTree?.rootId === currentNode.id;
 
     const allowedTypes = ['Prompt', 'Function', 'Snippet'] as const;
     const fallbackType = allowedTypes.includes(currentNode.entityType as any)
@@ -36,7 +39,7 @@ export function ComposerEditorView({
                 treeId={treeId}
                 nodePath={nodePath}
                 currentNode={currentNode}
-                readOnly={false} 
+                readOnly={false}
                 scrollIntoLast={true}
             />
 
@@ -56,8 +59,19 @@ export function ComposerEditorView({
                 onChipPress={onChipPress}
             />
 
-            {onSaveTree && (
+            {isAtRoot && onSaveTree && (
                 <ThemedButton title="Save Tree" onPress={onSaveTree} style={{ marginTop: 24 }} />
+            )}
+
+            {!isAtRoot && (
+                <ThemedButton
+                    title="Back to Root"
+                    onPress={() =>
+                        router.push(`/(drawer)/(composer)/${treeId}/${composerTree?.rootId}`)
+                    }
+                    style={{ marginTop: 24 }}
+                    colorKey="onAccent"
+                />
             )}
         </View>
     );

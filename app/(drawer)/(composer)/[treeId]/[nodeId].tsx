@@ -1,4 +1,3 @@
-// src/app/(drawer)/(composer)/[treeId]/[nodeId].tsx
 import React, { useEffect, useRef, useState, startTransition } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -112,6 +111,7 @@ function ComposerNodeScreenInner({ treeId, nodeId }: { treeId: string; nodeId: s
                     currentNode={node}
                     nodePath={nodePath}
                     onChangeNode={updateNode}
+
                     onChipPress={insertChildNode}
                     onSaveTree={handleSavePress}
                 />

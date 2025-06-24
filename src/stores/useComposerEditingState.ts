@@ -55,8 +55,23 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
 
     /** Create child then navigate */
     function insertChildNode(title: string) {
-        if (!nodeId || !treeId) return;
+        if (!nodeId || !treeId || !composerTree) return;
 
+        const parent = composerTree.nodes[nodeId];
+        if (!parent) return;
+
+        // Check if child with matching title already exists
+        const existingId = parent.childIds.find((childId) => {
+            const child = composerTree.nodes[childId];
+            return child?.title?.trim() === title.trim();
+        });
+
+        if (existingId) {
+            router.push(`/(drawer)/(composer)/${treeId}/${existingId}`);
+            return;
+        }
+
+        // Otherwise, create a new one
         const childId = generateUUIDSync();
         const now = new Date().toISOString();
 
@@ -70,9 +85,10 @@ export function useComposerEditingState(treeId?: string, nodeId?: string) {
             updatedAt: now,
         };
 
-        addChild(nodeId, child);                         // adds + links
+        addChild(nodeId, child); // adds and links it in store
         router.push(`/(drawer)/(composer)/${treeId}/${childId}`);
     }
+
 
     return {
         nodePath,
