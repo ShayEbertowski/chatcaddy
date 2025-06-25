@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, startTransition } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Snackbar } from 'react-native-paper';
@@ -11,7 +11,7 @@ import { ComposerEditorView } from '../../../../src/components/composer/Composer
 import SavePromptModal from '../../../../src/components/modals/SavePromptModal';
 import { generateSmartTitle } from '../../../../src/utils/prompt/generateSmartTitle';
 
-const goHome = () => startTransition(() => router.replace('/entry'));
+const goHome = () => router.replace('/entry');
 
 export default function ComposerNodeScreen() {
     const rawParams = useLocalSearchParams();
@@ -19,12 +19,11 @@ export default function ComposerNodeScreen() {
     const nodeId = String(rawParams.nodeId);
     const rawPath = rawParams.path;
 
-    // 🧠 Parse incoming path (optional)
     const initialPathIds = Array.isArray(rawPath)
         ? JSON.parse(rawPath[0])
         : rawPath
-            ? JSON.parse(rawPath)
-            : undefined;
+        ? JSON.parse(rawPath)
+        : undefined;
 
     const screenKey = `${treeId}-${nodeId}`;
 
@@ -48,8 +47,6 @@ function ComposerNodeScreenInner({
     initialPathIds?: string[];
 }) {
     const colors = useColors();
-    console.log('🧭 Params:', { treeId, nodeId });
-    console.log('📌 initialPathIds:', initialPathIds);
 
     const {
         nodePath,
@@ -66,6 +63,7 @@ function ComposerNodeScreenInner({
     const [saveTitle, setSaveTitle] = useState('');
     const [saving, setSaving] = useState(false);
     const [snackOpen, setSnackOpen] = useState(false);
+    const [queuedSave, setQueuedSave] = useState(false);
 
     const loadedOnce = useRef(false);
 
@@ -82,28 +80,31 @@ function ComposerNodeScreenInner({
         loadTree(treeId).catch(console.error);
     }, [treeId]);
 
-    if (!composerTree) {
-        return (
-            <ThemedSafeArea>
-                <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={{ textAlign: 'center', marginTop: 10 }}>Loading tree...</Text>
-            </ThemedSafeArea>
-        );
-    }
+    const node = composerTree?.nodes?.[nodeId];
 
-    const node = composerTree.nodes?.[nodeId];
-    if (!node) {
-        return (
-            <ThemedSafeArea>
-                <Text style={{ padding: 20, color: colors.error }}>
-                    ⚠️ Node not found in this tree.
-                </Text>
-            </ThemedSafeArea>
-        );
-    }
+    const isAtRoot = node?.id === composerTree?.rootId;
 
-    const handleSavePress = async () => {
-        if (!node.content.trim()) return;
+    // When Save is triggered from a child node, redirect to root and queue save
+    const handleSaveTreeRequest = () => {
+        if (isAtRoot) {
+            openSaveModal();
+        } else {
+            setQueuedSave(true);
+            router.push(`/(drawer)/(composer)/${treeId}/${composerTree?.rootId}`);
+        }
+    };
+
+    // After navigating to root, detect and open modal
+    useEffect(() => {
+        if (queuedSave && isAtRoot) {
+            setQueuedSave(false);
+            openSaveModal();
+        }
+    }, [queuedSave, isAtRoot]);
+
+    const openSaveModal = async () => {
+        if (!node?.content.trim()) return;
+
         setIsGeneratingTitle(true);
         try {
             const smart = await generateSmartTitle(node.content);
@@ -128,6 +129,25 @@ function ComposerNodeScreenInner({
         }
     };
 
+    if (!composerTree) {
+        return (
+            <ThemedSafeArea>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={{ textAlign: 'center', marginTop: 10 }}>Loading tree...</Text>
+            </ThemedSafeArea>
+        );
+    }
+
+    if (!node) {
+        return (
+            <ThemedSafeArea>
+                <Text style={{ padding: 20, color: colors.error }}>
+                    ⚠️ Node not found in this tree.
+                </Text>
+            </ThemedSafeArea>
+        );
+    }
+
     return (
         <ThemedSafeArea>
             <View style={{ flex: 1, paddingHorizontal: 16 }}>
@@ -137,7 +157,7 @@ function ComposerNodeScreenInner({
                     nodePath={nodePath}
                     onChangeNode={updateNode}
                     onChipPress={insertChildNode}
-                    onSaveTree={handleSavePress}
+                    onSaveTree={handleSaveTreeRequest}
                 />
             </View>
 

@@ -88,20 +88,22 @@ export function ComposerEditorView({
                 onChipPress={onChipPress}
             />
 
-            {isAtRoot && onSaveTree && (
-                <ThemedButton title="Save Tree" onPress={onSaveTree} style={{ marginTop: 24 }} />
-            )}
-
-            {!isAtRoot && (
-                <ThemedButton
-                    title="Back to Root"
-                    onPress={() =>
-                        router.push(`/(drawer)/(composer)/${treeId}/${composerTree?.rootId}`)
+            <ThemedButton
+                title={isAtRoot ? 'Save Tree' : 'Go to Root to Save'}
+                onPress={() => {
+                    if (isAtRoot) {
+                        onSaveTree?.();
+                    } else {
+                        router.push({
+                            pathname: `/(drawer)/(composer)/${treeId}/${composerTree?.rootId}`,
+                            params: { autoSave: 'true' },
+                        });
                     }
-                    style={{ marginTop: 24 }}
-                    colorKey="onAccent"
-                />
-            )}
+                }}
+                style={{ marginTop: 24 }}
+                colorKey={isAtRoot ? undefined : 'onAccent'}
+            />
+
         </View>
     );
 }
