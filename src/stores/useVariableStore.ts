@@ -4,6 +4,7 @@ import { Variable } from '../types/prompt';  // ✅ use Variable (not VariableVa
 type VariableState = {
     values: Record<string, Variable>;
     setVariable: (key: string, value: Variable) => void;
+    setVariables: (vars: Record<string, Variable>) => void; // ✅ Add this
     getVariable: (key: string) => Variable | undefined;
     removeVariable: (key: string) => void;
     clearAll: () => void;
@@ -19,6 +20,8 @@ export const useVariableStore = create<VariableState>((set, get) => ({
                 [key]: value,
             },
         })),
+
+    setVariables: (vars) => set({ values: vars }), // ✅ Sets everything at once
 
     getVariable: (key) => get().values[key],
 
