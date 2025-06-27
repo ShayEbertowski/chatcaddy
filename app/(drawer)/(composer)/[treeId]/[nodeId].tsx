@@ -57,6 +57,7 @@ function ComposerNodeScreenInner({
     } = useComposerEditingState(treeId, nodeId, { initialPathIds });
 
     const composerTree = useComposerStore((s) => s.composerTree);
+    console.log("🥶 composer tree", composerTree)
 
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);

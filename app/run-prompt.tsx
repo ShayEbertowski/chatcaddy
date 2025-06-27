@@ -35,6 +35,12 @@ export default function RunPromptScreen() {
     const tree = useComposerStore((s) => s.composerTree);
 
     const root = tree?.nodes?.[tree?.rootId];
+    console.log('🧠 Root passed to editor:', root);
+
+    const variables = root?.variables ?? (root as any)?.data?.variables ?? {};
+    console.log('🧠 Variables passed to editor:', variables);
+
+
 
     useEffect(() => {
         navigation.setOptions({ title: 'Run Prompt' });
@@ -53,16 +59,16 @@ export default function RunPromptScreen() {
     const hasInitialized = useRef(false);
 
     useEffect(() => {
-        if (!root?.variables || hasInitialized.current) return;
+        if (!variables || hasInitialized.current) return;
 
         const initial: Record<string, string> = {};
-        Object.entries(root.variables as Record<string, Variable>).forEach(([k, v]) => {
+        Object.entries(variables as Record<string, Variable>).forEach(([k, v]) => {
             initial[k] = resolveInitialValue(v);
         });
 
         setInputs(initial);
         hasInitialized.current = true;
-    }, [root?.variables]);
+    }, [variables]);
 
     if (!treeId || !isLoaded || !root) {
         return (
@@ -77,7 +83,7 @@ export default function RunPromptScreen() {
         setResponse('');
 
         Object.entries(inputs).forEach(([key, value]) => {
-            const variableDef = root.variables?.[key] as Variable | undefined;
+            const variableDef = (variables as Record<string, Variable>)[key];
             if (!variableDef) return;
 
             switch (variableDef.type) {
@@ -122,7 +128,7 @@ export default function RunPromptScreen() {
                 </Text>
 
                 <EntityVariableEditor
-                    prompt={root}
+                    prompt={{ ...root, variables }}
                     onChange={setInputs}
                 />
 

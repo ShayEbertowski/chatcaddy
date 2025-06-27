@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { IndexedEntity } from '../types/entity';
 import { forkTreeFrom } from '../utils/composer/forkTreeFrom';
 import { router } from 'expo-router';
+import { inferVariablesFromRoot } from '../utils/composer/inferVariables'; // Add to imports
 
 /* ─── TYPES ─────────────────────────────────────────── */
 export type NodeKind = 'Prompt' | 'Function' | 'Snippet';
@@ -90,6 +91,7 @@ export const useComposerStore = create<ComposerStoreState>()(
             },
 
             async saveTree() {
+
                 const { composerTree } = get();
                 if (!composerTree) throw new Error('Nothing to save');
 
@@ -98,6 +100,11 @@ export const useComposerStore = create<ComposerStoreState>()(
                 const nodes = composerTree.nodes;
                 const rootId = composerTree.rootId;
                 const treeName = nodes[rootId].title?.trim() || 'Untitled';
+
+                // 🧠 Inject inferred variables into root
+                const inferredVars = inferVariablesFromRoot(composerTree);
+                composerTree.nodes[rootId].variables = inferredVars;
+
 
                 const { error: treeErr } = await supabase.from('composer_trees').upsert({
                     id: treeId,
