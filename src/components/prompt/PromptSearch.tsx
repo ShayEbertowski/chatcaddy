@@ -23,15 +23,24 @@ export default function PromptSearch() {
     const styles = getStyles(colors);
     const sharedStyles = getSharedStyles(colors);
 
+    const promptVersion = useComposerStore((s) => s.promptVersion);
+
+
     useEffect(() => {
-        (async () => {
+        const loadEntities = async () => {
             const { data, error } = await supabase
                 .from('indexed_entities')
                 .select('*');
-            if (error) console.error('Error fetching indexed_entities:', error);
-            setEntities(data ?? []);
-        })();
-    }, []);
+            if (error) {
+                console.error('Error fetching indexed_entities:', error);
+            } else {
+                setEntities(data ?? []);
+            }
+        };
+
+        loadEntities();
+    }, [promptVersion]);
+
 
     const filtered = entities.filter((entity) => {
         const q = search.toLowerCase().trim();

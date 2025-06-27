@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -36,11 +36,15 @@ export function EntityVariableEditor({
     const [showInsertModal, setShowInsertModal] = useState(false);
     const [editingVariable, setEditingVariable] = useState<{ name: string; value: string } | null>(null);
 
+    const hasInitialized = useRef(false);
+
     useEffect(() => {
         onChange(inputs);
     }, [inputs, onChange]);
 
     useEffect(() => {
+        if (hasInitialized.current) return;
+
         const initial: Record<string, string> = {};
 
         Object.entries(prompt.variables ?? {}).forEach(([name, variable]) => {
@@ -52,6 +56,7 @@ export function EntityVariableEditor({
         });
 
         setInputs((prev) => ({ ...initial, ...prev }));
+        hasInitialized.current = true;
     }, [prompt, initialValues]);
 
     const handleChipPress = (name: string) => {
@@ -120,7 +125,6 @@ export function EntityVariableEditor({
                     );
                 }
 
-                // prompt-type variable (for nested prompt refs)
                 return (
                     <View key={name} style={styles.inputGroup}>
                         <Text style={styles.label}>{name}</Text>
@@ -137,7 +141,6 @@ export function EntityVariableEditor({
                 );
             })}
 
-            {/* Insert modal */}
             {showInsertModal && insertTarget && (
                 <BaseModal
                     visible
@@ -162,7 +165,6 @@ export function EntityVariableEditor({
                 </BaseModal>
             )}
 
-            {/* Inline edit modal for chips */}
             {editingVariable && (
                 <VariableEditModal
                     visible

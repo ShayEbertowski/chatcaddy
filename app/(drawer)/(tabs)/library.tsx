@@ -9,6 +9,7 @@ import { supabase } from '../../../src/lib/supabaseClient';
 import { useRouter } from 'expo-router';
 import EntityCard from '../../../src/components/entity/EntityCard';
 import { IndexedEntity } from '../../../src/types/entity';
+import { useComposerStore } from '../../../src/stores/useComposerStore';
 
 const options: DropdownOption<IndexedEntity['entityType']>[] = [
     { label: 'Prompts', value: 'Prompt' },
@@ -26,6 +27,9 @@ export default function EntityLibraryScreen() {
     const [entities, setEntities] = useState<IndexedEntity[]>([]);
     const [deleteTarget, setDeleteTarget] = useState<IndexedEntity | null>(null);
 
+    const promptVersion = useComposerStore((s) => s.promptVersion);
+
+
     useEffect(() => {
         async function loadEntities() {
             const { data, error } = await supabase.from('indexed_entities').select('*');
@@ -34,10 +38,9 @@ export default function EntityLibraryScreen() {
                 return;
             }
 
-            // Normalize shape to match expected frontend structure
             const normalized = (data || []).map((item) => ({
                 ...item,
-                entityType: item.entity_type, // 🛠 normalize snake_case to camelCase
+                entityType: item.entity_type,
                 variables: item.variables ?? {},
             }));
 
@@ -45,7 +48,8 @@ export default function EntityLibraryScreen() {
         }
 
         loadEntities();
-    }, []);
+    }, [promptVersion]); // 👈 this ensures auto-refresh
+
 
     const filteredEntities = useMemo(
         () => entities.filter((e) => e.entityType === category),
@@ -62,7 +66,7 @@ export default function EntityLibraryScreen() {
     const handleRun = (entity: IndexedEntity) => {
         router.push({
             pathname: '/run-prompt',
-            params: { id: entity.id },
+            params: { id: entity.tree_id }, // ✅ use the tree ID instead
         });
     };
 
@@ -161,4 +165,3 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
         },
     });
 
-    

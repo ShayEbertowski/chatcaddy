@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -8,19 +8,16 @@ import {
     Alert,
 } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
-import { useColors } from '../../src/hooks/useColors';
-import { useVariableStore } from '../../src/stores/useVariableStore';
-import { getSharedStyles } from '../../src/styles/shared';
-import { runPrompt } from '../../src/utils/prompt/runPrompt';
-import { ThemedSafeArea } from '../../src/components/shared/ThemedSafeArea';
-import { useFunctionStore } from '../../src/stores/useFunctionStore';
-import { useEntityStore } from '../../src/stores/useEntityStore';
-import type { Variable } from '../../src/types/prompt';
-import { isPrompt } from '../../src/utils/entity/entityGuards';
-import { PromptEntity } from '../../src/types/entity';
-import { EntityVariableEditor } from '../../src/components/prompt/EntityVariableEditor';
+import { useColors } from '../src/hooks/useColors';
+import { ThemedSafeArea } from '../src/components/shared/ThemedSafeArea';
+import { EntityVariableEditor } from '../src/components/entity/EntityVariableEditor';
+import { getSharedStyles } from '../src/styles/shared';
+import { Variable } from '../src/types/prompt';
+import { useVariableStore } from '../src/stores/useVariableStore';
+import { useComposerStore } from '../src/stores/useComposerStore';
+import { runPrompt } from '../src/utils/prompt/runPrompt';
 
-export default function RunPrompt() {
+export default function RunPromptScreen() {
     const colors = useColors();
     const styles = getStyles(colors);
     const sharedStyles = getSharedStyles(colors);
@@ -31,62 +28,77 @@ export default function RunPrompt() {
     const [isLoading, setIsLoading] = useState(false);
 
     const { id } = useLocalSearchParams<{ id?: string | string[] }>();
-    const entityId = Array.isArray(id) ? id[0] : id;
-    const entity = useEntityStore().entities.find(e => e.id === entityId);
+    const treeId = Array.isArray(id) ? id[0] : id;
 
+    const loadTree = useComposerStore((s) => s.loadTree);
+    const isLoaded = useComposerStore((s) => treeId ? s.loadedTreeIds.has(treeId) : false);
+    const tree = useComposerStore((s) => s.composerTree);
 
-    if (!entity || !isPrompt(entity)) {
-        return (
-            <View style={styles.container}>
-                <Text style={styles.title}>No prompt loaded.</Text>
-            </View>
-        );
-    }
-
-    const prompt: PromptEntity = entity;
+    const root = tree?.nodes?.[tree?.rootId];
 
     useEffect(() => {
         navigation.setOptions({ title: 'Run Prompt' });
     }, [navigation]);
 
     useEffect(() => {
-        const initial: Record<string, string> = {};
-        Object.entries(entity.variables ?? {}).forEach(([k, v]) => {
-            initial[k] = resolveInitialValue(v);
+        if (!treeId || isLoaded) return;
+
+        console.log('📥 Loading tree:', treeId);
+        loadTree(treeId).catch((err) => {
+            console.error('❌ Failed to load tree:', err);
+            Alert.alert('Error', 'Failed to load prompt.');
         });
-        setInputs(initial);
-    }, [prompt]);
+    }, [treeId, isLoaded, loadTree]);
+
+    const hasInitialized = useRef(false);
 
     useEffect(() => {
-        useFunctionStore.getState().loadFunctions();
-    }, []);
+        if (!root?.variables || hasInitialized.current) return;
+
+        const initial: Record<string, string> = {};
+        Object.entries(root.variables as Record<string, Variable>).forEach(([k, v]) => {
+            initial[k] = resolveInitialValue(v);
+        });
+
+        setInputs(initial);
+        hasInitialized.current = true;
+    }, [root?.variables]);
+
+    if (!treeId || !isLoaded || !root) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.title}>Loading prompt…</Text>
+            </View>
+        );
+    }
 
     const handleRun = async () => {
         setIsLoading(true);
         setResponse('');
 
         Object.entries(inputs).forEach(([key, value]) => {
-            const variableDef = prompt?.variables?.[key];
+            const variableDef = root.variables?.[key] as Variable | undefined;
             if (!variableDef) return;
 
-            if (variableDef.type === 'string') {
-                useVariableStore.getState().setVariable(key, {
-                    type: 'string',
-                    value,
-                    richCapable: variableDef.richCapable,
-                });
-            }
-
-            if (variableDef.type === 'prompt') {
-                useVariableStore.getState().setVariable(key, {
-                    type: 'prompt',
-                    promptId: variableDef.promptId,
-                    promptTitle: value,
-                });
+            switch (variableDef.type) {
+                case 'string':
+                    useVariableStore.getState().setVariable(key, {
+                        type: 'string',
+                        value,
+                        richCapable: variableDef.richCapable,
+                    });
+                    break;
+                case 'prompt':
+                    useVariableStore.getState().setVariable(key, {
+                        type: 'prompt',
+                        promptId: variableDef.promptId,
+                        promptTitle: value,
+                    });
+                    break;
             }
         });
 
-        const filledPrompt = (prompt.content ?? '').replace(/{{(.*?)}}/g, (_, rawVar) => {
+        const filledPrompt = (root.content ?? '').replace(/{{(.*?)}}/g, (_, rawVar) => {
             const key = rawVar.split('=')[0].trim();
             return inputs[key] || '';
         });
@@ -105,11 +117,12 @@ export default function RunPrompt() {
     return (
         <ThemedSafeArea style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <Text style={[styles.title, { color: colors.accent }]}>{prompt.title}</Text>
+                <Text style={[styles.title, { color: colors.accent }]}>
+                    {root.title || '(Untitled)'}
+                </Text>
 
                 <EntityVariableEditor
-                    prompt={prompt}
-                    initialValues={inputs}
+                    prompt={root}
                     onChange={setInputs}
                 />
 
@@ -121,8 +134,8 @@ export default function RunPrompt() {
             </ScrollView>
 
             <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.runButton} onPress={handleRun}>
-                    <Text style={styles.runButtonText}>Run</Text>
+                <TouchableOpacity style={styles.runButton} onPress={handleRun} disabled={isLoading}>
+                    <Text style={styles.runButtonText}>{isLoading ? 'Running…' : 'Run'}</Text>
                 </TouchableOpacity>
             </View>
         </ThemedSafeArea>

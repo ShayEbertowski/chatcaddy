@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import RichPromptEditor from '../editor/RichPromptEditor';
 import { ThemedButton } from '../ui/ThemedButton';
@@ -35,75 +35,66 @@ export function ComposerEditorView({
 
     return (
         <View style={{ flex: 1, padding: 16 }}>
-            {/* Commented out breadcrumb UI for now */}
-            {/* 
-      <PromptPathNavigator
-        treeId={treeId}
-        nodePath={nodePath}
-        currentNode={currentNode}
-        readOnly={false}
-        scrollIntoLast={true}
-      />
-      */}
+            <View style={{ flex: 1 }}>
+                <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+                    <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 12, color: 'white' }}>
+                        {currentNode.title?.trim() || '(Untitled Node)'}
+                    </Text>
 
-            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 12, color: 'white' }}>
-                {currentNode.title?.trim() || '(Untitled Node)'}
-            </Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 12 }}>
+                        <View style={{ flex: 1 }}>
+                            {nodePath.length > 1 && (
+                                <NavigationButton
+                                    icon="chevron-back"
+                                    onPress={() => {
+                                        const prev = nodePath.at(-2);
+                                        if (prev) router.push(`/(drawer)/(composer)/${treeId}/${prev.id}`);
+                                    }}
+                                />
+                            )}
+                        </View>
 
-            {/* Minimalist forward/backward buttons */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 12 }}>
-                <View style={{ flex: 1 }}>
-                    {nodePath.length > 1 && (
-                        <NavigationButton
-                            icon="chevron-back"
-                            onPress={() => {
-                                const prev = nodePath.at(-2);
-                                if (prev) router.push(`/(drawer)/(composer)/${treeId}/${prev.id}`);
-                            }}
-                        />
-                    )}
-                </View>
+                        <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                            {currentNode.childIds?.length > 0 && (
+                                <NavigationButton
+                                    icon="chevron-forward"
+                                    onPress={() => {
+                                        const nextId = currentNode.childIds?.[0];
+                                        if (nextId) router.push(`/(drawer)/(composer)/${treeId}/${nextId}`);
+                                    }}
+                                />
+                            )}
+                        </View>
+                    </View>
 
-                <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                    {currentNode.childIds?.length > 0 && (
-                        <NavigationButton
-                            icon="chevron-forward"
-                            onPress={() => {
-                                const nextId = currentNode.childIds?.[0];
-                                if (nextId) router.push(`/(drawer)/(composer)/${treeId}/${nextId}`);
-                            }}
-                        />
-                    )}
-                </View>
+                    <RichPromptEditor
+                        text={currentNode.content}
+                        onChangeText={(text) => onChangeNode({ content: text })}
+                        entityType={fallbackType}
+                        onChangeEntityType={(entityType) => onChangeNode({ entityType })}
+                        variables={toEditorVariables(currentNode.variables)}
+                        onChangeVariables={(vars) => onChangeNode({ variables: fromEditorVariables(vars) })}
+                        onChipPress={onChipPress}
+                    />
+                </ScrollView>
             </View>
 
-
-            <RichPromptEditor
-                text={currentNode.content}
-                onChangeText={(text) => onChangeNode({ content: text })}
-                entityType={fallbackType}
-                onChangeEntityType={(entityType) => onChangeNode({ entityType })}
-                variables={toEditorVariables(currentNode.variables)}
-                onChangeVariables={(vars) => onChangeNode({ variables: fromEditorVariables(vars) })}
-                onChipPress={onChipPress}
-            />
-
-            <ThemedButton
-                title={isAtRoot ? 'Save Tree' : 'Go to Root to Save'}
-                onPress={() => {
-                    if (isAtRoot) {
-                        onSaveTree?.();
-                    } else {
-                        router.push({
-                            pathname: `/(drawer)/(composer)/${treeId}/${composerTree?.rootId}`,
-                            params: { autoSave: 'true' },
-                        });
-                    }
-                }}
-                style={{ marginTop: 24 }}
-                colorKey={isAtRoot ? undefined : 'onAccent'}
-            />
-
+            <View style={{ paddingTop: 12 }}>
+                <ThemedButton
+                    title={isAtRoot ? 'Save Tree' : 'Go to Root to Save'}
+                    onPress={() => {
+                        if (isAtRoot) {
+                            onSaveTree?.();
+                        } else {
+                            router.push({
+                                pathname: `/(drawer)/(composer)/${treeId}/${composerTree?.rootId}`,
+                                params: { autoSave: 'true' },
+                            });
+                        }
+                    }}
+                    colorKey={isAtRoot ? 'primary' : 'accent'}
+                />
+            </View>
         </View>
     );
 }

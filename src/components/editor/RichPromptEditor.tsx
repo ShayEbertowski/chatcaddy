@@ -13,7 +13,6 @@ import {
 import InsertModal from '../modals/InsertModal';
 import CollapsibleSection from '../shared/CollapsibleSection';
 import { useVariableStore } from '../../stores/useVariableStore';
-import { getEntityForEdit } from '../../utils/prompt/generateEntityForEdit';
 import { getSharedStyles } from '../../styles/shared';
 import { useColors } from '../../hooks/useColors';
 import { resolveVariableDisplayValue } from '../../utils/variables/variables';

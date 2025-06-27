@@ -31,6 +31,10 @@ export interface ComposerStoreState {
     activeTreeId: string | null;
     composerTree: ComposerTree | null;
     availableTrees: { id: string; name: string }[];
+    loadedTreeIds: Set<string>; // ✅ NEW
+
+    promptVersion: number;
+    bumpPromptVersion: () => void;
 
     loadTree: (treeId: string) => Promise<void>;
     saveTree: () => Promise<string>;
@@ -54,6 +58,10 @@ export const useComposerStore = create<ComposerStoreState>()(
             activeTreeId: null,
             composerTree: null,
             availableTrees: [],
+            loadedTreeIds: new Set(), // ✅ NEW
+            promptVersion: 0,
+
+            bumpPromptVersion: () => set((s) => ({ promptVersion: s.promptVersion + 1 })),
 
             async loadTree(treeId) {
                 const { data, error } = await supabase
@@ -68,7 +76,7 @@ export const useComposerStore = create<ComposerStoreState>()(
                 const { id, name, root_id, nodes, updated_at } = data;
                 if (!root_id || !nodes[root_id]) throw new Error('Bad tree blob');
 
-                set({
+                set((state) => ({
                     activeTreeId: id,
                     composerTree: {
                         id,
@@ -77,7 +85,8 @@ export const useComposerStore = create<ComposerStoreState>()(
                         nodes,
                         updatedAt: updated_at,
                     },
-                });
+                    loadedTreeIds: new Set([...state.loadedTreeIds, id]), // ✅ NEW
+                }));
             },
 
             async saveTree() {
@@ -99,7 +108,6 @@ export const useComposerStore = create<ComposerStoreState>()(
                 });
                 if (treeErr) throw treeErr;
 
-                const nodeList = Object.values(nodes);
                 const rootNode = nodes[rootId];
                 await supabase.from('indexed_entities').upsert({
                     id: rootId,
@@ -108,13 +116,15 @@ export const useComposerStore = create<ComposerStoreState>()(
                     title: rootNode.title || 'Untitled',
                     entity_type: rootNode.entityType,
                     content: rootNode.content,
-                    updated_at: now
+                    updated_at: now,
                 });
 
                 set({
                     activeTreeId: treeId,
                     composerTree: { ...composerTree, id: treeId, updatedAt: now },
                 });
+
+                get().bumpPromptVersion();
                 return treeId;
             },
 
@@ -172,7 +182,13 @@ export const useComposerStore = create<ComposerStoreState>()(
                     updated_at: now,
                 });
 
-                set({ activeTreeId: id, composerTree: freshTree });
+                set((state) => ({
+                    activeTreeId: id,
+                    composerTree: freshTree,
+                    loadedTreeIds: new Set([...state.loadedTreeIds, id]), // ✅ NEW
+                }));
+
+                get().bumpPromptVersion();
                 return { treeId: id, rootId };
             },
 
@@ -259,6 +275,7 @@ export const useComposerStore = create<ComposerStoreState>()(
                     console.error('⚠️ Unexpected error during child node upsert:', err);
                 }
 
+                get().bumpPromptVersion();
                 router.push(`/(drawer)/(composer)/${tree.id}/${childId}`);
             },
 
@@ -278,12 +295,14 @@ export const useComposerStore = create<ComposerStoreState>()(
                     router.push(`/(drawer)/(composer)/${treeId}/${rootId}`);
                 }, 0);
 
+                get().bumpPromptVersion();
                 return { treeId, rootId };
             },
 
             forkTreeFromTreeId: async (id) => {
                 const { treeId, rootId } = await forkTreeFrom(id);
                 await get().loadTree(treeId);
+                get().bumpPromptVersion();
                 return { treeId, rootId };
             },
 
