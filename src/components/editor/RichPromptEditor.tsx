@@ -30,6 +30,10 @@ export interface RichPromptEditorProps {
     variables: Record<string, Variable>;
     onChangeVariables: (newVars: Record<string, Variable>) => void;
     onChipPress: (name: string) => void;
+
+    readOnly?: boolean;
+    readOnlyVariables?: boolean;
+    readOnlyContent?: boolean;
 }
 
 export const uiEntityTypes = ['Prompt', 'Function', 'Snippet'] as const;
@@ -41,6 +45,9 @@ export default function RichPromptEditor({
     entityType,
     onChangeEntityType,
     onChipPress,
+    readOnly = false,
+    readOnlyVariables = readOnly,
+    readOnlyContent = readOnly,
 }: RichPromptEditorProps) {
     const [selection, setSelection] = useState({ start: 0, end: 0 });
     const [showInsertModal, setShowInsertModal] = useState(false);
@@ -125,12 +132,15 @@ export default function RichPromptEditor({
             {/* Header with “insert” button */}
             <View style={styles.headerRow}>
                 <View style={{ flex: 1 }} />
-                <TouchableOpacity
-                    onPress={() => setShowInsertModal(true)}
-                    style={styles.insertIconButton}
-                >
-                    <Ionicons name="add" size={20} color={colors.accent} />
-                </TouchableOpacity>
+                {!(readOnlyContent && readOnlyVariables) && (
+                    <TouchableOpacity
+                        onPress={() => setShowInsertModal(true)}
+                        style={styles.insertIconButton}
+                    >
+                        <Ionicons name="add" size={20} color={colors.accent} />
+                    </TouchableOpacity>
+                )}
+
             </View>
 
             {/* Entity-type dropdown */}
@@ -151,6 +161,7 @@ export default function RichPromptEditor({
                 ) => setSelection(e.nativeEvent.selection)}
                 selection={selection}
                 multiline
+                editable={!readOnlyContent}
                 style={[styles.input, { borderColor: colors.borderThin }]}
                 placeholder="Try anything here..."
                 placeholderTextColor={colors.secondaryText}
@@ -177,7 +188,9 @@ export default function RichPromptEditor({
                         usedVars.map((varName, i) => (
                             <TouchableOpacity
                                 key={i}
-                                onPress={() => onChipPress(varName)}
+                                onPress={() => {
+                                    if (!readOnlyVariables) onChipPress(varName);
+                                }}
                                 style={sharedStyles.chip}
                             >
                                 <Text style={sharedStyles.chipText}>{varName}</Text>
@@ -207,12 +220,12 @@ export default function RichPromptEditor({
                                     .map((chunk) =>
                                         chunk.type === 'variable'
                                             ? resolveVariableDisplayValue(
-                                                  getVariable(chunk.name) ?? {
-                                                      type: 'string',
-                                                      value: '',
-                                                      richCapable: false,
-                                                  }
-                                              )
+                                                getVariable(chunk.name) ?? {
+                                                    type: 'string',
+                                                    value: '',
+                                                    richCapable: false,
+                                                }
+                                            )
                                             : chunk.value
                                     )
                                     .join('')}

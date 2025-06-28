@@ -16,6 +16,7 @@ export type UIEntityType = typeof uiEntityTypes[number];
 export type IndexedEntity = {
     id: string;
     tree_id: string;
+    root_id: string;
     entityType: 'Prompt' | 'Function' | 'Snippet';
     title: string;
     content: string;

@@ -29,10 +29,12 @@ export default function EntityLibraryScreen() {
 
     const promptVersion = useComposerStore((s) => s.promptVersion);
 
-
     useEffect(() => {
         async function loadEntities() {
-            const { data, error } = await supabase.from('indexed_entities').select('*');
+            const { data, error } = await supabase
+                .from('indexed_entities')
+                .select('id, tree_id, root_id, entity_type, title, content, variables'); // ✅ explicitly include root_id
+
             if (error) {
                 console.error('Error loading indexed entities:', error);
                 return;
@@ -41,6 +43,7 @@ export default function EntityLibraryScreen() {
             const normalized = (data || []).map((item) => ({
                 ...item,
                 entityType: item.entity_type,
+                root_id: item.root_id,
                 variables: item.variables ?? {},
             }));
 
@@ -48,8 +51,7 @@ export default function EntityLibraryScreen() {
         }
 
         loadEntities();
-    }, [promptVersion]); // 👈 this ensures auto-refresh
-
+    }, [promptVersion]);
 
     const filteredEntities = useMemo(
         () => entities.filter((e) => e.entityType === category),
@@ -64,9 +66,14 @@ export default function EntityLibraryScreen() {
     };
 
     const handleRun = (entity: IndexedEntity) => {
+        console.log('Running with treeId:', entity.tree_id);
+        console.log('Running with nodeId (root_id):', entity.root_id);
         router.push({
             pathname: '/run-prompt',
-            params: { id: entity.tree_id }, // ✅ use the tree ID instead
+            params: {
+                treeId: entity.tree_id,
+                nodeId: entity.root_id,
+            },
         });
     };
 
@@ -164,4 +171,3 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             backgroundColor: colors.background,
         },
     });
-
