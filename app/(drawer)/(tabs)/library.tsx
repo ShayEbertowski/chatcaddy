@@ -69,12 +69,13 @@ export default function EntityLibraryScreen() {
         console.log('Running with treeId:', entity.tree_id);
         console.log('Running with nodeId (root_id):', entity.root_id);
         router.push({
-            pathname: '/run-prompt',
+            pathname: '/(drawer)/run',
             params: {
                 treeId: entity.tree_id,
                 nodeId: entity.root_id,
             },
         });
+
     };
 
     const handleDeleteRequest = (entity: IndexedEntity) => {

@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator, Text } from 'react-native';
+import { View, Text } from 'react-native';
 import { useComposerStore } from '../../stores/useComposerStore';
 import { useVariableStore } from '../../stores/useVariableStore';
 import RichPromptEditor from '../editor/RichPromptEditor';
-import { inferVariablesFromRoot } from '../../utils/composer/inferVariables';
+import { flattenVariables, inferVariablesFromRoot } from '../../utils/composer/inferVariables';
 import { Variable } from '../../types/prompt';
 
 interface ComposerRunnerProps {
@@ -11,6 +11,7 @@ interface ComposerRunnerProps {
     nodeId: string;
     readOnly?: boolean;
     allowVariableInput?: boolean;
+    onVariablesChange?: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }
 
 export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
@@ -18,6 +19,7 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
     nodeId,
     readOnly = true,
     allowVariableInput = true,
+    onVariablesChange,
 }) => {
     const loadTree = useComposerStore.getState().loadTree;
     const composerTree = useComposerStore((s) => s.composerTree);
@@ -35,11 +37,19 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
                 console.log('Selected node:', node);
                 const inferred = inferVariablesFromRoot(tree);
                 setAllVariables(inferred);
+                onVariablesChange?.(
+                    Object.fromEntries(
+                        Object.entries(inferred).map(([key, val]) => {
+                            if (val.type === 'string') return [key, val.value];
+                            if (val.type === 'prompt') return [key, `{{${val.promptTitle ?? 'Prompt'}}}`];
+                            return [key, ''];
+                        })
+                    )
+                );
             }
         };
         load();
     }, [treeId, nodeId]);
-
 
     if (!composerTree || !composerTree.nodes[nodeId]) {
         console.warn('⚠️ Node not found:', nodeId);
@@ -49,7 +59,6 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
             </View>
         );
     }
-
 
     const node = composerTree.nodes?.[nodeId];
     if (!node) {
@@ -68,7 +77,11 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
                 entityType={node.entityType}
                 onChangeEntityType={() => { }}
                 variables={node.variables as Record<string, Variable>}
-                onChangeVariables={() => { }}
+                onChangeVariables={(updated) => {
+                    setAllVariables(updated);
+                    const flat = flattenVariables(updated); // convert Variable → string
+                    onVariablesChange?.(flat);
+                }}
                 onChipPress={() => { }}
                 readOnly={readOnly}
                 readOnlyContent={readOnly}

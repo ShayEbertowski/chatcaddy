@@ -34,3 +34,14 @@ export function inferVariablesFromRoot(tree: ComposerTree): Record<string, Varia
 
     return vars;
 }
+
+
+export function flattenVariables(vars: Record<string, Variable>): Record<string, string> {
+    return Object.fromEntries(
+        Object.entries(vars).map(([key, val]) => {
+            if (val.type === 'string') return [key, val.value];
+            if (val.type === 'prompt') return [key, `{{${val.promptTitle ?? 'Prompt'}}}`];
+            return [key, ''];
+        })
+    );
+}
