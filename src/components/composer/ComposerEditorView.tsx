@@ -54,7 +54,7 @@ export function ComposerEditorView({
                             )}
                         </View>
 
-                        <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                        {/* <View style={{ flex: 1, alignItems: 'flex-end' }}>
                             {currentNode.childIds?.length > 0 && (
                                 <NavigationButton
                                     icon="chevron-forward"
@@ -64,7 +64,7 @@ export function ComposerEditorView({
                                     }}
                                 />
                             )}
-                        </View>
+                        </View> */}
                     </View>
 
                     <RichPromptEditor
