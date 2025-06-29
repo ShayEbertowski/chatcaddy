@@ -3,17 +3,29 @@ import { View, Text, Button } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { ComposerRunner } from '../../../src/components/composer/ComposerRunner';
 import { runPromptFromTree } from '../../../src/utils/prompt/runPromptFromTree';
-
+import { useColors } from '../../../src/hooks/useColors';
 
 export default function RunPromptScreen() {
     const { treeId, nodeId } = useLocalSearchParams();
+    const colors = useColors();
+
     const [variables, setVariables] = useState<Record<string, any>>({});
     const [output, setOutput] = useState<string | null>(null);
 
     if (!treeId || !nodeId) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text>Missing tree or node ID. Please try again from the library screen.</Text>
+            <View
+                style={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: colors.background,
+                    padding: 16,
+                }}
+            >
+                <Text style={{ color: colors.text }}>
+                    Missing tree or node ID. Please try again from the library screen.
+                </Text>
             </View>
         );
     }
@@ -27,7 +39,6 @@ export default function RunPromptScreen() {
             });
 
             setOutput(result.response ?? '[No output]');
-
         } catch (err) {
             console.error('Error running prompt:', err);
             setOutput('[Error running prompt]');
@@ -35,7 +46,7 @@ export default function RunPromptScreen() {
     };
 
     return (
-        <View style={{ flex: 1, padding: 16 }}>
+        <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
             <ComposerRunner
                 treeId={treeId as string}
                 nodeId={nodeId as string}
@@ -43,11 +54,11 @@ export default function RunPromptScreen() {
                 allowVariableInput={true}
                 onVariablesChange={setVariables}
             />
-            <Button title="Run Prompt" onPress={handleRun} />
+            <Button title="Run Prompt" onPress={handleRun} color={colors.primary} />
             {output && (
                 <View style={{ marginTop: 20 }}>
-                    <Text style={{ fontWeight: 'bold' }}>Output:</Text>
-                    <Text>{output}</Text>
+                    <Text style={{ color: colors.text, fontWeight: 'bold' }}>Output:</Text>
+                    <Text style={{ color: colors.text }}>{output}</Text>
                 </View>
             )}
         </View>

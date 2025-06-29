@@ -1,35 +1,19 @@
-import '../shim';
-import 'react-native-get-random-values';
-
-import { Slot } from 'expo-router';
-import { ThemeProvider } from '../src/theme/ThemeProvider';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Drawer } from 'expo-router/drawer';
 import { StatusBar, View } from 'react-native';
-import { useAuthStore } from '../src/stores/useAuthStore';
-import React, { useEffect } from 'react';
-import { useThemeStore } from '../src/stores/useThemeStore';
-import LoadingScreen from '../src/screens/LoadingScreen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Provider as PaperProvider, MD3LightTheme, MD3DarkTheme, ThemeProvider } from 'react-native-paper';
+import { useEffect } from 'react';
 import { useColors } from '../src/hooks/useColors';
-import { useEntityStore } from '../src/stores/useEntityStore';
-import { Provider as PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
+import { useThemeStore } from '../src/stores/useThemeStore';
+import { CustomDrawerContent } from './(drawer)/_layout';
 
-export default function RootLayout() {
-    useEffect(() => {
-        useAuthStore.getState().loadSession();
-        useEntityStore.getState().loadEntities();
-    }, []);
-
-    const initialized = useThemeStore((s) => s.initialized);
+export default function DrawerLayout() {
     const colors = useColors();
     const isDark = colors.isDark;
 
     useEffect(() => {
         useThemeStore.getState().hydrate();
     }, []);
-
-    if (!initialized) {
-        return <LoadingScreen />;
-    }
 
     const baseTheme = isDark ? MD3DarkTheme : MD3LightTheme;
 
@@ -56,7 +40,10 @@ export default function RootLayout() {
                             barStyle={isDark ? 'light-content' : 'dark-content'}
                             animated
                         />
-                        <Slot />
+                        <Drawer
+                            drawerContent={(props) => <CustomDrawerContent {...props} />}
+                            screenOptions={{ headerShown: false }}
+                        />
                     </View>
                 </ThemeProvider>
             </SafeAreaProvider>

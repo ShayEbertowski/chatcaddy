@@ -12,7 +12,7 @@ export function CustomDrawerContent(props: any) {
     const user = useAuthStore((state) => state.user);
     const signOut = useAuthStore((state) => state.signOut);
     const router = useRouter();
-
+    console.log('🌯 drawer layout colors:', colors);
     return (
         <View style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? StatusBar.currentHeight ?? 44 : 0, backgroundColor: colors.background }}>
             <DrawerContentScrollView {...props} contentContainerStyle={{ paddingHorizontal: 16, flexGrow: 1 }}>

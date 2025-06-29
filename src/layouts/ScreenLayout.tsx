@@ -1,8 +1,8 @@
+// ScreenLayout.tsx
 import { Stack, useRouter } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { useColors } from '../hooks/useColors'; // adjust path if needed
+import { useColors } from '../hooks/useColors';
 
 type Options = {
     title: string;
@@ -18,18 +18,11 @@ export function ScreenLayout({ title, showBack = true }: Options) {
             screenOptions={{
                 headerShown: true,
                 headerTitle: title,
-                headerTitleStyle: {
-                    color: colors.accent, // ← uses your theme's text color
-                },
-                headerStyle: {
-                    backgroundColor: colors.background, // ← uses your theme's background
-                },
+                headerTitleStyle: { color: colors.accent },
+                headerStyle: { backgroundColor: colors.background },
                 headerLeft: showBack
                     ? () => (
-                        <TouchableOpacity
-                            style={{ marginLeft: 12 }}
-                            onPress={() => router.back()}
-                        >
+                        <TouchableOpacity style={{ marginLeft: 12 }} onPress={() => router.back()}>
                             <Ionicons name="arrow-back" size={24} color={colors.accent} />
                         </TouchableOpacity>
                     )
