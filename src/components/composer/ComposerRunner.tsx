@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+// src/components/composer/ComposerRunner.tsx
+import React, { useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
 import { useComposerStore } from '../../stores/useComposerStore';
 import { useVariableStore } from '../../stores/useVariableStore';
-import RichPromptEditor from '../editor/RichPromptEditor';
-import { flattenVariables, inferVariablesFromRoot } from '../../utils/composer/inferVariables';
+import { useColors } from '../../hooks/useColors';
+import { inferVariablesFromRoot } from '../../utils/composer/inferVariables';
 import { Variable } from '../../types/prompt';
 
 interface ComposerRunnerProps {
@@ -11,82 +12,104 @@ interface ComposerRunnerProps {
     nodeId: string;
     readOnly?: boolean;
     allowVariableInput?: boolean;
-    onVariablesChange?: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+    onVariablesChange?: (flatVars: Record<string, string>) => void;
 }
 
 export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
     treeId,
     nodeId,
-    readOnly = true,
-    allowVariableInput = true,
-    onVariablesChange,
 }) => {
-    const loadTree = useComposerStore.getState().loadTree;
-    const composerTree = useComposerStore((s) => s.composerTree);
+    const colors = useColors();
+    const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
     const setAllVariables = useVariableStore((s) => s.setVariables);
+    const variables = useVariableStore((s) => s.values);
+    const [contentParts, setContentParts] = useState<string[]>([]);
 
     useEffect(() => {
-        const load = async () => {
-            console.log('Loading tree:', treeId);
-            await loadTree(treeId);
-            const tree = useComposerStore.getState().composerTree;
-            console.log('Loaded composerTree:', tree);
-            console.log('Expected nodeId:', nodeId);
-            if (tree) {
-                const node = tree.nodes?.[nodeId];
-                console.log('Selected node:', node);
-                const inferred = inferVariablesFromRoot(tree);
-                setAllVariables(inferred);
-                onVariablesChange?.(
-                    Object.fromEntries(
-                        Object.entries(inferred).map(([key, val]) => {
-                            if (val.type === 'string') return [key, val.value];
-                            if (val.type === 'prompt') return [key, `{{${val.promptTitle ?? 'Prompt'}}}`];
-                            return [key, ''];
-                        })
-                    )
-                );
+        try {
+            const store = useComposerStore.getState();
+            store.loadTree(treeId);
+
+            const tree = store.composerTree;
+            if (!tree) return;
+
+            const inferred = inferVariablesFromRoot(tree);
+
+            // TEMP: Assign test values
+            inferred['topic'] = {
+                type: 'string',
+                value: 'AI-generated summaries',
+                richCapable: false,
+            };
+            inferred['tone'] = {
+                type: 'string',
+                value: 'a friendly tone',
+                richCapable: false,
+            };
+
+            setAllVariables(inferred);
+
+            const node = tree.nodes?.[nodeId];
+            if (!node) {
+                setStatus('error');
+                return;
             }
-        };
-        load();
+
+            const parts = node.content.split(/(\{\{.*?\}\})/g) ?? [];
+            setContentParts(parts);
+
+            setStatus('ready');
+        } catch (err) {
+            setStatus('error');
+        }
     }, [treeId, nodeId]);
 
-    if (!composerTree || !composerTree.nodes[nodeId]) {
-        console.warn('⚠️ Node not found:', nodeId);
+    if (status === 'loading') {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ color: 'red' }}>⚠️ Node not found: {nodeId}</Text>
+            <View
+                style={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: colors.background,
+                }}
+            >
+                <Text style={{ color: colors.text }}>Loading...</Text>
             </View>
         );
     }
 
-    const node = composerTree.nodes?.[nodeId];
-    if (!node) {
+    if (status === 'error') {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ color: 'red' }}>⚠️ Node not found: {nodeId}</Text>
+            <View
+                style={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: colors.background,
+                }}
+            >
+                <Text style={{ color: colors.error }}>Error loading prompt.</Text>
             </View>
         );
     }
 
     return (
-        <View style={{ flex: 1 }}>
-            <RichPromptEditor
-                text={node.content}
-                onChangeText={() => { }}
-                entityType={node.entityType}
-                onChangeEntityType={() => { }}
-                variables={node.variables as Record<string, Variable>}
-                onChangeVariables={(updated) => {
-                    setAllVariables(updated);
-                    const flat = flattenVariables(updated); // convert Variable → string
-                    onVariablesChange?.(flat);
-                }}
-                onChipPress={() => { }}
-                readOnly={readOnly}
-                readOnlyContent={readOnly}
-                readOnlyVariables={!allowVariableInput}
-            />
+        <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
+            <Text style={{ color: colors.text, fontSize: 16, marginBottom: 12 }}>
+                Preview:
+            </Text>
+            <Text style={{ color: colors.text, fontSize: 16 }}>
+                {contentParts.map((part, i) => {
+                    const match = part.match(/\{\{(.*?)\}\}/);
+                    if (match) {
+                        const varName = match[1];
+                        const val = variables?.[varName];
+                        return val?.type === 'string' ? val.value : `[${varName}]`;
+                    }
+                    return part;
+                })}
+            </Text>
         </View>
     );
 };

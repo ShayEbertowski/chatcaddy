@@ -44,6 +44,7 @@ export default function RichPromptEditor({
     onChangeText,
     entityType,
     onChangeEntityType,
+    onChangeVariables,
     onChipPress,
     readOnly = false,
     readOnlyVariables = readOnly,
@@ -61,7 +62,7 @@ export default function RichPromptEditor({
     const styles = getStyles(colors);
 
     const entityStore = useEntityStore();
-    const { values, setVariable, getVariable, removeVariable } = useVariableStore.getState();
+    const { setVariable, getVariable, removeVariable } = useVariableStore.getState();
 
     const [showVariables, setShowVariables] = useState(true);
     const [showPreview, setShowPreview] = useState(true);
@@ -73,9 +74,12 @@ export default function RichPromptEditor({
         [parts]
     );
 
-    /* ─────────────────────────────────────────────────── */
-    /*  Handlers                                           */
-    /* ─────────────────────────────────────────────────── */
+    const pushVariableChange = () => {
+        if (onChangeVariables) {
+            onChangeVariables(useVariableStore.getState().values);
+        }
+
+    };
 
     const handleInsert = (
         mode: 'Function' | 'Snippet' | 'Variable',
@@ -85,6 +89,7 @@ export default function RichPromptEditor({
         if (mode === 'Variable') {
             if (isEditingVariable) removeVariable(name);
             setVariable(name, { type: 'string', value, richCapable: false });
+            pushVariableChange();
         } else {
             const newEntity = {
                 id: name,
@@ -110,7 +115,6 @@ export default function RichPromptEditor({
             });
         }
 
-        // Reset modal state
         setIsEditingVariable(false);
         setTempVariableName('');
         setTempVariableValue('');
@@ -123,13 +127,8 @@ export default function RichPromptEditor({
         { label: 'Snippet', value: 'Snippet' },
     ];
 
-    /* ─────────────────────────────────────────────────── */
-    /*  Render                                             */
-    /* ─────────────────────────────────────────────────── */
-
     return (
         <View style={styles.container}>
-            {/* Header with “insert” button */}
             <View style={styles.headerRow}>
                 <View style={{ flex: 1 }} />
                 {!(readOnlyContent && readOnlyVariables) && (
@@ -140,19 +139,9 @@ export default function RichPromptEditor({
                         <Ionicons name="add" size={20} color={colors.accent} />
                     </TouchableOpacity>
                 )}
-
             </View>
 
-            {/* Entity-type dropdown */}
-            {/* <View style={{ marginBottom: 16 }}>
-                <DropdownSelector
-                    value={entityType}
-                    options={options}
-                    onSelect={onChangeEntityType}
-                />
-            </View> */}
-
-            {/* Prompt input */}
+            {/* Text Editor */}
             <TextInput
                 value={text}
                 onChangeText={onChangeText}
@@ -167,7 +156,6 @@ export default function RichPromptEditor({
                 placeholderTextColor={colors.secondaryText}
             />
 
-            {/* Variables */}
             <CollapsibleSection
                 title="Variables"
                 isOpen={showVariables}
@@ -202,7 +190,6 @@ export default function RichPromptEditor({
 
             <View style={sharedStyles.divider} />
 
-            {/* Preview */}
             <CollapsibleSection
                 title="Preview"
                 isOpen={showPreview}
@@ -237,7 +224,6 @@ export default function RichPromptEditor({
 
             <View style={sharedStyles.divider} />
 
-            {/* Insert Modal */}
             <InsertModal
                 visible={showInsertModal}
                 mode={editMode}
@@ -271,7 +257,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             padding: 8,
             borderRadius: 6,
         },
-
         input: {
             backgroundColor: colors.card,
             borderColor: colors.border,
@@ -282,14 +267,12 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             paddingHorizontal: 16,
             color: colors.text,
         },
-
         chipContainer: {
             flexDirection: 'row',
             flexWrap: 'wrap',
             gap: 8,
             marginTop: 10,
         },
-
         section: {
             backgroundColor: colors.card,
             borderRadius: 12,
@@ -297,6 +280,5 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             paddingHorizontal: 16,
             marginBottom: 12,
         },
-
         previewContainer: { paddingVertical: 12, paddingHorizontal: 8 },
     });
