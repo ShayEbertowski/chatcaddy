@@ -1,11 +1,18 @@
-// src/components/composer/ComposerRunner.tsx
-import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+    View,
+    Text,
+    Pressable,
+    TouchableOpacity,
+    TextInput,
+    Modal,
+} from 'react-native';
+
 import { useComposerStore } from '../../stores/useComposerStore';
 import { useVariableStore } from '../../stores/useVariableStore';
 import { useColors } from '../../hooks/useColors';
 import { inferVariablesFromRoot } from '../../utils/composer/inferVariables';
-import { Variable } from '../../types/prompt';
+import { getSharedStyles } from '../../styles/shared';
 
 interface ComposerRunnerProps {
     treeId: string;
@@ -20,96 +27,145 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
     nodeId,
 }) => {
     const colors = useColors();
-    const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-    const setAllVariables = useVariableStore((s) => s.setVariables);
-    const variables = useVariableStore((s) => s.values);
-    const [contentParts, setContentParts] = useState<string[]>([]);
+    const sharedStyles = getSharedStyles(colors);
+    const composerTree = useComposerStore((s) => s.composerTree);
+    const [contentParts, setContentParts] = useState<string[] | null>(null);
+
+    const [editingVar, setEditingVar] = useState<string | null>(null);
+    const [tempValue, setTempValue] = useState('');
+
+    const node = useMemo(() => composerTree?.nodes?.[nodeId], [composerTree, nodeId]);
 
     useEffect(() => {
-        try {
-            const store = useComposerStore.getState();
-            store.loadTree(treeId);
+        useComposerStore.getState().loadTree(treeId);
+    }, [treeId]);
 
-            const tree = store.composerTree;
-            if (!tree) return;
+    useEffect(() => {
+        if (!composerTree || !node) return;
 
-            const inferred = inferVariablesFromRoot(tree);
+        const inferred = inferVariablesFromRoot(composerTree);
+        useVariableStore.getState().setVariables(inferred);
 
-            // TEMP: Assign test values
-            inferred['topic'] = {
-                type: 'string',
-                value: 'AI-generated summaries',
-                richCapable: false,
-            };
-            inferred['tone'] = {
-                type: 'string',
-                value: 'a friendly tone',
-                richCapable: false,
-            };
+        const parts = node.content.split(/(\{\{.*?\}\})/g);
+        setContentParts(parts);
+    }, [composerTree, node]);
 
-            setAllVariables(inferred);
-
-            const node = tree.nodes?.[nodeId];
-            if (!node) {
-                setStatus('error');
-                return;
-            }
-
-            const parts = node.content.split(/(\{\{.*?\}\})/g) ?? [];
-            setContentParts(parts);
-
-            setStatus('ready');
-        } catch (err) {
-            setStatus('error');
-        }
-    }, [treeId, nodeId]);
-
-    if (status === 'loading') {
+    if (!composerTree || !node || !contentParts) {
         return (
-            <View
-                style={{
-                    flex: 1,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    backgroundColor: colors.background,
-                }}
-            >
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
                 <Text style={{ color: colors.text }}>Loading...</Text>
             </View>
         );
     }
 
-    if (status === 'error') {
-        return (
+    return (
+        <>
             <View
                 style={{
-                    flex: 1,
-                    justifyContent: 'center',
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
                     alignItems: 'center',
-                    backgroundColor: colors.background,
+                    gap: 4,
+                    paddingVertical: 4,
                 }}
             >
-                <Text style={{ color: colors.error }}>Error loading prompt.</Text>
-            </View>
-        );
-    }
-
-    return (
-        <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
-            <Text style={{ color: colors.text, fontSize: 16, marginBottom: 12 }}>
-                Preview:
-            </Text>
-            <Text style={{ color: colors.text, fontSize: 16 }}>
                 {contentParts.map((part, i) => {
                     const match = part.match(/\{\{(.*?)\}\}/);
                     if (match) {
                         const varName = match[1];
-                        const val = variables?.[varName];
-                        return val?.type === 'string' ? val.value : `[${varName}]`;
+                        return (
+                            <TouchableOpacity
+                                key={`chip-${i}`}
+                                onPress={() => {
+                                    const currentVar = useVariableStore.getState().values[varName];
+                                    if (currentVar?.type === 'string') {
+                                        setTempValue(currentVar.value ?? '');
+                                    } else {
+                                        setTempValue('');
+                                    }
+
+                                    setEditingVar(varName);
+                                }}
+                                style={sharedStyles.chip}
+                            >
+                                <Text style={sharedStyles.chipText}>{varName}</Text>
+                            </TouchableOpacity>
+                        );
                     }
-                    return part;
+
+                    return (
+                        <Text
+                            key={`text-${i}`}
+                            style={{
+                                color: colors.text,
+                                fontSize: 16,
+                                lineHeight: 24,
+                            }}
+                        >
+                            {part}
+                        </Text>
+                    );
                 })}
-            </Text>
-        </View>
+            </View>
+
+            {editingVar && (
+                <Modal
+                    transparent
+                    animationType="slide"
+                    onRequestClose={() => setEditingVar(null)}
+                >
+                    <View style={{
+                        flex: 1,
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}>
+                        <View style={{
+                            backgroundColor: colors.card,
+                            padding: 20,
+                            borderRadius: 10,
+                            width: '80%',
+                        }}>
+                            <Text style={{ color: colors.text, marginBottom: 10 }}>
+                                Enter value for "{editingVar}"
+                            </Text>
+                            <TextInput
+                                value={tempValue}
+                                onChangeText={setTempValue}
+                                placeholder="Type something..."
+                                style={{
+                                    borderColor: colors.borderThin,
+                                    borderWidth: 1,
+                                    padding: 10,
+                                    borderRadius: 6,
+                                    color: colors.text,
+                                    marginBottom: 16,
+                                }}
+                            />
+                            <Pressable
+                                onPress={() => {
+                                    if (editingVar !== null) {
+                                        useVariableStore.getState().setVariable(editingVar, {
+                                            type: 'string',
+                                            value: tempValue,
+                                            richCapable: false,
+                                        });
+                                    }
+                                    setEditingVar(null);
+                                }}
+                                style={{
+                                    backgroundColor: colors.accent,
+                                    paddingVertical: 10,
+                                    borderRadius: 6,
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <Text style={{ color: '#fff' }}>Save</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </Modal>
+            )}
+        </>
     );
 };
