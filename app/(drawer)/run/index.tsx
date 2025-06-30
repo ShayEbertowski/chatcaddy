@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { ComposerRunner } from '../../../src/components/composer/ComposerRunner';
 import { runPromptFromTree } from '../../../src/utils/prompt/runPromptFromTree';
 import { useColors } from '../../../src/hooks/useColors';
@@ -9,6 +9,7 @@ import { useVariableStore } from '../../../src/stores/useVariableStore';
 import { ThemedButton } from '../../../src/components/ui/ThemedButton';
 import { PromptResult } from '../../../src/components/prompt/PromptResult';
 import CollapsibleSection from '../../../src/components/shared/CollapsibleSection';
+import { useComposerStore } from '../../../src/stores/useComposerStore';
 
 
 export default function RunPromptScreen() {
@@ -65,6 +66,25 @@ export default function RunPromptScreen() {
         // Optional: capture or persist variable changes
     }, []);
 
+    const handleChipPress = (name: string) => {
+        const allVars = useVariableStore.getState().values;
+        const composerTree = useComposerStore.getState().composerTree;
+        const variable = allVars[name];
+
+        if (variable?.type === 'prompt') {
+            const targetNode = composerTree?.nodes?.[variable.promptId];
+            const hasUnfilledVariables = targetNode?.content?.includes('{{');
+
+            if (targetNode && hasUnfilledVariables) {
+                router.push(`/(drawer)/(composer)/${treeId}/${targetNode.id}`);
+                return;
+            }
+        }
+
+        // fallback: show modal or no-op
+        Alert.alert('Variable Info', `This variable is a string or already resolved.`);
+    };
+
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 140 }}>
@@ -74,6 +94,7 @@ export default function RunPromptScreen() {
                     readOnly={true}
                     allowVariableInput={true}
                     onVariablesChange={handleVariablesChange}
+                    onChipPress={handleChipPress}
                 />
 
                 {(response !== null || isLoading) && (

@@ -22,6 +22,7 @@ interface ComposerRunnerProps {
     readOnly?: boolean;
     allowVariableInput?: boolean;
     onVariablesChange?: (flatVars: Record<string, string>) => void;
+    onChipPress?: (name: string) => void;
 }
 
 function isStringVariable(v: Variable): v is StringVariable {
@@ -32,6 +33,7 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
     treeId,
     nodeId,
     onVariablesChange,
+    onChipPress
 }) => {
     const colors = useColors();
     const sharedStyles = getSharedStyles(colors);
@@ -49,12 +51,21 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
     useEffect(() => {
         if (!composerTree || !node) return;
 
-        const inferred = inferVariablesFromRoot(composerTree);
-        useVariableStore.getState().setVariables(inferred);
+        const cleared = Object.fromEntries(
+            Object.entries(inferVariablesFromRoot(composerTree)).map(([k, v]) => {
+                return [
+                    k,
+                    v.type === 'string'
+                        ? { ...v, value: '' }
+                        : v // leave prompt vars unchanged for now
+                ];
+            })
+        );
+        useVariableStore.getState().setVariables(cleared);
 
         if (onVariablesChange) {
             const flatVars: Record<string, string> = {};
-            for (const [k, v] of Object.entries(inferred)) {
+            for (const [k, v] of Object.entries(cleared)) {
                 if (isStringVariable(v)) flatVars[k] = v.value;
             }
             onVariablesChange(flatVars);
@@ -92,12 +103,14 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
                                 <View key={`chip-${i}`} style={{ alignItems: 'flex-start', marginRight: 8, marginBottom: 12 }}>
                                     <TouchableOpacity
                                         onPress={() => {
-                                            if (variable?.type === 'string') {
-                                                const stringVar = variable as StringVariable;
-                                                setTempValue(stringVar.value ?? '');
-                                            } else {
-                                                setTempValue('');
+                                            if (variable?.type !== 'string') {
+                                                // Let parent handle this variable chip click (e.g. navigate)
+                                                if (onChipPress) onChipPress(varName);
+                                                return;
                                             }
+
+                                            const stringVar = variable as StringVariable;
+                                            setTempValue(stringVar.value ?? '');
                                             setEditingVar(varName);
                                         }}
                                         style={sharedStyles.chip}

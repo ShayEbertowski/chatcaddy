@@ -17,6 +17,10 @@ type ComposerEditorViewProps = {
     onSaveTree?: () => void;
 };
 
+function getFlattenedPromptContent(path: ComposerNode[]): string {
+    return path.map((node) => node.content.trim()).join(' ');
+}
+
 export function ComposerEditorView({
     treeId,
     currentNode,
@@ -69,6 +73,7 @@ export function ComposerEditorView({
 
                     <RichPromptEditor
                         text={currentNode.content}
+                        // fullPreviewText={getFlattenedPromptContent(nodePath)}
                         onChangeText={(text) => onChangeNode({ content: text })}
                         entityType={fallbackType}
                         onChangeEntityType={(entityType) => onChangeNode({ entityType })}

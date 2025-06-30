@@ -34,6 +34,7 @@ export interface RichPromptEditorProps {
     readOnly?: boolean;
     readOnlyVariables?: boolean;
     readOnlyContent?: boolean;
+    fullPreviewText?: string;
 }
 
 export const uiEntityTypes = ['Prompt', 'Function', 'Snippet'] as const;
@@ -44,11 +45,13 @@ export default function RichPromptEditor({
     onChangeText,
     entityType,
     onChangeEntityType,
+    variables,
     onChangeVariables,
     onChipPress,
     readOnly = false,
     readOnlyVariables = readOnly,
     readOnlyContent = readOnly,
+    fullPreviewText,
 }: RichPromptEditorProps) {
     const [selection, setSelection] = useState({ start: 0, end: 0 });
     const [showInsertModal, setShowInsertModal] = useState(false);
@@ -203,19 +206,26 @@ export default function RichPromptEditor({
                     ) : (
                         <View style={styles.previewContainer}>
                             <Text style={sharedStyles.previewVariable}>
-                                {parts
-                                    .map((chunk) =>
-                                        chunk.type === 'variable'
-                                            ? resolveVariableDisplayValue(
-                                                getVariable(chunk.name) ?? {
+                                {(fullPreviewText ?? text)
+                                    .split(/(\{\{.*?\}\})/)
+                                    .map((segment, i) => {
+                                        const match = segment.match(/\{\{(.*?)\}\}/);
+                                        if (match) {
+                                            const varName = match[1].trim();
+                                            return (
+                                                resolveVariableDisplayValue(getVariable(varName) ?? {
                                                     type: 'string',
-                                                    value: '',
+                                                    value: '___',
                                                     richCapable: false,
-                                                }
-                                            )
-                                            : chunk.value
-                                    )
+                                                }) || '___'
+                                            );
+                                        } else {
+                                            return segment;
+                                        }
+                                    })
                                     .join('')}
+
+
                             </Text>
                         </View>
                     )}
