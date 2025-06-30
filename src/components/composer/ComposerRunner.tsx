@@ -6,6 +6,7 @@ import {
     TouchableOpacity,
     TextInput,
     Modal,
+    ScrollView,
 } from 'react-native';
 
 import { useComposerStore } from '../../stores/useComposerStore';
@@ -13,6 +14,7 @@ import { useVariableStore } from '../../stores/useVariableStore';
 import { useColors } from '../../hooks/useColors';
 import { inferVariablesFromRoot } from '../../utils/composer/inferVariables';
 import { getSharedStyles } from '../../styles/shared';
+import { StringVariable, Variable } from '../../types/prompt';
 
 interface ComposerRunnerProps {
     treeId: string;
@@ -22,15 +24,19 @@ interface ComposerRunnerProps {
     onVariablesChange?: (flatVars: Record<string, string>) => void;
 }
 
+function isStringVariable(v: Variable): v is StringVariable {
+    return v.type === 'string' && 'value' in v && 'richCapable' in v;
+}
+
 export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
     treeId,
     nodeId,
+    onVariablesChange,
 }) => {
     const colors = useColors();
     const sharedStyles = getSharedStyles(colors);
     const composerTree = useComposerStore((s) => s.composerTree);
     const [contentParts, setContentParts] = useState<string[] | null>(null);
-
     const [editingVar, setEditingVar] = useState<string | null>(null);
     const [tempValue, setTempValue] = useState('');
 
@@ -46,6 +52,14 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
         const inferred = inferVariablesFromRoot(composerTree);
         useVariableStore.getState().setVariables(inferred);
 
+        if (onVariablesChange) {
+            const flatVars: Record<string, string> = {};
+            for (const [k, v] of Object.entries(inferred)) {
+                if (isStringVariable(v)) flatVars[k] = v.value;
+            }
+            onVariablesChange(flatVars);
+        }
+
         const parts = node.content.split(/(\{\{.*?\}\})/g);
         setContentParts(parts);
     }, [composerTree, node]);
@@ -60,53 +74,57 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
 
     return (
         <>
-            <View
-                style={{
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    gap: 4,
-                    paddingVertical: 4,
-                }}
-            >
-                {contentParts.map((part, i) => {
-                    const match = part.match(/\{\{(.*?)\}\}/);
-                    if (match) {
-                        const varName = match[1];
+            <ScrollView contentContainerStyle={{ padding: 16 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, paddingVertical: 4 }}>
+                    {contentParts.map((part, i) => {
+                        const match = part.match(/\{\{(.*?)\}\}/);
+                        if (match) {
+                            const varName = match[1];
+                            const variable = useVariableStore.getState().values[varName];
+                            let valueDisplay = '[Not Set]';
+
+                            if (variable?.type === 'string') {
+                                const stringVar = variable as StringVariable;
+                                valueDisplay = `"${stringVar.value}"`;
+                            }
+
+                            return (
+                                <View key={`chip-${i}`} style={{ alignItems: 'flex-start', marginRight: 8, marginBottom: 12 }}>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            if (variable?.type === 'string') {
+                                                const stringVar = variable as StringVariable;
+                                                setTempValue(stringVar.value ?? '');
+                                            } else {
+                                                setTempValue('');
+                                            }
+                                            setEditingVar(varName);
+                                        }}
+                                        style={sharedStyles.chip}
+                                    >
+                                        <Text style={sharedStyles.chipText}>{varName}</Text>
+                                    </TouchableOpacity>
+                                    <Text style={{ fontSize: 12, color: colors.text }}>{valueDisplay}</Text>
+
+                                </View>
+                            );
+                        }
+
                         return (
-                            <TouchableOpacity
-                                key={`chip-${i}`}
-                                onPress={() => {
-                                    const currentVar = useVariableStore.getState().values[varName];
-                                    if (currentVar?.type === 'string') {
-                                        setTempValue(currentVar.value ?? '');
-                                    } else {
-                                        setTempValue('');
-                                    }
-
-                                    setEditingVar(varName);
+                            <Text
+                                key={`text-${i}`}
+                                style={{
+                                    color: colors.text,
+                                    fontSize: 16,
+                                    lineHeight: 24,
                                 }}
-                                style={sharedStyles.chip}
                             >
-                                <Text style={sharedStyles.chipText}>{varName}</Text>
-                            </TouchableOpacity>
+                                {part}
+                            </Text>
                         );
-                    }
-
-                    return (
-                        <Text
-                            key={`text-${i}`}
-                            style={{
-                                color: colors.text,
-                                fontSize: 16,
-                                lineHeight: 24,
-                            }}
-                        >
-                            {part}
-                        </Text>
-                    );
-                })}
-            </View>
+                    })}
+                </View>
+            </ScrollView>
 
             {editingVar && (
                 <Modal
@@ -150,6 +168,16 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
                                             value: tempValue,
                                             richCapable: false,
                                         });
+
+                                        if (onVariablesChange) {
+                                            const allVars = useVariableStore.getState().values;
+                                            const flatVars = Object.fromEntries(
+                                                Object.entries(allVars)
+                                                    .filter(([_k, v]): v is StringVariable => isStringVariable(v))
+                                                    .map(([k, v]) => [k, v.value])
+                                            );
+                                            onVariablesChange(flatVars);
+                                        }
                                     }
                                     setEditingVar(null);
                                 }}

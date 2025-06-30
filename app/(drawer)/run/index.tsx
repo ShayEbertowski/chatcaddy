@@ -1,17 +1,22 @@
-// app/(drawer)/run/index.tsx
 import React, { useCallback, useState } from 'react';
-import { View, Text, Button } from 'react-native';
+import { View, Text, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { ComposerRunner } from '../../../src/components/composer/ComposerRunner';
 import { runPromptFromTree } from '../../../src/utils/prompt/runPromptFromTree';
 import { useColors } from '../../../src/hooks/useColors';
 import { flattenVariables } from '../../../src/utils/composer/inferVariables';
 import { useVariableStore } from '../../../src/stores/useVariableStore';
+import { ThemedButton } from '../../../src/components/ui/ThemedButton';
+import { PromptResult } from '../../../src/components/prompt/PromptResult';
+import CollapsibleSection from '../../../src/components/shared/CollapsibleSection';
+
 
 export default function RunPromptScreen() {
     const { treeId, nodeId } = useLocalSearchParams();
     const colors = useColors();
-    const [output, setOutput] = useState<string | null>(null);
+    const [response, setResponse] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [showResponse, setShowResponse] = useState(true);
 
     if (!treeId || !nodeId) {
         return (
@@ -24,41 +29,90 @@ export default function RunPromptScreen() {
     }
 
     const handleRun = async () => {
+        const allVars = useVariableStore.getState().values;
+        const flat = flattenVariables(allVars);
+
+        const emptyKeys = Object.entries(flat)
+            .filter(([_, value]) => typeof value !== 'string' || value.trim() === '')
+
+
+        if (emptyKeys.length > 0) {
+            Alert.alert(
+                'Missing Inputs',
+                `Please fill in the following variable${emptyKeys.length > 1 ? 's' : ''}: ${emptyKeys.join(', ')}`,
+            );
+            return;
+        }
+
         try {
-            const variables = flattenVariables(useVariableStore.getState().values);
+            setIsLoading(true);
             const result = await runPromptFromTree({
                 treeId: treeId as string,
                 nodeId: nodeId as string,
-                variableValues: variables,
+                variableValues: flat,
             });
-
-            setOutput(result.response ?? '[No output]');
+            setResponse(result.response ?? '[No output]');
         } catch (err) {
             console.error('Error running prompt:', err);
-            setOutput('[Error running prompt]');
+            Alert.alert('Error', 'There was a problem running the prompt.');
+            setResponse('[Error running prompt]');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleVariablesChange = useCallback((flatVars: Record<string, string>) => {
-        // Do nothing for now or store if needed
+        // Optional: capture or persist variable changes
     }, []);
 
     return (
-        <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
-            <ComposerRunner
-                treeId={treeId as string}
-                nodeId={nodeId as string}
-                readOnly={true}
-                allowVariableInput={true}
-                onVariablesChange={handleVariablesChange}
-            />
-            <Button title="Run Prompt" onPress={handleRun} color={colors.primary} />
-            {output && (
-                <View style={{ marginTop: 20 }}>
-                    <Text style={{ color: colors.text, fontWeight: 'bold' }}>Output:</Text>
-                    <Text style={{ color: colors.text }}>{output}</Text>
-                </View>
-            )}
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 140 }}>
+                <ComposerRunner
+                    treeId={treeId as string}
+                    nodeId={nodeId as string}
+                    readOnly={true}
+                    allowVariableInput={true}
+                    onVariablesChange={handleVariablesChange}
+                />
+
+                {(response !== null || isLoading) && (
+                    <CollapsibleSection
+                        title="Response"
+                        isOpen={showResponse}
+                        onToggle={() => setShowResponse(prev => !prev)}
+                    >
+                        {isLoading ? (
+                            <ActivityIndicator size="large" color={colors.accent} style={{ marginVertical: 20 }} />
+                        ) : (
+                            <PromptResult
+                                response={response ?? ''}
+                                isLoading={false}
+                                onClear={() => setResponse(null)}
+                            />
+                        )}
+                    </CollapsibleSection>
+                )}
+            </ScrollView>
+
+            <View
+                style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    padding: 16,
+                    backgroundColor: colors.background,
+                    borderTopColor: colors.borderThin,
+                    borderTopWidth: 1,
+                }}
+            >
+                <ThemedButton
+                    title="Run Prompt"
+                    onPress={handleRun}
+                    colorKey="primary"
+                />
+            </View>
         </View>
     );
 }
