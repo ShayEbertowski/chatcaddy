@@ -1,14 +1,12 @@
 import { Alert } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { fillVariables } from './fillVariables';
 
 type RunPromptResult =
     | { response: string }
     | { error: string };
 
 export async function runPrompt(
-    input: string,
-    filledValues: Record<string, string>
+    input: string
 ): Promise<RunPromptResult> {
     try {
         const apiKey = await SecureStore.getItemAsync('openai_api_key');
@@ -16,10 +14,7 @@ export async function runPrompt(
             return { error: 'No API key found. Please enter one in settings.' };
         }
 
-        const finalPromptOrError = fillVariables(input, filledValues);
-        if (finalPromptOrError instanceof Error) {
-            return { error: finalPromptOrError.message };
-        }
+        const finalPrompt = input;
 
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -29,7 +24,7 @@ export async function runPrompt(
             },
             body: JSON.stringify({
                 model: 'gpt-3.5-turbo',
-                messages: [{ role: 'user', content: finalPromptOrError }],
+                messages: [{ role: 'user', content: finalPrompt }],
             }),
         });
 

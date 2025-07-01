@@ -11,6 +11,8 @@ import { PromptResult } from '../../../src/components/prompt/PromptResult';
 import CollapsibleSection from '../../../src/components/shared/CollapsibleSection';
 import { useComposerStore } from '../../../src/stores/useComposerStore';
 import { NavigationButton } from '../../../src/components/ui/NavigationButton';
+import { Variable } from '../../../src/types/prompt';
+import { flattenToStrings } from '../../../src/utils/variables/flattenToStrings';
 
 export default function RunPromptScreen() {
     const { treeId, nodeId } = useLocalSearchParams();
@@ -34,8 +36,10 @@ export default function RunPromptScreen() {
     }
 
     const handleRun = async () => {
+
         const allVars = useVariableStore.getState().values;
-        const flat = flattenVariables(allVars);
+        const flat = flattenToStrings(allVars); // <- new clean flat strings
+
 
         const emptyKeys = Object.entries(flat)
             .filter(([_, value]) => typeof value !== 'string' || value.trim() === '');
@@ -50,11 +54,35 @@ export default function RunPromptScreen() {
 
         try {
             setIsLoading(true);
+            const variableValues: Record<string, Variable> = {};
+
+            for (const [key, value] of Object.entries(flat)) {
+                if (value.startsWith('{{') && value.endsWith('}}')) {
+                    const promptKey = value.slice(2, -2).trim();
+                    const composerNode = composerTree?.nodes?.[promptKey];
+                    if (composerNode) {
+                        variableValues[key] = {
+                            type: 'prompt',
+                            promptId: promptKey,
+                            promptTitle: composerNode.title,
+                        };
+                        continue;
+                    }
+                }
+
+                variableValues[key] = {
+                    type: 'string',
+                    value,
+                    richCapable: false,
+                };
+            }
+
             const result = await runPromptFromTree({
                 treeId: treeId as string,
                 nodeId: nodeId as string,
-                variableValues: flat,
+                variableValues,
             });
+
             setResponse(result.response ?? '[No output]');
         } catch (err) {
             console.error('Error running prompt:', err);
@@ -74,18 +102,13 @@ export default function RunPromptScreen() {
         const composerTree = useComposerStore.getState().composerTree;
         const variable = allVars[name];
 
-        if (!variable) {
-            Alert.alert('Missing Variable', `Variable "${name}" not found.`);
-            return;
-        }
-
-        if (variable.type === 'string') {
+        if (variable?.type === 'string') {
             setTempValue(variable.value ?? '');
             setEditingVar(name);
             return;
         }
 
-        if (variable.type === 'prompt') {
+        if (variable?.type === 'prompt') {
             const targetNode = composerTree?.nodes?.[variable.promptId];
             if (!targetNode) {
                 Alert.alert('Invalid Reference', `No node found for ID: ${variable.promptId}`);
@@ -96,8 +119,19 @@ export default function RunPromptScreen() {
             if (hasVars) {
                 setFocusedNodeId(targetNode.id);
             } else {
-                Alert.alert('Already Resolved', 'This prompt has no unfilled variables.');
+                useVariableStore.getState().setVariable(name, {
+                    type: 'string',
+                    value: '',
+                    richCapable: false,
+                });
+                setTempValue('');
+                setEditingVar(name);
             }
+            return;
+        }
+
+        if (!variable) {
+            Alert.alert('Missing Variable', `Variable "${name}" not found.`);
         }
     };
 
