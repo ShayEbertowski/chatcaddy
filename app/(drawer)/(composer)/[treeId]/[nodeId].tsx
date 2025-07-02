@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { JSX, useEffect, useRef, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Snackbar } from 'react-native-paper';
@@ -22,8 +22,8 @@ export default function ComposerNodeScreen() {
     const initialPathIds = Array.isArray(rawPath)
         ? JSON.parse(rawPath[0])
         : rawPath
-        ? JSON.parse(rawPath)
-        : undefined;
+            ? JSON.parse(rawPath)
+            : undefined;
 
     const screenKey = `${treeId}-${nodeId}`;
 
@@ -57,7 +57,6 @@ function ComposerNodeScreenInner({
     } = useComposerEditingState(treeId, nodeId, { initialPathIds });
 
     const composerTree = useComposerStore((s) => s.composerTree);
-    console.log("🥶 composer tree", composerTree)
 
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
@@ -65,6 +64,7 @@ function ComposerNodeScreenInner({
     const [saving, setSaving] = useState(false);
     const [snackOpen, setSnackOpen] = useState(false);
     const [queuedSave, setQueuedSave] = useState(false);
+    const [showMiniMap, setShowMiniMap] = useState(false);
 
     const loadedOnce = useRef(false);
 
@@ -82,10 +82,8 @@ function ComposerNodeScreenInner({
     }, [treeId]);
 
     const node = composerTree?.nodes?.[nodeId];
-
     const isAtRoot = node?.id === composerTree?.rootId;
 
-    // When Save is triggered from a child node, redirect to root and queue save
     const handleSaveTreeRequest = () => {
         if (isAtRoot) {
             openSaveModal();
@@ -95,7 +93,6 @@ function ComposerNodeScreenInner({
         }
     };
 
-    // After navigating to root, detect and open modal
     useEffect(() => {
         if (queuedSave && isAtRoot) {
             setQueuedSave(false);
@@ -130,6 +127,35 @@ function ComposerNodeScreenInner({
         }
     };
 
+    const renderNodeBranch = (id: string, level: number = 0): JSX.Element | null => {
+        if (!composerTree) return null;
+        const node = composerTree.nodes[id];
+        if (!node) return null;
+
+        return (
+            <View key={id} style={{ marginLeft: level * 12, marginBottom: 6 }}>
+                <Text
+                    onPress={() => {
+                        router.push(`/(drawer)/(composer)/${treeId}/${id}`);
+                        setShowMiniMap(false);
+                    }}
+                    style={{
+                        padding: 6,
+                        borderRadius: 6,
+                        borderColor: colors.accentSoft,
+                        borderWidth: 1,
+                        backgroundColor: colors.surface,
+                        color: colors.text,
+                    }}
+                >
+                    {node.title || 'Untitled'}
+                </Text>
+
+                {node.childIds?.map((childId) => renderNodeBranch(childId, level + 1))}
+            </View>
+        );
+    };
+
     if (!composerTree) {
         return (
             <ThemedSafeArea>
@@ -152,6 +178,15 @@ function ComposerNodeScreenInner({
     return (
         <ThemedSafeArea>
             <View style={{ flex: 1, paddingHorizontal: 16 }}>
+                <View style={{ alignItems: 'flex-end', padding: 8 }}>
+                    <Text
+                        style={{ color: colors.accentSoft, fontSize: 16 }}
+                        onPress={() => setShowMiniMap(true)}
+                    >
+                        🗺 Zoom Out
+                    </Text>
+                </View>
+
                 <ComposerEditorView
                     treeId={treeId}
                     currentNode={node}
@@ -192,6 +227,32 @@ function ComposerNodeScreenInner({
             >
                 <Text style={{ color: colors.onSurface }}>Tree saved!</Text>
             </Snackbar>
+
+            {showMiniMap && (
+                <View
+                    style={{
+                        position: 'absolute',
+                        top: 60,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: colors.background,
+                        padding: 16,
+                        zIndex: 10,
+                    }}
+                >
+                    <Text style={{ color: colors.text, marginBottom: 12 }}>🧠 Prompt Tree</Text>
+                    <View>
+                        {renderNodeBranch(composerTree.rootId)}
+                    </View>
+                    <Text
+                        style={{ marginTop: 16, color: colors.mutedText }}
+                        onPress={() => setShowMiniMap(false)}
+                    >
+                        ✖ Close
+                    </Text>
+                </View>
+            )}
         </ThemedSafeArea>
     );
 }
