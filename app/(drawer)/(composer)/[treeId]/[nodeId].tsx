@@ -10,8 +10,13 @@ import { useComposerStore, ComposerNode } from '../../../../src/stores/useCompos
 import { ComposerEditorView } from '../../../../src/components/composer/ComposerEditorView';
 import SavePromptModal from '../../../../src/components/modals/SavePromptModal';
 import { generateSmartTitle } from '../../../../src/utils/prompt/generateSmartTitle';
+import { Variable } from '../../../../src/types/prompt';
 
 const goHome = () => router.replace('/entry');
+
+function previewContent(content: string): string {
+    return content.length > 40 ? content.slice(0, 40) + '…' : content;
+}
 
 export default function ComposerNodeScreen() {
     const rawParams = useLocalSearchParams();
@@ -127,35 +132,71 @@ function ComposerNodeScreenInner({
         }
     };
 
-    const renderNodeBranch = (id: string, level: number = 0): JSX.Element | null => {
-        if (!composerTree) return null;
-        const node = composerTree.nodes[id];
-        if (!node) return null;
+    const renderNodeBranch = (
+        id: string,
+        level: number,
+        visited: Set<string>
+    ): JSX.Element | null => {
+        const node = composerTree?.nodes[id];
+        console.log('🔄 Checking node ID:', id, 'Exists:', !!node);
+
+        if (!node || visited.has(id)) return null;
+        visited.add(id);
+
+        const variablePromptIds = Object.entries(node.variables as Record<string, Variable>)
+            .flatMap(([key, v]) => {
+                if (v.type === 'prompt') {
+                    if (v.promptId) {
+                        return [v.promptId];
+                    } else {
+                        console.warn(`⚠️ Variable '${key}' in node ${node.id} has no promptId`);
+                        return [`__missing_prompt__:${key}:${node.id}`];
+                    }
+                }
+                return [];
+            });
+
+
+        const allChildIds = [...(node.childIds || []), ...variablePromptIds];
+
+        console.log('🧩 Rendering Node:', {
+            id,
+            title: node.title,
+            level,
+            childIds: node.childIds,
+            variablePromptIds,
+            allChildIds,
+        });
 
         return (
-            <View key={id} style={{ marginLeft: level * 12, marginBottom: 6 }}>
+            <View key={id} style={{ marginLeft: level * 12, marginBottom: 8 }}>
                 <Text
                     onPress={() => {
-                        router.push(`/(drawer)/(composer)/${treeId}/${id}`);
-                        setShowMiniMap(false);
+                        if (!id.startsWith('__missing_prompt__')) {
+                            router.push(`/(drawer)/(composer)/${treeId}/${id}`);
+                            setShowMiniMap(false);
+                        }
                     }}
                     style={{
                         padding: 6,
                         borderRadius: 6,
-                        borderColor: colors.accentSoft,
+                        borderColor: id.startsWith('__missing_prompt__') ? colors.warning : colors.accentSoft,
                         borderWidth: 1,
-                        backgroundColor: colors.surface,
-                        color: colors.text,
+                        backgroundColor: id === nodeId ? colors.accentSoft : colors.surface,
+                        color: id.startsWith('__missing_prompt__') ? colors.warning : (id === nodeId ? colors.onAccent : colors.text),
                     }}
                 >
-                    {node.title || 'Untitled'}
+                    {id.startsWith('__missing_prompt__')
+                        ? `⚠️ Missing variable prompt`
+                        : node.title || previewContent(node.content) || 'Untitled'}
                 </Text>
 
-                {node.childIds?.map((childId) => renderNodeBranch(childId, level + 1))}
+                {allChildIds.map((childId) =>
+                    renderNodeBranch(childId, level + 1, visited)
+                )}
             </View>
         );
     };
-
     if (!composerTree) {
         return (
             <ThemedSafeArea>
@@ -243,7 +284,10 @@ function ComposerNodeScreenInner({
                 >
                     <Text style={{ color: colors.text, marginBottom: 12 }}>🧠 Prompt Tree</Text>
                     <View>
-                        {renderNodeBranch(composerTree.rootId)}
+                        {(() => {
+                            const visited = new Set<string>();
+                            return renderNodeBranch(composerTree.rootId, 0, visited);
+                        })()}
                     </View>
                     <Text
                         style={{ marginTop: 16, color: colors.mutedText }}
@@ -253,6 +297,7 @@ function ComposerNodeScreenInner({
                     </Text>
                 </View>
             )}
+
         </ThemedSafeArea>
     );
 }
