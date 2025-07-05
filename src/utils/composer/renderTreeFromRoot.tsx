@@ -20,6 +20,8 @@ export function renderTreeFromRoot({
 }: Props): JSX.Element[] {
     const visited = new Set<string>();
 
+    const INDENT_SPACING = '        ';
+
     const render = (id: string, level: number): JSX.Element[] => {
         if (visited.has(id)) return [];
         visited.add(id);
@@ -37,14 +39,11 @@ export function renderTreeFromRoot({
             if (variable?.type === 'prompt') {
                 return variable.promptId ?? `__missing_prompt__:${varName}:${node.id}`;
             }
-            // If variable is missing or not of type prompt, still show as missing
             return `__missing_prompt__:${varName}:${node.id}`;
         });
 
-        const indent = '  '.repeat(Math.max(0, level - 1)); // ✅ Safe repeat
-        // const arrow = level > 0 ? '↳ ' : '';
+        const indent = INDENT_SPACING.repeat(Math.max(0, level - 1)); // ✅ Safe repeat
         const arrow = level > 0 ? '└─ ' : '';
-
 
         const allChildIds = [...(node.childIds || []), ...variablePromptIds];
 
@@ -79,19 +78,17 @@ export function renderTreeFromRoot({
             </View>
         );
 
-
         return [
             nodeItem,
             ...allChildIds.flatMap((childId) =>
                 childId.startsWith('__missing_prompt__') ? [] : render(childId, level + 1)
             ),
-            // Render placeholders directly as their own nodes
             ...allChildIds
                 .filter((id) => id.startsWith('__missing_prompt__'))
                 .map((id) => (
                     <View key={id} style={{ marginBottom: 6, flexDirection: 'row', alignItems: 'center' }}>
                         <Text style={{ color: colors.mutedText }}>
-                            {'  '.repeat(level) + '└─ '}
+                            {INDENT_SPACING.repeat(level) + '└─ '}
                         </Text>
                         <Text
                             style={{
@@ -103,12 +100,11 @@ export function renderTreeFromRoot({
                                 color: colors.warning,
                             }}
                         >
-                            ⚠️ {id.split(':')[1]}
+                            {`⚠️ ${id.split(':')[1]}`}
                         </Text>
                     </View>
                 )),
         ];
-
     };
 
     return render(rootId, 0);
