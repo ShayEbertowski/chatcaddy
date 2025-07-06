@@ -93,7 +93,7 @@ export function renderTreeFromRoot({
                     style={{
                         paddingVertical: 4,
                         paddingHorizontal: 10,
-                        paddingLeft: isActive ? 14 : 10,
+                        paddingLeft: isActive ? 16 : 10, // Extra left padding for active node
                         backgroundColor: id.startsWith('__missing_prompt__')
                             ? colors.surface
                             : isActive
@@ -106,7 +106,11 @@ export function renderTreeFromRoot({
                                 ? colors.primary
                                 : colors.accent,
                         borderWidth: 1,
-                        borderLeftWidth: isActive ? 4 : 1,
+                        borderLeftWidth: id.startsWith('__missing_prompt__')
+                            ? 1
+                            : isActive
+                                ? 6  // Amplified left border for active node
+                                : 1, // Normal for inactive
                         borderLeftColor: id.startsWith('__missing_prompt__')
                             ? colors.warning
                             : isActive
@@ -115,6 +119,8 @@ export function renderTreeFromRoot({
                         minHeight: 36,
                         justifyContent: 'center',
                     }}
+
+
                 >
                     <Text
                         onPress={() => handlePress(id)}
