@@ -76,6 +76,8 @@ function ComposerNodeScreenInner({
     const [snackOpen, setSnackOpen] = useState(false);
     const [queuedSave, setQueuedSave] = useState(false);
     const [showMiniMap, setShowMiniMap] = useState(false);
+    const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
+
     const loadedOnce = useRef(false);
 
     console.log('🎯 current node', nodeId, composerTree?.nodes?.[nodeId]);
@@ -157,6 +159,18 @@ function ComposerNodeScreenInner({
         } finally {
             setSaving(false);
         }
+    };
+
+    const toggleCollapse = (id: string) => {
+        setCollapsedNodes(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
     };
 
     if (!composerTree || !safeNode) {
@@ -248,6 +262,8 @@ function ComposerNodeScreenInner({
                                 router.push(`/(drawer)/(composer)/${treeId}/${id}`);
                                 setShowMiniMap(false);
                             },
+                            collapsedNodes,
+                            toggleCollapse,
                         })}
                     </View>
                 </View>

@@ -9,6 +9,8 @@ type Props = {
     currentNodeId: string;
     colors: any;
     onPressNode: (id: string) => void;
+    collapsedNodes: Set<string>;
+    toggleCollapse: (id: string) => void;
 };
 
 export function renderTreeFromRoot({
@@ -17,9 +19,10 @@ export function renderTreeFromRoot({
     currentNodeId,
     colors,
     onPressNode,
+    collapsedNodes,
+    toggleCollapse,
 }: Props): JSX.Element[] {
     const visited = new Set<string>();
-
     const INDENT_SPACING = '        ';
 
     const handlePress = (id: string) => {
@@ -46,16 +49,31 @@ export function renderTreeFromRoot({
             return `__missing_prompt__:${varName}:${node.id}`;
         });
 
+        const allChildIds = [...(node.childIds || []), ...variablePromptIds];
+        const hasChildren = allChildIds.length > 0;
+        const isCollapsed = collapsedNodes.has(id);
+
         const indent = INDENT_SPACING.repeat(Math.max(0, level - 1));
         const arrow = level > 0 ? '└─ ' : '';
-
-        const allChildIds = [...(node.childIds || []), ...variablePromptIds];
 
         const nodeItem = (
             <View key={id} style={{ marginBottom: 6, flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={{ color: colors.mutedText }}>
                     {indent + arrow}
                 </Text>
+
+                {hasChildren && (
+                    <Text
+                        onPress={() => toggleCollapse(id)}
+                        style={{
+                            marginRight: 4,
+                            color: colors.secondaryText,
+                        }}
+                    >
+                        {isCollapsed ? '➕' : '➖'}
+                    </Text>
+                )}
+
                 <Text
                     onPress={() => handlePress(id)}
                     style={{
@@ -78,20 +96,18 @@ export function renderTreeFromRoot({
             </View>
         );
 
-        return [
-            nodeItem,
-            ...allChildIds.flatMap((childId) =>
-                childId.startsWith('__missing_prompt__') ? [] : render(childId, level + 1)
-            ),
-            ...allChildIds
-                .filter((id) => id.startsWith('__missing_prompt__'))
-                .map((id) => (
-                    <View key={id} style={{ marginBottom: 6, flexDirection: 'row', alignItems: 'center' }}>
+        if (isCollapsed) return [nodeItem];
+
+        const childElements = allChildIds.flatMap((childId) => {
+            if (childId.startsWith('__missing_prompt__')) {
+                const [, varName] = childId.split(':');
+                return (
+                    <View key={childId} style={{ marginBottom: 6, flexDirection: 'row', alignItems: 'center' }}>
                         <Text style={{ color: colors.mutedText }}>
                             {INDENT_SPACING.repeat(level) + '└─ '}
                         </Text>
                         <Text
-                            onPress={() => handlePress(id)}
+                            onPress={() => handlePress(childId)}
                             style={{
                                 padding: 6,
                                 borderRadius: 6,
@@ -101,11 +117,21 @@ export function renderTreeFromRoot({
                                 color: colors.warning,
                             }}
                         >
-                            {`⚠️ ${id.split(':')[1]}`}
+                            ⚠️ {varName}
                         </Text>
                     </View>
-                ))
-        ];
+                );
+            }
+
+            if (!nodes[childId]) {
+                console.warn('⚠️ Skipping missing node:', childId);
+                return [];
+            }
+
+            return render(childId, level + 1);
+        });
+
+        return [nodeItem, ...childElements];
     };
 
     return render(rootId, 0);
