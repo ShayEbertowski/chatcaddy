@@ -40,6 +40,12 @@ export const light = (() => {
         navigation: '#c4c4c4',
         onNavigation: '#1c1c1e',
         navigationSoft: '#c4c4c488',
+
+        expandToggleBackground: '#e0f2ff', // soft blue hint
+        expandToggleIcon: '#2463A8',       // consistent with your accent
+        collapseToggleBackground: '#e5e5e7', // neutral gray
+        collapseToggleIcon: '#555555',       // dark gray for subtlety
+
     };
 })();
 
@@ -85,5 +91,11 @@ export const dark = (() => {
         navigation: '#444444',
         onNavigation: '#ffffff',
         navigationSoft: '#44444488',
+
+        expandToggleBackground: '#1c3b5a', // muted blue-gray
+        expandToggleIcon: '#4DA8FF',       // accent
+        collapseToggleBackground: '#2c2c2e', // your inputBackground
+        collapseToggleIcon: '#bbbbbb',       // softened light gray
+
     };
 })();

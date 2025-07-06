@@ -1,5 +1,5 @@
 import React, { JSX } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { ComposerNode } from '../../stores/useComposerStore';
 import { Variable } from '../../types/prompt';
 
@@ -63,15 +63,32 @@ export function renderTreeFromRoot({
                 </Text>
 
                 {hasChildren && (
-                    <Text
+                    <TouchableOpacity
                         onPress={() => toggleCollapse(id)}
                         style={{
-                            marginRight: 4,
-                            color: colors.secondaryText,
+                            marginRight: 6,
+                            width: 24,
+                            height: 24,
+                            borderRadius: 12,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: isCollapsed
+                                ? colors.expandToggleBackground
+                                : colors.collapseToggleBackground,
                         }}
                     >
-                        {isCollapsed ? '➕' : '➖'}
-                    </Text>
+                        <Text style={{
+                            fontSize: 16,
+                            fontWeight: '600',
+                            color: isCollapsed
+                                ? colors.expandToggleIcon
+                                : colors.collapseToggleIcon,
+                        }}>
+                            {isCollapsed ? '+' : '−'}
+                        </Text>
+                    </TouchableOpacity>
+
+
                 )}
 
                 <Text
