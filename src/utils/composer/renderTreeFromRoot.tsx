@@ -22,6 +22,10 @@ export function renderTreeFromRoot({
 
     const INDENT_SPACING = '        ';
 
+    const handlePress = (id: string) => {
+        setTimeout(() => onPressNode(id), 0);
+    };
+
     const render = (id: string, level: number): JSX.Element[] => {
         if (visited.has(id)) return [];
         visited.add(id);
@@ -42,7 +46,7 @@ export function renderTreeFromRoot({
             return `__missing_prompt__:${varName}:${node.id}`;
         });
 
-        const indent = INDENT_SPACING.repeat(Math.max(0, level - 1)); // ✅ Safe repeat
+        const indent = INDENT_SPACING.repeat(Math.max(0, level - 1));
         const arrow = level > 0 ? '└─ ' : '';
 
         const allChildIds = [...(node.childIds || []), ...variablePromptIds];
@@ -53,11 +57,7 @@ export function renderTreeFromRoot({
                     {indent + arrow}
                 </Text>
                 <Text
-                    onPress={() => {
-                        if (!id.startsWith('__missing_prompt__')) {
-                            onPressNode(id);
-                        }
-                    }}
+                    onPress={() => handlePress(id)}
                     style={{
                         padding: 6,
                         borderRadius: 6,
@@ -91,6 +91,7 @@ export function renderTreeFromRoot({
                             {INDENT_SPACING.repeat(level) + '└─ '}
                         </Text>
                         <Text
+                            onPress={() => handlePress(id)}
                             style={{
                                 padding: 6,
                                 borderRadius: 6,
@@ -103,7 +104,7 @@ export function renderTreeFromRoot({
                             {`⚠️ ${id.split(':')[1]}`}
                         </Text>
                     </View>
-                )),
+                ))
         ];
     };
 

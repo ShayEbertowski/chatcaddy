@@ -9,7 +9,7 @@ import {
 } from './useComposerStore';
 
 interface UseComposerEditingStateOptions {
-    initialPathIds?: string[]; // 👈 new
+    initialPathIds?: string[];
 }
 
 /**
@@ -61,25 +61,26 @@ export function useComposerEditingState(
         updateNodeRaw(nodeId, patch);
     }
 
-    /** Create child then navigate */
-    function insertChildNode(title: string) {
-        if (!nodeId || !treeId || !composerTree) return;
+    /** Create child then navigate once it's ready */
+    function insertChildNode(title: string, parentOverrideId?: string): string | undefined {
+        const targetParentId = parentOverrideId || nodeId;
+        if (!targetParentId || !treeId || !composerTree) return;
 
-        const parent = composerTree.nodes[nodeId];
+        const parent = composerTree.nodes[targetParentId];
         if (!parent) return;
 
-        // Check if child with matching title already exists
         const existingId = parent.childIds.find((childId) => {
             const child = composerTree.nodes[childId];
             return child?.title?.trim() === title.trim();
         });
 
         if (existingId) {
-            router.push(`/(drawer)/(composer)/${treeId}/${existingId}`);
-            return;
+            requestAnimationFrame(() => {
+                router.replace(`/(drawer)/(composer)/${treeId}/${existingId}`);
+            });
+            return existingId;
         }
 
-        // Otherwise, create a new one
         const childId = generateUUIDSync();
         const now = new Date().toISOString();
 
@@ -93,9 +94,55 @@ export function useComposerEditingState(
             updatedAt: now,
         };
 
-        addChild(nodeId, child); // adds and links it in store
-        router.push(`/(drawer)/(composer)/${treeId}/${childId}`);
+        useComposerStore.setState((prev) => {
+            const parentNode = prev.composerTree?.nodes?.[targetParentId];
+            if (!parentNode) return prev;
+
+            const updatedParentVariables = {
+                ...(parentNode.variables ?? {}),
+                [title]: {
+                    type: 'prompt',
+                    promptId: childId,
+                    promptTitle: title,
+                },
+            };
+
+            return {
+                composerTree: {
+                    ...prev.composerTree!,
+                    nodes: {
+                        ...prev.composerTree!.nodes,
+                        [childId]: child,
+                        [targetParentId]: {
+                            ...parentNode,
+                            childIds: [...(parentNode.childIds ?? []), childId],
+                            variables: updatedParentVariables,
+                        },
+                    },
+                },
+            };
+        });
+
+        let attempts = 0;
+        const maxAttempts = 20;
+        const interval = setInterval(() => {
+            const nodeExists = useComposerStore.getState().composerTree?.nodes?.[childId];
+            if (nodeExists || attempts >= maxAttempts) {
+                clearInterval(interval);
+                if (nodeExists) {
+                    requestAnimationFrame(() => {
+                        router.replace(`/(drawer)/(composer)/${treeId}/${childId}`);
+                    });
+                } else {
+                    console.warn(`❌ Node ${childId} not found in store after waiting.`);
+                }
+            }
+            attempts++;
+        }, 50);
+
+        return childId;
     }
+
 
     return {
         nodePath,

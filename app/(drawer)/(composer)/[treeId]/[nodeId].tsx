@@ -14,7 +14,6 @@ import { renderTreeFromRoot } from '../../../../src/utils/composer/renderTreeFro
 
 const goHome = () => router.replace('/entry');
 
-
 export default function ComposerNodeScreen() {
     const rawParams = useLocalSearchParams();
     const treeId = String(rawParams.treeId || '');
@@ -49,7 +48,6 @@ export default function ComposerNodeScreen() {
     );
 }
 
-
 function ComposerNodeScreenInner({
     treeId,
     nodeId,
@@ -70,7 +68,7 @@ function ComposerNodeScreenInner({
     } = useComposerEditingState(treeId, nodeId, { initialPathIds });
 
     const composerTree = useComposerStore((s) => s.composerTree);
-
+    const [safeNode, setSafeNode] = useState<ComposerNode | null>(null);
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
     const [saveTitle, setSaveTitle] = useState('');
@@ -78,9 +76,11 @@ function ComposerNodeScreenInner({
     const [snackOpen, setSnackOpen] = useState(false);
     const [queuedSave, setQueuedSave] = useState(false);
     const [showMiniMap, setShowMiniMap] = useState(false);
-
     const loadedOnce = useRef(false);
 
+    console.log('🎯 current node', nodeId, composerTree?.nodes?.[nodeId]);
+
+    // Load the tree if not already
     useEffect(() => {
         if (!treeId || loadedOnce.current) return;
 
@@ -94,8 +94,27 @@ function ComposerNodeScreenInner({
         loadTree(treeId).catch(console.error);
     }, [treeId]);
 
-    const node = composerTree?.nodes?.[nodeId];
-    const isAtRoot = node?.id === composerTree?.rootId;
+    // Wait for safeNode to be available
+    useEffect(() => {
+        if (!nodeId) return;
+        const maybe = useComposerStore.getState().composerTree?.nodes?.[nodeId];
+        if (maybe) {
+            setSafeNode(maybe);
+            return;
+        }
+
+        const interval = setInterval(() => {
+            const maybe = useComposerStore.getState().composerTree?.nodes?.[nodeId];
+            if (maybe) {
+                setSafeNode(maybe);
+                clearInterval(interval);
+            }
+        }, 30);
+
+        return () => clearInterval(interval);
+    }, [nodeId]);
+
+    const isAtRoot = safeNode?.id === composerTree?.rootId;
 
     const handleSaveTreeRequest = () => {
         if (isAtRoot) {
@@ -114,11 +133,11 @@ function ComposerNodeScreenInner({
     }, [queuedSave, isAtRoot]);
 
     const openSaveModal = async () => {
-        if (!node?.content.trim()) return;
+        if (!safeNode?.content.trim()) return;
 
         setIsGeneratingTitle(true);
         try {
-            const smart = await generateSmartTitle(node.content);
+            const smart = await generateSmartTitle(safeNode.content);
             setSaveTitle(smart || 'Untitled');
         } catch {
             setSaveTitle('Untitled');
@@ -140,22 +159,11 @@ function ComposerNodeScreenInner({
         }
     };
 
-
-    if (!composerTree) {
+    if (!composerTree || !safeNode) {
         return (
             <ThemedSafeArea>
                 <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={{ textAlign: 'center', marginTop: 10 }}>Loading tree...</Text>
-            </ThemedSafeArea>
-        );
-    }
-
-    if (!node) {
-        return (
-            <ThemedSafeArea>
-                <Text style={{ padding: 20, color: colors.error }}>
-                    ⚠️ Node not found in this tree.
-                </Text>
+                <Text style={{ textAlign: 'center', marginTop: 10 }}>Loading node...</Text>
             </ThemedSafeArea>
         );
     }
@@ -174,7 +182,7 @@ function ComposerNodeScreenInner({
 
                 <ComposerEditorView
                     treeId={treeId}
-                    currentNode={node}
+                    currentNode={safeNode}
                     nodePath={nodePath}
                     onChangeNode={updateNode}
                     onChipPress={insertChildNode}
@@ -185,7 +193,7 @@ function ComposerNodeScreenInner({
             <SavePromptModal
                 visible={showSaveModal}
                 title={saveTitle}
-                prompt={node.content}
+                prompt={safeNode.content}
                 onChangeTitle={setSaveTitle}
                 onCancel={() => setShowSaveModal(false)}
                 onConfirm={handleConfirmSave}
@@ -226,14 +234,17 @@ function ComposerNodeScreenInner({
                         zIndex: 10,
                     }}
                 >
-
                     <View style={{ marginTop: 12 }}>
                         {renderTreeFromRoot({
                             rootId: composerTree.rootId,
                             nodes: composerTree.nodes,
-                            currentNodeId: nodeId,
+                            currentNodeId: safeNode.id,
                             colors,
-                            onPressNode: (id) => {
+                            onPressNode: async (id) => {
+                                if (id.startsWith('__missing_prompt__')) {
+                                    const [, varName, parentId] = id.split(':');
+                                    await insertChildNode(varName, parentId);
+                                }
                                 router.push(`/(drawer)/(composer)/${treeId}/${id}`);
                                 setShowMiniMap(false);
                             },
@@ -241,8 +252,6 @@ function ComposerNodeScreenInner({
                     </View>
                 </View>
             )}
-
-
         </ThemedSafeArea>
     );
 }
