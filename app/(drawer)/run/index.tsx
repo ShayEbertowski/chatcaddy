@@ -4,7 +4,6 @@ import { useLocalSearchParams } from 'expo-router';
 import { ComposerRunner } from '../../../src/components/composer/ComposerRunner';
 import { runPromptFromTree } from '../../../src/utils/prompt/runPromptFromTree';
 import { useColors } from '../../../src/hooks/useColors';
-import { flattenVariables } from '../../../src/utils/composer/inferVariables';
 import { useVariableStore } from '../../../src/stores/useVariableStore';
 import { ThemedButton } from '../../../src/components/ui/ThemedButton';
 import { PromptResult } from '../../../src/components/prompt/PromptResult';

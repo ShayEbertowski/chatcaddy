@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+
 import { View, Text, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import RichPromptEditor from '../editor/RichPromptEditor';
@@ -32,6 +33,13 @@ export function ComposerEditorView({
     const composerTree = useComposerStore((s) => s.composerTree);
     const isAtRoot = composerTree?.rootId === currentNode.id;
 
+    const [localText, setLocalText] = useState(currentNode.content);
+
+    // Sync if the node content changes externally
+    useEffect(() => {
+        setLocalText(currentNode.content);
+    }, [currentNode.content]);
+
     const allowedTypes = ['Prompt', 'Function', 'Snippet'] as const;
     const fallbackType = allowedTypes.includes(currentNode.entityType as any)
         ? (currentNode.entityType as typeof allowedTypes[number])
@@ -57,24 +65,14 @@ export function ComposerEditorView({
                                 />
                             )}
                         </View>
-
-                        {/* <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                            {currentNode.childIds?.length > 0 && (
-                                <NavigationButton
-                                    icon="chevron-forward"
-                                    onPress={() => {
-                                        const nextId = currentNode.childIds?.[0];
-                                        if (nextId) router.push(`/(drawer)/(composer)/${treeId}/${nextId}`);
-                                    }}
-                                />
-                            )}
-                        </View> */}
                     </View>
 
                     <RichPromptEditor
-                        text={currentNode.content}
-                        // fullPreviewText={getFlattenedPromptContent(nodePath)}
-                        onChangeText={(text) => onChangeNode({ content: text })}
+                        text={localText}
+                        onChangeText={(text) => {
+                            setLocalText(text);
+                            onChangeNode({ content: text });
+                        }}
                         entityType={fallbackType}
                         onChangeEntityType={(entityType) => onChangeNode({ entityType })}
                         variables={toEditorVariables(currentNode.variables)}

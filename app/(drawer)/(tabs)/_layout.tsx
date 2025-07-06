@@ -12,13 +12,11 @@ export default function TabLayout() {
 
     const icons = {
         entry: 'rocket-outline',
-        sandbox: 'flask-outline',
         library: 'library-outline',
     } as const;
 
     const labels = {
         entry: 'Composer',
-        sandbox: 'Sandbox',
         library: 'Library',
     } as const;
 
@@ -52,15 +50,6 @@ export default function TabLayout() {
             })}
         >
             <Tabs.Screen name="entry" />
-            <Tabs.Screen
-                name="sandbox"
-                listeners={{
-                    tabPress: (e) => {
-                        e.preventDefault();
-                        router.replace('/(drawer)/(tabs)/2-sandbox');
-                    },
-                }}
-            />
             <Tabs.Screen name="library" />
         </Tabs>
     );

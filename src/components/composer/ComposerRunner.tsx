@@ -50,7 +50,7 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
     useEffect(() => {
         if (!composerTree || !node) return;
 
-        const inferred = inferVariablesFromRoot(composerTree, nodeId);
+        const inferred = inferVariablesFromRoot(composerTree);
 
         const filled: Record<string, Variable> = {};
         for (const key of Object.keys(inferred)) {
@@ -192,6 +192,8 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
                                 value={tempValue}
                                 onChangeText={setTempValue}
                                 placeholder="Type something..."
+                                placeholderTextColor={colors.placeholder}
+
                                 style={{
                                     borderColor: colors.borderThin,
                                     borderWidth: 1,
@@ -207,13 +209,17 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
                                     style={{
                                         flex: 1,
                                         marginRight: 8,
-                                        paddingVertical: 10,
-                                        borderRadius: 6,
+                                        paddingVertical: 12,
+                                        borderRadius: 8,
                                         alignItems: 'center',
-                                        backgroundColor: colors.borderThin,
+                                        backgroundColor: colors.surface,
+                                        borderWidth: 1,
+                                        borderColor: colors.borderThin,
                                     }}
                                 >
-                                    <Text style={{ color: colors.text }}>Cancel</Text>
+                                    <Text style={{ color: colors.text, fontSize: 15, fontWeight: '500' }}>
+                                        Cancel
+                                    </Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
@@ -228,7 +234,10 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
                                             if (onVariablesChange) {
                                                 const allVars = useVariableStore.getState().values;
                                                 const flatVars = Object.fromEntries(
-                                                    Object.entries(inferVariablesFromRoot(composerTree)).map(([k, v]) => [k, v.value])
+                                                    Object.entries(inferVariablesFromRoot(composerTree)).map(([k, v]) => {
+                                                        if (v.type === 'string') return [k, v.value];
+                                                        return [k, '']; // fallback for non-string
+                                                    })
                                                 );
                                                 onVariablesChange(flatVars);
                                             }
@@ -238,14 +247,17 @@ export const ComposerRunner: React.FC<ComposerRunnerProps> = ({
                                     }}
                                     style={{
                                         flex: 1,
-                                        paddingVertical: 10,
-                                        borderRadius: 6,
+                                        paddingVertical: 12,
+                                        borderRadius: 8,
                                         alignItems: 'center',
                                         backgroundColor: colors.accent,
                                     }}
                                 >
-                                    <Text style={{ color: '#fff' }}>Save</Text>
+                                    <Text style={{ color: colors.onAccent, fontSize: 15, fontWeight: '600' }}>
+                                        Save
+                                    </Text>
                                 </TouchableOpacity>
+
                             </View>
                         </View>
                     </View>
