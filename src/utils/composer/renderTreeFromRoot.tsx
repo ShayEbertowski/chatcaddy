@@ -1,5 +1,5 @@
 import React, { JSX } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { ComposerNode } from '../../stores/useComposerStore';
 import { Variable } from '../../types/prompt';
 
@@ -52,64 +52,86 @@ export function renderTreeFromRoot({
         const allChildIds = [...(node.childIds || []), ...variablePromptIds];
         const hasChildren = allChildIds.length > 0;
         const isCollapsed = collapsedNodes.has(id);
+        const isActive = id === currentNodeId;
 
         const indent = INDENT_SPACING.repeat(Math.max(0, level - 1));
         const arrow = level > 0 ? '└─ ' : '';
 
         const nodeItem = (
-            <View key={id} style={{ marginBottom: 6, flexDirection: 'row', alignItems: 'center' }}>
+            <View
+                key={id}
+                style={{
+                    marginBottom: 6,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                }}
+            >
                 <Text style={{ color: colors.mutedText }}>
                     {indent + arrow}
                 </Text>
 
                 {hasChildren && (
-                    <TouchableOpacity
+                    <Text
                         onPress={() => toggleCollapse(id)}
                         style={{
-                            marginRight: 6,
                             width: 24,
                             height: 24,
                             borderRadius: 12,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: isCollapsed
-                                ? colors.expandToggleBackground
-                                : colors.collapseToggleBackground,
+                            backgroundColor: colors.accentSoft,
+                            color: colors.onAccent,
+                            textAlign: 'center',
+                            lineHeight: 24,
+                            marginRight: 6,
+                            fontWeight: 'bold',
                         }}
                     >
-                        <Text style={{
-                            fontSize: 16,
-                            fontWeight: '600',
-                            color: isCollapsed
-                                ? colors.expandToggleIcon
-                                : colors.collapseToggleIcon,
-                        }}>
-                            {isCollapsed ? '+' : '−'}
-                        </Text>
-                    </TouchableOpacity>
-
-
+                        {isCollapsed ? '+' : '–'}
+                    </Text>
                 )}
 
-                <Text
-                    onPress={() => handlePress(id)}
+                <View
                     style={{
-                        padding: 6,
+                        paddingVertical: 4,
+                        paddingHorizontal: 10,
+                        paddingLeft: isActive ? 14 : 10,
+                        backgroundColor: id.startsWith('__missing_prompt__')
+                            ? colors.surface
+                            : isActive
+                                ? colors.primarySoft
+                                : colors.accent + '33',
                         borderRadius: 6,
-                        borderColor: id.startsWith('__missing_prompt__') ? colors.warning : colors.accentSoft,
-                        borderWidth: 1,
-                        backgroundColor: id === currentNodeId ? colors.accentSoft : colors.surface,
-                        color: id.startsWith('__missing_prompt__')
+                        borderColor: id.startsWith('__missing_prompt__')
                             ? colors.warning
-                            : id === currentNodeId
-                                ? colors.onAccent
-                                : colors.text,
+                            : isActive
+                                ? colors.primary
+                                : colors.accent,
+                        borderWidth: 1,
+                        borderLeftWidth: isActive ? 4 : 1,
+                        borderLeftColor: id.startsWith('__missing_prompt__')
+                            ? colors.warning
+                            : isActive
+                                ? colors.primary
+                                : colors.accent,
+                        minHeight: 36,
+                        justifyContent: 'center',
                     }}
                 >
-                    {id.startsWith('__missing_prompt__')
-                        ? `⚠️ ${id.split(':')[1]}`
-                        : node.title || previewContent(node.content) || 'Untitled'}
-                </Text>
+                    <Text
+                        onPress={() => handlePress(id)}
+                        style={{
+                            color: id.startsWith('__missing_prompt__')
+                                ? colors.warning
+                                : colors.onSurface,
+                            fontSize: 13,
+                            fontWeight: '500',
+                            letterSpacing: 0.3,
+                        }}
+                    >
+                        {id.startsWith('__missing_prompt__')
+                            ? `⚠️ ${id.split(':')[1]}`
+                            : node.title || previewContent(node.content) || 'Untitled'}
+                    </Text>
+                </View>
             </View>
         );
 

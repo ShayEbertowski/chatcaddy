@@ -1,14 +1,21 @@
 export const light = (() => {
     const accent = '#2463A8';
+    const primary = '#219e98';
+    const onPrimary = '#f8f9fa';
+
     return {
-        primary: '#219e98',
-        onPrimary: '#f8f9fa',
+        primary,
+        onPrimary,
+        primarySoft: primary + '33',         // NEW
+        onPrimarySoft: onPrimary,            // NEW
+
         background: '#ebebec',
         surface: '#f6f6f7',
         onSurface: '#1c1c1e',
         placeholder: '#999999',
         accent,
         onAccent: '#ffffff',
+        onAccentSoft: '#ffffff',             // NEW (same as onAccent)
         accentSoft: accent + '88',
         text: '#1c1c1e',
         mutedText: '#6e6e73',
@@ -41,25 +48,31 @@ export const light = (() => {
         onNavigation: '#1c1c1e',
         navigationSoft: '#c4c4c488',
 
-        expandToggleBackground: '#e0f2ff', // soft blue hint
-        expandToggleIcon: '#2463A8',       // consistent with your accent
-        collapseToggleBackground: '#e5e5e7', // neutral gray
-        collapseToggleIcon: '#555555',       // dark gray for subtlety
-
+        expandToggleBackground: '#e0f2ff',
+        expandToggleIcon: '#2463A8',
+        collapseToggleBackground: '#e5e5e7',
+        collapseToggleIcon: '#555555',
     };
 })();
 
 export const dark = (() => {
     const accent = '#4DA8FF';
+    const primary = '#2ab3a6';
+    const onPrimary = '#ffffff';
+
     return {
-        primary: '#2ab3a6',
-        onPrimary: '#ffffff',
+        primary,
+        onPrimary,
+        primarySoft: primary + '33',         // NEW
+        onPrimarySoft: onPrimary,            // NEW
+
         background: '#0e0e0e',
         surface: '#1a1a1a',
         onSurface: '#ffffff',
         placeholder: '#AAAAAA',
         accent,
         onAccent: '#000000',
+        onAccentSoft: '#000000',             // NEW (same as onAccent)
         accentSoft: accent + '88',
         text: '#ffffff',
         mutedText: '#999999',
@@ -92,10 +105,9 @@ export const dark = (() => {
         onNavigation: '#ffffff',
         navigationSoft: '#44444488',
 
-        expandToggleBackground: '#1c3b5a', // muted blue-gray
-        expandToggleIcon: '#4DA8FF',       // accent
-        collapseToggleBackground: '#2c2c2e', // your inputBackground
-        collapseToggleIcon: '#bbbbbb',       // softened light gray
-
+        expandToggleBackground: '#1c3b5a',
+        expandToggleIcon: '#4DA8FF',
+        collapseToggleBackground: '#2c2c2e',
+        collapseToggleIcon: '#bbbbbb',
     };
 })();
