@@ -1,5 +1,5 @@
 import React, { JSX } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { ComposerNode } from '../../stores/useComposerStore';
 import { Variable } from '../../types/prompt';
 
@@ -87,65 +87,50 @@ export function renderTreeFromRoot({
                     >
                         {isCollapsed ? '+' : '–'}
                     </Text>
-
                 )}
 
-                <View
-                    style={{
-                        paddingVertical: 4,
-                        paddingHorizontal: 10,
-                        paddingLeft: isActive ? 16 : 10,
-                        backgroundColor: id.startsWith('__missing_prompt__')
-                            ? colors.surface
-                            : isActive
+                <TouchableOpacity onPress={() => handlePress(id)}>
+                    <View
+                        style={{
+                            paddingVertical: 4,
+                            paddingHorizontal: 10,
+                            paddingLeft: isActive ? 16 : 10,
+                            backgroundColor: isActive
                                 ? colors.primarySoft
                                 : colors.accent + '33',
-                        borderRadius: 6,
-                        borderColor: id.startsWith('__missing_prompt__')
-                            ? colors.warning
-                            : isActive
+                            borderRadius: 6,
+                            borderColor: isActive
                                 ? colors.primary
                                 : colors.accent,
-                        borderWidth: 1,
-                        borderLeftWidth: id.startsWith('__missing_prompt__')
-                            ? 1
-                            : isActive
-                                ? 6
-                                : 1,
-                        borderLeftColor: id.startsWith('__missing_prompt__')
-                            ? colors.warning
-                            : isActive
+                            borderWidth: 1,
+                            borderLeftWidth: isActive ? 6 : 1,
+                            borderLeftColor: isActive
                                 ? colors.primary
                                 : colors.accent,
-                        minHeight: 36,
-                        justifyContent: 'center',
-
-                        ...(isActive && {
-                            shadowColor: colors.primary,
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.2,
-                            shadowRadius: 4,
-                            elevation: 3,
-                            transform: [{ scale: 1.01 }],
-                        }),
-                    }}
-                >
-                    <Text
-                        onPress={() => handlePress(id)}
-                        style={{
-                            color: id.startsWith('__missing_prompt__')
-                                ? colors.warning
-                                : colors.onSurface,
-                            fontSize: 13,
-                            fontWeight: '500',
-                            letterSpacing: 0.3,
+                            minHeight: 36,
+                            justifyContent: 'center',
+                            ...(isActive && {
+                                shadowColor: colors.primary,
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 4,
+                                elevation: 3,
+                                transform: [{ scale: 1.01 }],
+                            }),
                         }}
                     >
-                        {id.startsWith('__missing_prompt__')
-                            ? `⚠️ ${id.split(':')[1]}`
-                            : node.title || previewContent(node.content) || 'Untitled'}
-                    </Text>
-                </View>
+                        <Text
+                            style={{
+                                color: colors.onSurface,
+                                fontSize: 13,
+                                fontWeight: '500',
+                                letterSpacing: 0.3,
+                            }}
+                        >
+                            {node.title || previewContent(node.content) || 'Untitled'}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
             </View>
         );
 
@@ -154,26 +139,40 @@ export function renderTreeFromRoot({
         const childElements = allChildIds.flatMap((childId) => {
             if (childId.startsWith('__missing_prompt__')) {
                 const [, varName] = childId.split(':');
-                return (
-                    <View key={childId} style={{ marginBottom: 6, flexDirection: 'row', alignItems: 'center' }}>
+
+                return [
+                    <View
+                        key={childId}
+                        style={{
+                            marginBottom: 6,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                        }}
+                    >
                         <Text style={{ color: colors.mutedText }}>
                             {INDENT_SPACING.repeat(level) + '└─ '}
                         </Text>
-                        <Text
-                            onPress={() => handlePress(childId)}
-                            style={{
-                                padding: 6,
-                                borderRadius: 6,
-                                borderColor: colors.warning,
-                                borderWidth: 1,
-                                backgroundColor: colors.surface,
-                                color: colors.warning,
-                            }}
-                        >
-                            ⚠️ {varName}
-                        </Text>
-                    </View>
-                );
+
+                        <TouchableOpacity onPress={() => handlePress(childId)}>
+                            <View
+                                style={{
+                                    paddingVertical: 4,
+                                    paddingHorizontal: 10,
+                                    backgroundColor: colors.accent + '33',
+                                    borderRadius: 6,
+                                    borderColor: colors.accent,
+                                    borderWidth: 1,
+                                    minHeight: 32,
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <Text style={{ color: colors.onSurface, fontSize: 13 }}>
+                                    {varName}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>,
+                ];
             }
 
             if (!nodes[childId]) {

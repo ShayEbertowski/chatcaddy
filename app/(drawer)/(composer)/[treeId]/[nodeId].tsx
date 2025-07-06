@@ -12,6 +12,7 @@ import SavePromptModal from '../../../../src/components/modals/SavePromptModal';
 import { generateSmartTitle } from '../../../../src/utils/prompt/generateSmartTitle';
 import { renderTreeFromRoot } from '../../../../src/utils/composer/renderTreeFromRoot';
 
+
 const goHome = () => router.replace('/entry');
 
 export default function ComposerNodeScreen() {
