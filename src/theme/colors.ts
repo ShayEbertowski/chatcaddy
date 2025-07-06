@@ -52,6 +52,8 @@ export const light = (() => {
         expandToggleIcon: '#2463A8',
         collapseToggleBackground: '#e5e5e7',
         collapseToggleIcon: '#555555',
+
+        toggleIconNeutral: '#5C7CFA', //not sure im happy with this color, good for now
     };
 })();
 
@@ -109,5 +111,7 @@ export const dark = (() => {
         expandToggleIcon: '#4DA8FF',
         collapseToggleBackground: '#2c2c2e',
         collapseToggleIcon: '#bbbbbb',
+
+        toggleIconNeutral: '#5C7CFA', //not sure im happy with this color, good for now
     };
 })();

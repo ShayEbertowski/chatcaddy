@@ -77,8 +77,8 @@ export function renderTreeFromRoot({
                             width: 24,
                             height: 24,
                             borderRadius: 12,
-                            backgroundColor: colors.accentSoft,
-                            color: colors.onAccent,
+                            backgroundColor: colors.toggleIconNeutral,
+                            color: colors.onSurface,
                             textAlign: 'center',
                             lineHeight: 24,
                             marginRight: 6,
@@ -87,13 +87,14 @@ export function renderTreeFromRoot({
                     >
                         {isCollapsed ? '+' : '–'}
                     </Text>
+
                 )}
 
                 <View
                     style={{
                         paddingVertical: 4,
                         paddingHorizontal: 10,
-                        paddingLeft: isActive ? 16 : 10, // Extra left padding for active node
+                        paddingLeft: isActive ? 16 : 10,
                         backgroundColor: id.startsWith('__missing_prompt__')
                             ? colors.surface
                             : isActive
@@ -109,8 +110,8 @@ export function renderTreeFromRoot({
                         borderLeftWidth: id.startsWith('__missing_prompt__')
                             ? 1
                             : isActive
-                                ? 6  // Amplified left border for active node
-                                : 1, // Normal for inactive
+                                ? 6
+                                : 1,
                         borderLeftColor: id.startsWith('__missing_prompt__')
                             ? colors.warning
                             : isActive
@@ -118,9 +119,16 @@ export function renderTreeFromRoot({
                                 : colors.accent,
                         minHeight: 36,
                         justifyContent: 'center',
+
+                        ...(isActive && {
+                            shadowColor: colors.primary,
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.2,
+                            shadowRadius: 4,
+                            elevation: 3,
+                            transform: [{ scale: 1.01 }],
+                        }),
                     }}
-
-
                 >
                     <Text
                         onPress={() => handlePress(id)}
