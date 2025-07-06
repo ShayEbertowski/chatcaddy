@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Snackbar } from 'react-native-paper';
+import { ArrowDownLeft, ChevronDown, Minimize2, Shrink, ZoomOut } from 'lucide-react-native';
 
 import { ThemedSafeArea } from '../../../../src/components/shared/ThemedSafeArea';
 import { useColors } from '../../../../src/hooks/useColors';
@@ -187,12 +188,15 @@ function ComposerNodeScreenInner({
         <ThemedSafeArea>
             <View style={{ flex: 1, paddingHorizontal: 16 }}>
                 <View style={{ alignItems: 'flex-end', padding: 8 }}>
-                    <Text
-                        style={{ color: colors.accentSoft, fontSize: 16 }}
-                        onPress={() => setShowMiniMap(true)}
+                    <View
+                        style={{
+                            backgroundColor: colors.accent + '22',
+                            padding: 6,
+                            borderRadius: 8,
+                        }}
                     >
-                        🗺 Zoom Out
-                    </Text>
+                        <Minimize2 size={20} color={colors.onSurface} />
+                    </View>
                 </View>
 
                 <ComposerEditorView
