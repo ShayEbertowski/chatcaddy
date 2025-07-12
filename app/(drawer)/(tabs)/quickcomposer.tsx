@@ -89,59 +89,37 @@ export default function QuickComposerScreen() {
     };
 
     const handleRun = async () => {
-        const finalInput =
-            selectedTemplates.length > 0
-                ? `${selectedTemplates.map((t) => t.content).join('\n\n')}\n\n${text}`
-                : text;
+    const templateText = selectedTemplates.map((t) => t.content).join('\n\n').trim();
+    const userText = text.trim();
+    const finalInput = [templateText, userText].filter(Boolean).join('\n\n');
 
-        if (!finalInput.trim()) {
-            Alert.alert('Empty Prompt', 'Please enter a prompt first.');
-            return;
+    if (!finalInput) {
+        Alert.alert('Empty Prompt', 'Please enter a prompt first.');
+        return;
+    }
+
+    setIsLoading(true);
+    setResponse(null);
+
+    try {
+        const result = await runPrompt(finalInput); // 👈 always run as plain text
+
+        if ('error' in result) {
+            console.error(result.error);
+            setResponse(`⚠️ ${result.error}`);
+        } else {
+            setResponse(result.response ?? '[No output]');
         }
+    } catch (err) {
+        console.error('Error running prompt:', err);
+        Alert.alert('Error', 'There was a problem running the prompt.');
+        setResponse('[Error running prompt]');
+    } finally {
+        setIsLoading(false);
+    }
+};
 
-        setIsLoading(true);
-        setResponse(null);
 
-        try {
-            if (selectedTemplates.length > 0) {
-                const selected = selectedTemplates[0];
-                const variables: Record<string, Variable> = {
-                    input: {
-                        type: 'string',
-                        value: finalInput,
-                        richCapable: false,
-                    },
-                };
-
-                const result = await runPromptFromTree({
-                    treeId: selected.tree_id,
-                    nodeId: selected.root_id,
-                    variableValues: variables,
-                });
-
-                if ('error' in result) {
-                    console.error(result.error);
-                    setResponse(`⚠️ ${result.error}`);
-                } else {
-                    setResponse(result.response ?? '[No output]');
-                }
-            } else {
-                const result = await runPrompt(finalInput);
-                if ('error' in result) {
-                    console.error(result.error);
-                    setResponse(`⚠️ ${result.error}`);
-                } else {
-                    setResponse(result.response ?? '[No output]');
-                }
-            }
-        } catch (err) {
-            console.error('Error running prompt:', err);
-            Alert.alert('Error', 'There was a problem running the prompt.');
-            setResponse('[Error running prompt]');
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     return (
         <ThemedSafeArea>
