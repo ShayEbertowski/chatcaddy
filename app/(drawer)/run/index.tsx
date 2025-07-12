@@ -24,6 +24,14 @@ export default function RunPromptScreen() {
     const [editingVar, setEditingVar] = useState<string | null>(null);
     const [tempValue, setTempValue] = useState('');
 
+    if (!composerTree) return null;
+    const { nodes } = composerTree;
+    console.log({
+        num: nodes["de10126c-df97-421c-8e4f-e8fbc9475227"]?.content,
+        age: nodes["5d593600-5b1c-4dfd-a9b1-d9d8a1af2fd6"]?.content,
+        diet: nodes["62d5bdad-d96e-4115-b998-718da36d5ce3"]?.content,
+    });
+
     if (!treeId || !nodeId) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background, padding: 16 }}>
@@ -54,6 +62,9 @@ export default function RunPromptScreen() {
         try {
             setIsLoading(true);
             const variableValues: Record<string, Variable> = {};
+
+            console.log('\n🎯 Variables BEFORE resolving:', JSON.stringify(variableValues, null, 2));
+
 
             for (const [key, value] of Object.entries(flat)) {
                 if (value.startsWith('{{') && value.endsWith('}}')) {

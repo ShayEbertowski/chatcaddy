@@ -91,7 +91,7 @@ export function ComposerEditorView({
                         } else {
                             router.push({
                                 pathname: `/(drawer)/(composer)/${treeId}/${composerTree?.rootId}`,
-                                params: { autoSave: 'true' },
+                                params: { autoSave: 'false' },
                             });
                         }
                     }}

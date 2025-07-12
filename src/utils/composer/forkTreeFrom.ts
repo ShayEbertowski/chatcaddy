@@ -40,7 +40,7 @@ export async function forkTreeFrom(sourceTreeId: string): Promise<{ treeId: stri
 
     await supabase.from('composer_trees').insert({
         id: newTreeId,
-        name: data.name,
+        title: data.title,
         root_id: newRootId,
         nodes: newNodes,
         updated_at: now,

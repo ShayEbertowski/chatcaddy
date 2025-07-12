@@ -8,57 +8,61 @@ type RunPromptFromTreeResult = {
     error?: string;
 };
 
+// Extract first clean line from a nested prompt response
+function extractSingleLine(text: string): string {
+    const lines = text.trim().split('\n').map(l => l.trim()).filter(Boolean);
+    return lines[0] ?? text.trim();
+}
+
 function resolvePromptContent(
-    content: string,
-    variableValues: Record<string, Variable>,
-    nodes: Record<string, { content: string }>,
-    depth: number = 0,
-    maxDepth: number = 5
+  content: string,
+  variableValues: Record<string, Variable>,
+  nodes: Record<string, { content: string }>,
+  depth: number = 0,
+  maxDepth: number = 5
 ): string {
-    if (depth > maxDepth) {
-        console.warn(`[resolvePromptContent] Max depth reached (${depth})`);
-        return '[max depth reached]';
+  if (depth > maxDepth) {
+    console.warn(`[resolvePromptContent] Max depth reached (${depth})`);
+    return '[max depth reached]';
+  }
+
+  return content.replace(/{{(.*?)}}/g, (_, rawKey) => {
+    const key = rawKey.trim();
+    const variable = variableValues[key];
+
+    if (!variable) {
+      console.warn(`⚠️ Variable "${key}" not found.`);
+      return `[missing: ${key}]`;
     }
 
-    console.log(`\n[resolvePromptContent] Depth: ${depth}`);
-    console.log('Content before resolving:', content);
+    if (variable.type === 'string') {
+      return variable.value ?? '[not set]';
+    }
 
-    const resolved = content.replace(/{{(.*?)}}/g, (_, rawKey) => {
-        const key = rawKey.trim();
-        const variable = variableValues[key];
+    if (variable.type === 'prompt') {
+      const nestedNode = nodes[variable.promptId];
+      if (!nestedNode) {
+        console.warn(`⚠️ Missing node for nested prompt "${key}"`);
+        return `[missing prompt: ${key}]`;
+      }
 
-        console.log(`-> Resolving variable: "${key}"`);
-        console.log('   Variable:', variable);
+      // 👇 Recursively resolve the nested prompt's content
+      const resolvedNested = resolvePromptContent(
+        nestedNode.content,
+        variableValues,
+        nodes,
+        depth + 1,
+        maxDepth
+      );
 
-        if (!variable) {
-            console.warn(`   ⚠️ Variable "${key}" not found.`);
-            return `[missing: ${key}]`;
-        }
+      return resolvedNested;
+    }
 
-        if (variable.type === 'string') {
-            const val = variable.value || '[not set]';
-            console.log(`   ✅ String value: "${val}"`);
-            return val;
-        }
-
-        if (variable.type === 'prompt') {
-            const nestedNode = nodes[variable.promptId];
-            if (!nestedNode) {
-                console.warn(`   ⚠️ Missing nested prompt for "${key}" (promptId: ${variable.promptId})`);
-                return `[missing prompt: ${key}]`;
-            }
-
-            console.log(`   🔁 Recursing into nested prompt "${key}" (promptId: ${variable.promptId})`);
-            return resolvePromptContent(nestedNode.content, variableValues, nodes, depth + 1, maxDepth);
-        }
-
-        console.warn(`   ❓ Unknown variable type for "${key}"`);
-        return `[unknown type: ${key}]`;
-    });
-
-    console.log('Resolved content:', resolved);
-    return resolved;
+    return `[unknown type: ${key}]`;
+  });
 }
+
+
 
 export async function runPromptFromTree({
     treeId,
@@ -80,18 +84,8 @@ export async function runPromptFromTree({
     const node = tree.nodes[nodeId];
     if (!node) throw new Error('Prompt node not found');
 
-    console.log('Prompt node content:', node.content);
-
     const finalInput = resolvePromptContent(node.content, variableValues, tree.nodes);
     console.log('Final resolved input:', finalInput);
 
-    // Only send string values to OpenAI — omit nested prompts
-    const flatStringVars: Record<string, string> = {};
-    for (const [key, val] of Object.entries(variableValues)) {
-        if (val.type === 'string') {
-            flatStringVars[key] = val.value;
-        }
-    }
-
-    return await runPrompt(finalInput, flatStringVars);
+    return await runPrompt(finalInput);
 }

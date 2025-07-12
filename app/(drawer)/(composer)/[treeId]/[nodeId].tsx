@@ -137,11 +137,11 @@ function ComposerNodeScreenInner({
     }, [queuedSave, isAtRoot]);
 
     const openSaveModal = async () => {
-        if (!safeNode?.content.trim()) return;
+        // if (!safeNode?.content.trim()) return;
 
         setIsGeneratingTitle(true);
         try {
-            const smart = await generateSmartTitle(safeNode.content);
+            const smart = await generateSmartTitle(safeNode!.content);
             setSaveTitle(smart || 'Untitled');
         } catch {
             setSaveTitle('Untitled');

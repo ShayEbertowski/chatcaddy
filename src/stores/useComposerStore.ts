@@ -5,9 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { IndexedEntity } from '../types/entity';
 import { forkTreeFrom } from '../utils/composer/forkTreeFrom';
 import { router } from 'expo-router';
-import { inferVariablesFromRoot } from '../utils/composer/inferVariables'; // Add to imports
-
-
+import { inferVariablesFromRoot } from '../utils/composer/inferVariables';
 
 /* ─── TYPES ─────────────────────────────────────────── */
 export type NodeKind = 'Prompt' | 'Function' | 'Snippet';
@@ -24,7 +22,7 @@ export interface ComposerNode {
 
 export interface ComposerTree {
     id: string;
-    name: string;
+    title: string;
     rootId: string;
     nodes: Record<string, ComposerNode>;
     updatedAt: string;
@@ -76,12 +74,15 @@ export const useComposerStore = create<ComposerStoreState>()(
                 if (error) throw error;
                 if (!data) throw new Error('Tree not found');
 
-                const { id, name, root_id, nodes, updated_at } = data;
+                const { id, title, root_id, nodes, updated_at } = data;
                 if (!root_id || !nodes[root_id]) throw new Error('Bad tree blob');
+
+                const inferredVars = inferVariablesFromRoot({ id, title, rootId: root_id, nodes, updatedAt: updated_at });
+                nodes[root_id].variables = inferredVars;
 
                 set((state) => ({
                     activeTreeId: id,
-                    composerTree: { id, name, rootId: root_id, nodes, updatedAt: updated_at },
+                    composerTree: { id, title, rootId: root_id, nodes, updatedAt: updated_at },
                     loadedTreeIds: new Set([...state.loadedTreeIds, id]),
                 }));
             },
@@ -93,14 +94,14 @@ export const useComposerStore = create<ComposerStoreState>()(
                 const now = new Date().toISOString();
                 const treeId = composerTree.id || uuid();
                 const { nodes, rootId } = composerTree;
-                const treeName = nodes[rootId].title?.trim() || 'Untitled';
+                const treeTitle = nodes[rootId].title?.trim() || 'Untitled';
 
                 const inferredVars = inferVariablesFromRoot(composerTree);
                 composerTree.nodes[rootId].variables = inferredVars;
 
                 const { error: treeErr } = await supabase.from('composer_trees').upsert({
                     id: treeId,
-                    name: treeName,
+                    title: treeTitle,
                     root_id: rootId,
                     nodes,
                     updated_at: now,
@@ -111,6 +112,7 @@ export const useComposerStore = create<ComposerStoreState>()(
                 await supabase.from('indexed_entities').upsert({
                     id: rootId,
                     tree_id: treeId,
+                    root_id: rootId,
                     is_root: true,
                     title: rootNode.title || 'Untitled',
                     entity_type: rootNode.entityType,
@@ -120,7 +122,7 @@ export const useComposerStore = create<ComposerStoreState>()(
 
                 set({
                     activeTreeId: treeId,
-                    composerTree: { ...composerTree, id: treeId, updatedAt: now },
+                    composerTree: { ...composerTree, id: treeId, title: treeTitle, updatedAt: now },
                 });
 
                 get().bumpPromptVersion();
@@ -157,7 +159,7 @@ export const useComposerStore = create<ComposerStoreState>()(
 
                 const freshTree: ComposerTree = {
                     id,
-                    name: 'Untitled',
+                    title: 'Untitled',
                     rootId,
                     nodes: { [rootId]: root },
                     updatedAt: now,
@@ -165,7 +167,7 @@ export const useComposerStore = create<ComposerStoreState>()(
 
                 await supabase.from('composer_trees').insert({
                     id,
-                    name: freshTree.name,
+                    title: freshTree.title,
                     root_id: rootId,
                     nodes: freshTree.nodes,
                     updated_at: now,
@@ -273,7 +275,6 @@ export const useComposerStore = create<ComposerStoreState>()(
 
                 get().bumpPromptVersion();
 
-                // ✅ Wait for node to exist before navigating
                 const waitForNodeToExist = new Promise<void>((resolve) => {
                     const interval = setInterval(() => {
                         const exists = get().composerTree?.nodes?.[childId];
@@ -282,7 +283,7 @@ export const useComposerStore = create<ComposerStoreState>()(
                             resolve();
                         }
                     }, 10);
-                    setTimeout(() => clearInterval(interval), 1000); // fail-safe
+                    setTimeout(() => clearInterval(interval), 1000);
                 });
 
                 await waitForNodeToExist;
@@ -292,6 +293,7 @@ export const useComposerStore = create<ComposerStoreState>()(
             forkTreeFromEntity: async (e) => {
                 const { treeId, rootId } = await forkTreeFrom(e.tree_id);
                 await get().loadTree(treeId);
+                await get().saveTree();
                 setTimeout(() => {
                     router.push(`/(drawer)/(composer)/${treeId}/${rootId}`);
                 }, 0);
@@ -302,6 +304,7 @@ export const useComposerStore = create<ComposerStoreState>()(
             forkTreeFromTreeId: async (id) => {
                 const { treeId, rootId } = await forkTreeFrom(id);
                 await get().loadTree(treeId);
+                await get().saveTree();
                 get().bumpPromptVersion();
                 return { treeId, rootId };
             },

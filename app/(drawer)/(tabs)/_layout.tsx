@@ -11,14 +11,17 @@ export default function TabLayout() {
     const toggle = useThemeStore((s) => s.toggle);
 
     const icons = {
-        entry: 'rocket-outline',
         library: 'library-outline',
+        quickcomposer: 'flash-outline',
+        entry: 'rocket-outline',
     } as const;
 
     const labels = {
-        entry: 'Composer',
         library: 'Library',
+        quickcomposer: 'QuickComposer',
+        entry: 'Composer',
     } as const;
+
 
     return (
         <Tabs
@@ -49,8 +52,10 @@ export default function TabLayout() {
                 ),
             })}
         >
-            <Tabs.Screen name="entry" />
+
             <Tabs.Screen name="library" />
+            <Tabs.Screen name="quickcomposer" />
+            <Tabs.Screen name="entry" />
         </Tabs>
     );
 }

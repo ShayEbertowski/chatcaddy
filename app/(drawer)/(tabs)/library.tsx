@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useColors } from '../../../src/hooks/useColors';
 import BaseModal from '../../../src/components/modals/BaseModal';
 import ConfirmModal from '../../../src/components/modals/ConfirmModal';
@@ -66,8 +66,11 @@ export default function EntityLibraryScreen() {
     };
 
     const handleRun = (entity: IndexedEntity) => {
-        console.log('Running with treeId:', entity.tree_id);
-        console.log('Running with nodeId (root_id):', entity.root_id);
+        if (!entity.tree_id || !entity.root_id) {
+            console.warn('Missing tree_id or root_id for entity', entity);
+            return; // or show an alert
+        }
+
         router.push({
             pathname: '/(drawer)/run',
             params: {
@@ -75,8 +78,8 @@ export default function EntityLibraryScreen() {
                 nodeId: entity.root_id,
             },
         });
-
     };
+
 
     const handleDeleteRequest = (entity: IndexedEntity) => {
         setDeleteTarget(entity);
@@ -103,15 +106,24 @@ export default function EntityLibraryScreen() {
         setDeleteTarget(null);
     };
 
+
+    const createNewTemplate = async () => {
+        try {
+            router.push('/templates');
+        } catch (err) {
+            console.error('❌ Failed to create prompt:', err);
+        }
+    };
+
     return (
-        <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <View style={styles.dropdownWrapper}>
+        <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: 24 }}>
+            {/* <View style={styles.dropdownWrapper}>
                 <DropdownSelector
                     value={category}
                     options={options}
                     onSelect={setCategory}
                 />
-            </View>
+            </View> */}
 
             {filteredEntities.length === 0 ? (
                 <Text style={{ textAlign: 'center', marginTop: 40, color: colors.secondaryText }}>
@@ -131,6 +143,25 @@ export default function EntityLibraryScreen() {
                     )}
                 />
             )}
+
+            <TouchableOpacity
+                onPress={createNewTemplate}
+                style={{
+                    position: 'absolute',
+                    bottom: 32,
+                    right: 32,
+                    backgroundColor: colors.primary,
+                    padding: 16,
+                    borderRadius: 28,
+                    elevation: 4,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 4,
+                }}
+            >
+                <Ionicons name="add" size={24} color={colors.onPrimary} />
+            </TouchableOpacity>
 
             <BaseModal visible={modalVisible} blur dismissOnBackdropPress onRequestClose={() => setModalVisible(false)}>
                 {options.map((opt) => (
