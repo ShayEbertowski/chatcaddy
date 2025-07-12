@@ -93,12 +93,12 @@ export default function TemplateDetailScreen() {
                 </View>
 
                 <View style={styles.footer}>
-                    <ThemedButton
+                    {/* <ThemedButton
                         title="Try Again"
                         onPress={handleTryAgain}
                         colorKey="accent"
                         style={{ marginBottom: 12 }}
-                    />
+                    /> */}
                     <ThemedButton
                         title="Save"
                         onPress={openSaveModal}

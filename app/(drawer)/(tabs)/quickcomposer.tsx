@@ -8,6 +8,8 @@ import {
     TextInputSelectionChangeEventData,
     ScrollView,
     TouchableOpacity,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
 
 import { useColors } from '../../../src/hooks/useColors';
@@ -15,8 +17,22 @@ import { ThemedSafeArea } from '../../../src/components/shared/ThemedSafeArea';
 import { getSharedStyles } from '../../../src/styles/shared';
 import { ThemedButton } from '../../../src/components/ui/ThemedButton';
 import BaseModal from '../../../src/components/modals/BaseModal';
-import { starterTemplates } from '../../../src/constants/starterTemplates';
 import { supabase } from '../../../src/lib/supabaseClient';
+import CollapsibleSection from '../../../src/components/shared/CollapsibleSection';
+import { PromptResult } from '../../../src/components/prompt/PromptResult';
+import { Variable } from '../../../src/types/prompt';
+import { runPromptFromTree } from '../../../src/utils/prompt/runPromptFromTree';
+import { runPrompt } from '../../../src/utils/prompt/runPrompt'; // Adjust path if needed
+
+type IndexedEntity = {
+    id: string;
+    tree_id: string;
+    root_id: string;
+    entityType: string;
+    title: string;
+    content: string;
+    variables: Record<string, any>;
+};
 
 export default function QuickComposerScreen() {
     const colors = useColors();
@@ -24,31 +40,14 @@ export default function QuickComposerScreen() {
     const styles = getStyles(colors);
 
     const [text, setText] = useState('');
-    const [selection, setSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
+    const [selection, setSelection] = useState({ start: 0, end: 0 });
     const [modalVisible, setModalVisible] = useState(false);
-
-
-    const insertTemplate = (templateText: string) => {
-        const before = text.slice(0, selection.start);
-        const after = text.slice(selection.end);
-        const inserted = `${before}${templateText}${after}`;
-        setText(inserted);
-
-        const newCursor = before.length + templateText.length;
-        setSelection({ start: newCursor, end: newCursor });
-        setModalVisible(false);
-    };
-
-    type IndexedEntity = {
-        id: string;
-        tree_id: string;
-        root_id: string;
-        entityType: string;
-        title: string;
-        content: string;
-        variables: Record<string, any>;
-    };
-
+    const [selectedTemplates, setSelectedTemplates] = useState<IndexedEntity[]>([]);
+    const [activeTemplate, setActiveTemplate] = useState<IndexedEntity | null>(null);
+    const [showTemplates, setShowTemplates] = useState(true);
+    const [response, setResponse] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [showResponse, setShowResponse] = useState(true);
     const [entities, setEntities] = useState<IndexedEntity[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -82,6 +81,67 @@ export default function QuickComposerScreen() {
         [entities]
     );
 
+    const handleTemplateSelect = (template: IndexedEntity) => {
+        if (!selectedTemplates.find((t) => t.id === template.id)) {
+            setSelectedTemplates((prev) => [...prev, template]);
+        }
+        setModalVisible(false);
+    };
+
+    const handleRun = async () => {
+        const finalInput =
+            selectedTemplates.length > 0
+                ? `${selectedTemplates.map((t) => t.content).join('\n\n')}\n\n${text}`
+                : text;
+
+        if (!finalInput.trim()) {
+            Alert.alert('Empty Prompt', 'Please enter a prompt first.');
+            return;
+        }
+
+        setIsLoading(true);
+        setResponse(null);
+
+        try {
+            if (selectedTemplates.length > 0) {
+                const selected = selectedTemplates[0];
+                const variables: Record<string, Variable> = {
+                    input: {
+                        type: 'string',
+                        value: finalInput,
+                        richCapable: false,
+                    },
+                };
+
+                const result = await runPromptFromTree({
+                    treeId: selected.tree_id,
+                    nodeId: selected.root_id,
+                    variableValues: variables,
+                });
+
+                if ('error' in result) {
+                    console.error(result.error);
+                    setResponse(`⚠️ ${result.error}`);
+                } else {
+                    setResponse(result.response ?? '[No output]');
+                }
+            } else {
+                const result = await runPrompt(finalInput);
+                if ('error' in result) {
+                    console.error(result.error);
+                    setResponse(`⚠️ ${result.error}`);
+                } else {
+                    setResponse(result.response ?? '[No output]');
+                }
+            }
+        } catch (err) {
+            console.error('Error running prompt:', err);
+            Alert.alert('Error', 'There was a problem running the prompt.');
+            setResponse('[Error running prompt]');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <ThemedSafeArea>
@@ -93,6 +153,26 @@ export default function QuickComposerScreen() {
                     style={{ marginBottom: 16 }}
                 />
 
+                {selectedTemplates.length > 0 && (
+                    <CollapsibleSection
+                        title="Inserted Templates"
+                        isOpen={showTemplates}
+                        onToggle={() => setShowTemplates(!showTemplates)}
+                    >
+                        <View style={styles.selectedList}>
+                            {selectedTemplates.map((template) => (
+                                <TouchableOpacity
+                                    key={template.id}
+                                    style={sharedStyles.chip}
+                                    onPress={() => setActiveTemplate(template)}
+                                >
+                                    <Text style={sharedStyles.chipText}>{template.title}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </CollapsibleSection>
+                )}
+
                 <TextInput
                     value={text}
                     onChangeText={setText}
@@ -101,18 +181,18 @@ export default function QuickComposerScreen() {
                     }
                     selection={selection}
                     multiline
-                    placeholder="Start typing or paste a prompt..."
+                    placeholder="Add additional context here..."
                     placeholderTextColor={colors.secondaryText}
                     style={[styles.input, { borderColor: colors.borderThin, color: colors.text }]}
                 />
 
+                {/* Template selection modal */}
                 <BaseModal
                     visible={modalVisible}
                     onRequestClose={() => setModalVisible(false)}
                     dismissOnBackdropPress
                 >
                     <Text style={[styles.modalTitle, { color: colors.text }]}>Insert a Template</Text>
-
                     {loading ? (
                         <Text style={{ color: colors.secondaryText, textAlign: 'center' }}>Loading...</Text>
                     ) : templates.length === 0 ? (
@@ -121,18 +201,60 @@ export default function QuickComposerScreen() {
                         templates.map((template) => (
                             <TouchableOpacity
                                 key={template.id}
-                                onPress={() => insertTemplate(template.content)}
-                                style={[styles.templateButton, { borderColor: colors.border }]}
+                                onPress={() => handleTemplateSelect(template)}
+                                style={styles.templateButton}
                             >
-                                <Text style={[styles.templateText, { color: colors.accent }]}>
-                                    {template.title}
-                                </Text>
+                                <Text style={styles.templateText}>{template.title}</Text>
                             </TouchableOpacity>
                         ))
                     )}
-
                 </BaseModal>
+
+                {/* Template preview modal */}
+                <BaseModal
+                    visible={!!activeTemplate}
+                    onRequestClose={() => setActiveTemplate(null)}
+                    dismissOnBackdropPress
+                >
+                    <Text style={[styles.modalTitle, { color: colors.text }]}>
+                        {activeTemplate?.title}
+                    </Text>
+                    <ScrollView>
+                        <Text style={[styles.templateContentText, { color: colors.secondaryText }]}>
+                            {activeTemplate?.content}
+                        </Text>
+                    </ScrollView>
+                </BaseModal>
+
+                <CollapsibleSection
+                    title="Response"
+                    isOpen={showResponse}
+                    onToggle={() => setShowResponse(prev => !prev)}
+                >
+                    {isLoading ? (
+                        <ActivityIndicator size="large" color={colors.accent} style={{ marginVertical: 20 }} />
+                    ) : (
+                        <PromptResult
+                            response={response ?? ''}
+                            isLoading={false}
+                            onClear={() => setResponse(null)}
+                        />
+                    )}
+                </CollapsibleSection>
             </ScrollView>
+
+            <View style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                padding: 16,
+                backgroundColor: colors.background,
+                borderTopColor: colors.borderThin,
+                borderTopWidth: 1,
+            }}>
+                <ThemedButton title="Run Prompt" onPress={handleRun} colorKey="primary" />
+            </View>
         </ThemedSafeArea>
     );
 }
@@ -142,6 +264,12 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
         container: {
             flexGrow: 1,
             padding: 24,
+        },
+        selectedList: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginBottom: 8,
         },
         input: {
             backgroundColor: colors.card,
@@ -153,6 +281,7 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             paddingHorizontal: 16,
             textAlignVertical: 'top',
             minHeight: 200,
+            marginTop: 16
         },
         modalTitle: {
             fontSize: 18,
@@ -170,8 +299,11 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
         templateText: {
             fontSize: 17,
             fontWeight: '400',
-            color: '#007AFF', // iOS blue
+            color: colors.onSurface,
         },
-
-
+        templateContentText: {
+            fontSize: 15,
+            lineHeight: 22,
+            textAlign: 'left',
+        },
     });

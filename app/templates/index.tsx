@@ -52,7 +52,7 @@ export default function TemplatesScreen() {
                     <TextInput
                         value={input}
                         onChangeText={setInput}
-                        placeholder="e.g. I’m a nursing student and need to email my professor"
+                        placeholder="e.g. I’m a student and need to email my professor"
                         placeholderTextColor={colors.secondaryText}
                         multiline
                         style={[styles.input, { color: colors.text, borderColor: colors.border }]}
