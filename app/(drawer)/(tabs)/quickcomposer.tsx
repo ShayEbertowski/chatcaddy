@@ -50,6 +50,9 @@ export default function QuickComposerScreen() {
     const [entities, setEntities] = useState<IndexedEntity[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const [modalStep, setModalStep] = useState<'type' | 'select'>('type');
+    const [insertType, setInsertType] = useState<'template' | 'snippet' | 'tag' | 'modifier' | null>(null);
+
     useEffect(() => {
         async function loadEntities() {
             const { data, error } = await supabase
@@ -124,12 +127,15 @@ export default function QuickComposerScreen() {
     return (
         <ThemedSafeArea>
             <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
-                <ThemedButton
-                    title="Insert Template"
-                    onPress={() => setModalVisible(true)}
-                    colorKey="accent"
-                    style={{ marginBottom: 16 }}
-                />
+                <View style={{ alignItems: 'flex-end', marginBottom: 16 }}>
+                    <TouchableOpacity
+                        onPress={() => setModalVisible(true)}
+                        style={styles.insertIconButton}
+                    >
+                        <Text style={{ fontSize: 20, color: colors.accent }}>＋</Text>
+                    </TouchableOpacity>
+                </View>
+
 
                 {selectedTemplates.length > 0 && (
                     <CollapsibleSection
@@ -201,29 +207,61 @@ export default function QuickComposerScreen() {
 
                 <BaseModal
                     visible={modalVisible}
-                    onRequestClose={() => setModalVisible(false)}
+                    onRequestClose={() => {
+                        setModalVisible(false);
+                        setModalStep('type');
+                        setInsertType(null);
+                    }}
                     dismissOnBackdropPress
                 >
-                    <Text style={[styles.modalTitle, { color: colors.text }]}>Insert a Template</Text>
-                    {loading ? (
-                        <Text style={{ color: colors.secondaryText, textAlign: 'center' }}>Loading...</Text>
-                    ) : templates.length === 0 ? (
-                        <Text style={{ color: colors.secondaryText, textAlign: 'center' }}>No templates found.</Text>
+                    {modalStep === 'type' ? (
+                        <>
+                            <Text style={[styles.modalTitle, { color: colors.text }]}>What would you like to insert?</Text>
+                            <View style={styles.modalButtonList}>
+                                {['Prompt', 'Snippet', 'Tag', 'Modifier'].map((type) => (
+                                    <TouchableOpacity
+                                        key={type}
+                                        onPress={() => {
+                                            setInsertType(type as any);
+                                            setModalStep('select');
+                                        }}
+                                        style={styles.insertTypeButton}
+                                    >
+                                        <Text style={styles.insertTypeText}>{type}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </>
                     ) : (
-                        templates
-                            .filter((template) => !selectedTemplates.some((t) => t.id === template.id))
-                            .map((template) => (
-                                <TouchableOpacity
-                                    key={template.id}
-                                    onPress={() => handleTemplateSelect(template)}
-                                    style={styles.templateButton}
-                                >
-                                    <Text style={styles.templateText}>{template.title}</Text>
-                                </TouchableOpacity>
-                            ))
-                            
+                        <>
+                            <Text style={[styles.modalTitle, { color: colors.text }]}>Select a {insertType}</Text>
+                            {loading ? (
+                                <Text style={{ color: colors.secondaryText, textAlign: 'center' }}>Loading…</Text>
+                            ) : (
+                                <ScrollView style={{ maxHeight: 300 }}>
+                                    {entities
+                                        .filter((e) => e.entityType.toLowerCase() === insertType?.toLowerCase())
+                                        .map((entity) => (
+                                            <TouchableOpacity
+                                                key={entity.id}
+                                                onPress={() => {
+                                                    handleTemplateSelect(entity); // or reroute to handler if needed
+                                                    setModalVisible(false);
+                                                    setModalStep('type');
+                                                    setInsertType(null);
+                                                }}
+                                                style={styles.insertTypeButton}
+                                            >
+                                                <Text style={styles.insertTypeText}>{entity.title}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                </ScrollView>
+                            )}
+                        </>
                     )}
                 </BaseModal>
+
+
 
                 <BaseModal
                     visible={!!activeTemplate}
@@ -319,4 +357,30 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             lineHeight: 22,
             textAlign: 'left',
         },
+        insertTypeButton: {
+            backgroundColor: colors.surface,
+            borderColor: colors.borderThin,
+            borderWidth: 1,
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            borderRadius: 6,
+            marginBottom: 12,
+            alignItems: 'center',
+        },
+        insertTypeText: {
+            fontSize: 16,
+            fontWeight: '500',
+            color: colors.text,
+        },
+        modalButtonList: {
+            marginTop: 12,
+        },
+        insertIconButton: {
+            backgroundColor: colors.surface,
+            borderColor: colors.borderThin,
+            borderWidth: 1,
+            padding: 8,
+            borderRadius: 6,
+        },
+
     });
