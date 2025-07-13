@@ -19,8 +19,9 @@ export default function EntityCard({ entity, onPress, onEdit, onDelete, variable
 
     const displayTitle = entity.title?.trim() ? entity.title : '(Untitled)';
 
-    // Pull preview content based on entity type:
-    const previewText = (entity && entity.content) ?? '';
+    const fullText = (entity && entity.content) ?? '';
+    const previewText = fullText.length > 200 ? fullText.slice(0, 200) + '…' : fullText;
+
 
 
     return (

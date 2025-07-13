@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Snackbar } from 'react-native-paper';
 import { v4 as uuidv4 } from 'uuid';
@@ -83,22 +83,23 @@ export default function TemplateDetailScreen() {
     return (
         <ThemedSafeArea>
             <View style={[styles.container, { backgroundColor: colors.background }]}>
-                <View>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                >
                     <Text style={[styles.title, { color: colors.text }]}>Suggested Template</Text>
                     {output ? (
                         <Text style={[styles.inputText, { color: colors.secondaryText }]}>{output}</Text>
                     ) : (
                         <ActivityIndicator color={colors.primary} />
                     )}
-                </View>
+                </ScrollView>
 
-                <View style={styles.footer}>
-                    {/* <ThemedButton
-                        title="Try Again"
-                        onPress={handleTryAgain}
-                        colorKey="accent"
-                        style={{ marginBottom: 12 }}
-                    /> */}
+                <View style={[styles.footer, {
+                    backgroundColor: colors.background,
+                    borderTopColor: colors.border,
+                    borderTopWidth: 1,
+                }]}>
                     <ThemedButton
                         title="Save"
                         onPress={openSaveModal}
@@ -121,7 +122,7 @@ export default function TemplateDetailScreen() {
                     visible={snackOpen}
                     onDismiss={() => {
                         setSnackOpen(false);
-                        router.replace('/library'); // Or wherever you want to route after save
+                        router.replace('/library');
                     }}
                     duration={1200}
                     style={{
@@ -138,6 +139,7 @@ export default function TemplateDetailScreen() {
                 </Snackbar>
             </View>
         </ThemedSafeArea>
+
     );
 }
 
@@ -156,7 +158,12 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 24,
     },
+    scrollContent: {
+        padding: 24,
+        paddingBottom: 80, // ensures space beneath long content
+    },
     footer: {
-        paddingTop: 16,
+        padding: 16,
+        borderTopWidth: 1,
     },
 });

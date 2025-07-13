@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useColors } from '../../src/hooks/useColors';
 import { inferTagsFromText } from '../../src/utils/templates/inferTagsFromText';
@@ -44,7 +44,10 @@ export default function TemplatesScreen() {
     return (
         <ThemedSafeArea>
             <View style={[styles.container, { backgroundColor: colors.background }]}>
-                <View>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                >
                     <Text style={[styles.label, { color: colors.text }]}>
                         What do you want help writing?
                     </Text>
@@ -62,13 +65,14 @@ export default function TemplatesScreen() {
                     {error !== '' && (
                         <Text style={{ color: colors.error, marginTop: 16 }}>{error}</Text>
                     )}
-                </View>
+                </ScrollView>
 
-                <View style={styles.footer}>
+                <View style={[styles.footer, { backgroundColor: colors.background, borderTopColor: colors.border, borderTopWidth: 1 }]}>
                     <ThemedButton title="Continue" onPress={handleSubmit} colorKey="accent" />
                 </View>
             </View>
         </ThemedSafeArea>
+
 
     );
 }
@@ -76,15 +80,14 @@ export default function TemplatesScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'space-between',
+    },
+    scrollContent: {
         padding: 24,
+        paddingBottom: 80, // so input doesn’t get hidden behind button
     },
     footer: {
-        paddingTop: 16,
-    },
-    label: {
-        fontSize: 20,
-        marginBottom: 12,
+        padding: 16,
+        borderTopWidth: 1,
     },
     input: {
         minHeight: 100,
@@ -93,5 +96,9 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         marginBottom: 24,
         fontSize: 16,
+    },
+    label: {
+        fontSize: 20,
+        marginBottom: 12,
     },
 });

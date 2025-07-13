@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     StyleSheet,
     ActivityIndicator,
+    ScrollView,
 } from 'react-native';
 import { useColors } from '../../hooks/useColors';
 
@@ -42,12 +43,14 @@ export default function SavePromptModal({
 
                     {loading ? (
                         <View style={{ paddingVertical: 20 }}>
-                            <Text style={{ color: colors.text, marginBottom: 10 }}>Generating smart title...</Text>
+                            <Text style={{ color: colors.text, marginBottom: 10 }}>
+                                Generating smart title...
+                            </Text>
                             <ActivityIndicator size="large" color={colors.accent} />
                         </View>
                     ) : (
                         <>
-                            <View style={styles.box}>
+                            <ScrollView style={styles.scrollBox} contentContainerStyle={styles.scrollContent}>
                                 <Text style={styles.label}>Title:</Text>
                                 <TextInput
                                     value={title}
@@ -59,10 +62,13 @@ export default function SavePromptModal({
 
                                 <Text style={[styles.label, { marginTop: 12 }]}>Prompt:</Text>
                                 <Text style={styles.prompt}>{prompt}</Text>
-                            </View>
+                            </ScrollView>
 
                             <View style={styles.buttonRow}>
-                                <TouchableOpacity style={[styles.button, styles.cancel]} onPress={onCancel}>
+                                <TouchableOpacity
+                                    style={[styles.button, styles.cancel]}
+                                    onPress={onCancel}
+                                >
                                     <Text style={[styles.buttonText, styles.cancelText]}>Cancel</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.button} onPress={onConfirm}>
@@ -74,6 +80,7 @@ export default function SavePromptModal({
                 </View>
             </View>
         </Modal>
+
     );
 }
 
@@ -149,5 +156,16 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
         },
         cancelText: {
             color: colors.text,
+        },
+        scrollBox: {
+            maxHeight: 300,
+            width: '100%',
+            borderRadius: 8,
+            marginVertical: 12,
+        },
+        scrollContent: {
+            backgroundColor: colors.inputBackground,
+            padding: 12,
+            borderRadius: 8,
         },
     });
