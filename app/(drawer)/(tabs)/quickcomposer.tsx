@@ -1,3 +1,4 @@
+// [QuickComposerScreen.tsx]
 import { useEffect, useMemo, useState } from 'react';
 import {
     View,
@@ -20,12 +21,8 @@ import BaseModal from '../../../src/components/modals/BaseModal';
 import { supabase } from '../../../src/lib/supabaseClient';
 import CollapsibleSection from '../../../src/components/shared/CollapsibleSection';
 import { PromptResult } from '../../../src/components/prompt/PromptResult';
-import { Variable } from '../../../src/types/prompt';
 import { runPrompt } from '../../../src/utils/prompt/runPrompt';
 import { PREDEFINED_TAGS, PREDEFINED_MODIFIERS } from '../../../src/constants/entities';
-
-
-
 
 type IndexedEntity = {
     id: string;
@@ -56,6 +53,9 @@ export default function QuickComposerScreen() {
 
     const [modalStep, setModalStep] = useState<'type' | 'select'>('type');
     const [insertType, setInsertType] = useState<'template' | 'snippet' | 'tag' | 'modifier' | null>(null);
+
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [selectedModifiers, setSelectedModifiers] = useState<string[]>([]);
 
     useEffect(() => {
         async function loadEntities() {
@@ -92,16 +92,62 @@ export default function QuickComposerScreen() {
             setSelectedTemplates((prev) => [...prev, template]);
         }
         setModalVisible(false);
-    };
-
-    const handleTemplateRemove = (templateId: string) => {
-        setSelectedTemplates((prev) => prev.filter((t) => t.id !== templateId));
+        setModalStep('type');
+        setInsertType(null);
     };
 
     const handleRun = async () => {
         const templateText = selectedTemplates.map((t) => t.content).join('\n\n').trim();
-        const userText = text.trim();
-        const finalInput = [templateText, userText].filter(Boolean).join('\n\n');
+
+        // Detect translation intent
+        const translatedModifier = selectedModifiers.find((m) =>
+            m.toLowerCase().startsWith('translate to ')
+        );
+        const isTranslation = !!translatedModifier;
+        const targetLanguage = translatedModifier?.split('translate to ')[1] ?? '';
+
+        // Build strong language persona + rule enforcement
+        const translationInstruction = isTranslation
+            ? `You are a professional storyteller who only writes in ${targetLanguage}. From start to finish, your entire output must be written in ${targetLanguage}, using correct grammar and vocabulary as used by native speakers. Do not write in any other language.`
+            : '';
+
+        // Other modifiers (skip translation one)
+        const otherModifiers = selectedModifiers
+            .filter((m) => !m.toLowerCase().startsWith('translate to '))
+            .map((m) => `- ${m}`)
+            .join('\n');
+
+        const modifierLine = otherModifiers
+            ? `Apply the following modifiers:\n${otherModifiers}`
+            : '';
+
+        // Tags
+        const tagLine = selectedTags.length > 0
+            ? `Your response should reflect the following tags: ${selectedTags.map(t => `#${t}`).join(', ')}.`
+            : '';
+
+        // Smart prompt enrichment
+        const baseUserText = text.trim();
+        const isShort = baseUserText.length < 60;
+        const enrichedUserText =
+            !templateText && isShort && !baseUserText.toLowerCase().includes('story')
+                ? `Write a short, creative story based on the following: ${baseUserText}`
+                : baseUserText;
+
+        const finalUserPrompt = isTranslation
+            ? `Tell a short and creative story in ${targetLanguage}: ${enrichedUserText}`
+            : enrichedUserText;
+
+        // Final input
+        const finalInput = [
+            translationInstruction,
+            modifierLine,
+            tagLine,
+            templateText,
+            finalUserPrompt,
+        ]
+            .filter(Boolean)
+            .join('\n\n');
 
         if (!finalInput) {
             Alert.alert('Empty Prompt', 'Please enter a prompt first.');
@@ -128,6 +174,10 @@ export default function QuickComposerScreen() {
         }
     };
 
+
+
+
+
     return (
         <ThemedSafeArea>
             <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
@@ -139,7 +189,6 @@ export default function QuickComposerScreen() {
                         <Text style={{ fontSize: 20, color: colors.accent }}>＋</Text>
                     </TouchableOpacity>
                 </View>
-
 
                 {selectedTemplates.length > 0 && (
                     <CollapsibleSection
@@ -177,7 +226,9 @@ export default function QuickComposerScreen() {
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
-                                        onPress={() => handleTemplateRemove(template.id)}
+                                        onPress={() =>
+                                            setSelectedTemplates((prev) => prev.filter((t) => t.id !== template.id))
+                                        }
                                         style={{
                                             marginLeft: 8,
                                             paddingHorizontal: 8,
@@ -189,11 +240,55 @@ export default function QuickComposerScreen() {
                                         <Text style={{ color: '#fff', fontSize: 12 }}>✕</Text>
                                     </TouchableOpacity>
                                 </View>
-
                             ))}
                         </View>
                     </CollapsibleSection>
+                )}
 
+                {selectedTags.length > 0 && (
+                    <CollapsibleSection title="Selected Tags" isOpen onToggle={() => { }}>
+                        <View style={styles.selectedList}>
+                            {selectedTags.map((tag) => (
+                                <View key={tag} style={{
+                                    flexDirection: 'row', alignItems: 'center',
+                                    paddingHorizontal: 12, paddingVertical: 6, marginBottom: 8,
+                                    backgroundColor: colors.card, borderRadius: 999, justifyContent: 'space-between',
+                                }}>
+                                    <Text style={[sharedStyles.chipText, { color: colors.text }]}>#{tag}</Text>
+                                    <TouchableOpacity onPress={() => setSelectedTags((prev) => prev.filter(t => t !== tag))}
+                                        style={{
+                                            marginLeft: 8, paddingHorizontal: 8, paddingVertical: 4,
+                                            borderRadius: 999, backgroundColor: colors.error ?? '#F66'
+                                        }}>
+                                        <Text style={{ color: '#fff', fontSize: 12 }}>✕</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                        </View>
+                    </CollapsibleSection>
+                )}
+
+                {selectedModifiers.length > 0 && (
+                    <CollapsibleSection title="Selected Modifiers" isOpen onToggle={() => { }}>
+                        <View style={styles.selectedList}>
+                            {selectedModifiers.map((mod) => (
+                                <View key={mod} style={{
+                                    flexDirection: 'row', alignItems: 'center',
+                                    paddingHorizontal: 12, paddingVertical: 6, marginBottom: 8,
+                                    backgroundColor: colors.card, borderRadius: 999, justifyContent: 'space-between',
+                                }}>
+                                    <Text style={[sharedStyles.chipText, { color: colors.text }]}>{mod}</Text>
+                                    <TouchableOpacity onPress={() => setSelectedModifiers((prev) => prev.filter(m => m !== mod))}
+                                        style={{
+                                            marginLeft: 8, paddingHorizontal: 8, paddingVertical: 4,
+                                            borderRadius: 999, backgroundColor: colors.error ?? '#F66'
+                                        }}>
+                                        <Text style={{ color: '#fff', fontSize: 12 }}>✕</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                        </View>
+                    </CollapsibleSection>
                 )}
 
                 <TextInput
@@ -237,57 +332,44 @@ export default function QuickComposerScreen() {
                             </View>
                         </>
                     ) : (
-                        <>
-                            <Text style={[styles.modalTitle, { color: colors.text }]}>Select a {insertType}</Text>
-                            {loading ? (
-                                <Text style={{ color: colors.secondaryText, textAlign: 'center' }}>Loading…</Text>
+                        <ScrollView style={{ maxHeight: 300 }}>
+                            {insertType === 'tag' || insertType === 'modifier' ? (
+                                (insertType === 'tag' ? PREDEFINED_TAGS : PREDEFINED_MODIFIERS).map((label) => (
+                                    <TouchableOpacity
+                                        key={label}
+                                        onPress={() => {
+                                            if (insertType === 'tag') {
+                                                if (!selectedTags.includes(label)) setSelectedTags((prev) => [...prev, label]);
+                                            } else {
+                                                if (!selectedModifiers.includes(label)) setSelectedModifiers((prev) => [...prev, label]);
+                                            }
+                                            setModalVisible(false);
+                                            setModalStep('type');
+                                            setInsertType(null);
+                                        }}
+                                        style={styles.insertTypeButton}
+                                    >
+                                        <Text style={styles.insertTypeText}>
+                                            {insertType === 'tag' ? `#${label}` : label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))
                             ) : (
-                                <ScrollView style={{ maxHeight: 300 }}>
-                                    {insertType === 'tag' || insertType === 'modifier' ? (
-                                        (insertType === 'tag' ? PREDEFINED_TAGS : PREDEFINED_MODIFIERS).map((label) => (
-                                            <TouchableOpacity
-                                                key={label}
-                                                onPress={() => {
-                                                    const insertion = insertType === 'tag' ? `#${label}` : label;
-                                                    const prefix = text && !text.endsWith(' ') ? ' ' : '';
-                                                    setText((prev) => prev + prefix + insertion + ' ');
-                                                    setModalVisible(false);
-                                                    setModalStep('type');
-                                                    setInsertType(null);
-                                                }}
-                                                style={styles.insertTypeButton}
-                                            >
-                                                <Text style={styles.insertTypeText}>
-                                                    {insertType === 'tag' ? `#${label}` : label}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        ))
-                                    ) : (
-                                        entities
-                                            .filter((e) => e.entityType.toLowerCase() === insertType?.toLowerCase())
-                                            .map((entity) => (
-                                                <TouchableOpacity
-                                                    key={entity.id}
-                                                    onPress={() => {
-                                                        handleTemplateSelect(entity);
-                                                        setModalVisible(false);
-                                                        setModalStep('type');
-                                                        setInsertType(null);
-                                                    }}
-                                                    style={styles.insertTypeButton}
-                                                >
-                                                    <Text style={styles.insertTypeText}>{entity.title}</Text>
-                                                </TouchableOpacity>
-                                            ))
-                                    )}
-                                </ScrollView>
-
+                                entities
+                                    .filter((e) => e.entityType.toLowerCase() === insertType)
+                                    .map((entity) => (
+                                        <TouchableOpacity
+                                            key={entity.id}
+                                            onPress={() => handleTemplateSelect(entity)}
+                                            style={styles.insertTypeButton}
+                                        >
+                                            <Text style={styles.insertTypeText}>{entity.title}</Text>
+                                        </TouchableOpacity>
+                                    ))
                             )}
-                        </>
+                        </ScrollView>
                     )}
                 </BaseModal>
-
-
 
                 <BaseModal
                     visible={!!activeTemplate}
@@ -347,7 +429,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             flexDirection: 'column',
             width: '100%',
         },
-
         input: {
             backgroundColor: colors.card,
             borderColor: colors.border,
@@ -365,18 +446,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             fontWeight: '600',
             marginBottom: 16,
             textAlign: 'center',
-        },
-        templateButton: {
-            paddingVertical: 14,
-            paddingHorizontal: 12,
-            borderRadius: 10,
-            backgroundColor: 'transparent',
-            alignItems: 'center',
-        },
-        templateText: {
-            fontSize: 17,
-            fontWeight: '400',
-            color: colors.onSurface,
         },
         templateContentText: {
             fontSize: 15,
@@ -408,5 +477,4 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             padding: 8,
             borderRadius: 6,
         },
-
     });
