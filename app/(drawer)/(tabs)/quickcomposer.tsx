@@ -210,15 +210,18 @@ export default function QuickComposerScreen() {
                     ) : templates.length === 0 ? (
                         <Text style={{ color: colors.secondaryText, textAlign: 'center' }}>No templates found.</Text>
                     ) : (
-                        templates.map((template) => (
-                            <TouchableOpacity
-                                key={template.id}
-                                onPress={() => handleTemplateSelect(template)}
-                                style={styles.templateButton}
-                            >
-                                <Text style={styles.templateText}>{template.title}</Text>
-                            </TouchableOpacity>
-                        ))
+                        templates
+                            .filter((template) => !selectedTemplates.some((t) => t.id === template.id))
+                            .map((template) => (
+                                <TouchableOpacity
+                                    key={template.id}
+                                    onPress={() => handleTemplateSelect(template)}
+                                    style={styles.templateButton}
+                                >
+                                    <Text style={styles.templateText}>{template.title}</Text>
+                                </TouchableOpacity>
+                            ))
+                            
                     )}
                 </BaseModal>
 
