@@ -22,6 +22,10 @@ import CollapsibleSection from '../../../src/components/shared/CollapsibleSectio
 import { PromptResult } from '../../../src/components/prompt/PromptResult';
 import { Variable } from '../../../src/types/prompt';
 import { runPrompt } from '../../../src/utils/prompt/runPrompt';
+import { PREDEFINED_TAGS, PREDEFINED_MODIFIERS } from '../../../src/constants/entities';
+
+
+
 
 type IndexedEntity = {
     id: string;
@@ -222,7 +226,7 @@ export default function QuickComposerScreen() {
                                     <TouchableOpacity
                                         key={type}
                                         onPress={() => {
-                                            setInsertType(type as any);
+                                            setInsertType(type.toLowerCase() as any);
                                             setModalStep('select');
                                         }}
                                         style={styles.insertTypeButton}
@@ -239,23 +243,45 @@ export default function QuickComposerScreen() {
                                 <Text style={{ color: colors.secondaryText, textAlign: 'center' }}>Loading…</Text>
                             ) : (
                                 <ScrollView style={{ maxHeight: 300 }}>
-                                    {entities
-                                        .filter((e) => e.entityType.toLowerCase() === insertType?.toLowerCase())
-                                        .map((entity) => (
+                                    {insertType === 'tag' || insertType === 'modifier' ? (
+                                        (insertType === 'tag' ? PREDEFINED_TAGS : PREDEFINED_MODIFIERS).map((label) => (
                                             <TouchableOpacity
-                                                key={entity.id}
+                                                key={label}
                                                 onPress={() => {
-                                                    handleTemplateSelect(entity); // or reroute to handler if needed
+                                                    const insertion = insertType === 'tag' ? `#${label}` : label;
+                                                    const prefix = text && !text.endsWith(' ') ? ' ' : '';
+                                                    setText((prev) => prev + prefix + insertion + ' ');
                                                     setModalVisible(false);
                                                     setModalStep('type');
                                                     setInsertType(null);
                                                 }}
                                                 style={styles.insertTypeButton}
                                             >
-                                                <Text style={styles.insertTypeText}>{entity.title}</Text>
+                                                <Text style={styles.insertTypeText}>
+                                                    {insertType === 'tag' ? `#${label}` : label}
+                                                </Text>
                                             </TouchableOpacity>
-                                        ))}
+                                        ))
+                                    ) : (
+                                        entities
+                                            .filter((e) => e.entityType.toLowerCase() === insertType?.toLowerCase())
+                                            .map((entity) => (
+                                                <TouchableOpacity
+                                                    key={entity.id}
+                                                    onPress={() => {
+                                                        handleTemplateSelect(entity);
+                                                        setModalVisible(false);
+                                                        setModalStep('type');
+                                                        setInsertType(null);
+                                                    }}
+                                                    style={styles.insertTypeButton}
+                                                >
+                                                    <Text style={styles.insertTypeText}>{entity.title}</Text>
+                                                </TouchableOpacity>
+                                            ))
+                                    )}
                                 </ScrollView>
+
                             )}
                         </>
                     )}
