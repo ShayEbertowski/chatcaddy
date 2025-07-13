@@ -29,7 +29,7 @@ export function RenderPreviewChunks({ content, onChipPress }: RenderPreviewChunk
                     );
                 } else {
                     return (
-                        <Text key={index} style={{ color: colors.onPrimary }}>
+                        <Text key={index} style={{ color: colors.onSurface }}>
                             {part}
                         </Text>
                     );

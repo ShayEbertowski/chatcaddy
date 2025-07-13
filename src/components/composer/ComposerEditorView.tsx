@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import RichPromptEditor from '../editor/RichPromptEditor';
 import { ThemedButton } from '../ui/ThemedButton';
@@ -8,6 +8,8 @@ import { NavigationButton } from '../ui/NavigationButton';
 import { toEditorVariables, fromEditorVariables } from '../../utils/composer/variables';
 import { ComposerNode } from '../../stores/useComposerStore';
 import { useComposerStore } from '../../stores/useComposerStore';
+import { useColors } from '../../hooks/useColors';
+import { getSharedStyles } from '../../styles/shared';
 
 type ComposerEditorViewProps = {
     treeId: string;
@@ -30,6 +32,9 @@ export function ComposerEditorView({
     onChipPress,
     onSaveTree,
 }: ComposerEditorViewProps) {
+    const colors = useColors();
+    const sharedStyles = getSharedStyles(colors);
+    const styles = getStyles(colors);
     const composerTree = useComposerStore((s) => s.composerTree);
     const isAtRoot = composerTree?.rootId === currentNode.id;
 
@@ -49,7 +54,7 @@ export function ComposerEditorView({
         <View style={{ flex: 1, padding: 16 }}>
             <View style={{ flex: 1 }}>
                 <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-                    <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 12, color: 'white' }}>
+                    <Text style={[{ fontSize: 18, fontWeight: '600', marginBottom: 12 }, styles.title]}>
                         {currentNode.title?.trim() || '(Untitled Node)'}
                     </Text>
 
@@ -101,3 +106,12 @@ export function ComposerEditorView({
         </View>
     );
 }
+
+
+const getStyles = (colors: ReturnType<typeof useColors>) =>
+    StyleSheet.create({
+        title: {
+            color: colors.onSurface
+        },
+
+    });

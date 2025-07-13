@@ -164,7 +164,6 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             marginVertical: 12,
         },
         scrollContent: {
-            backgroundColor: colors.inputBackground,
             padding: 12,
             borderRadius: 8,
         },
