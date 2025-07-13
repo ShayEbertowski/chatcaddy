@@ -21,8 +21,7 @@ import { supabase } from '../../../src/lib/supabaseClient';
 import CollapsibleSection from '../../../src/components/shared/CollapsibleSection';
 import { PromptResult } from '../../../src/components/prompt/PromptResult';
 import { Variable } from '../../../src/types/prompt';
-import { runPromptFromTree } from '../../../src/utils/prompt/runPromptFromTree';
-import { runPrompt } from '../../../src/utils/prompt/runPrompt'; // Adjust path if needed
+import { runPrompt } from '../../../src/utils/prompt/runPrompt';
 
 type IndexedEntity = {
     id: string;
@@ -88,38 +87,39 @@ export default function QuickComposerScreen() {
         setModalVisible(false);
     };
 
+    const handleTemplateRemove = (templateId: string) => {
+        setSelectedTemplates((prev) => prev.filter((t) => t.id !== templateId));
+    };
+
     const handleRun = async () => {
-    const templateText = selectedTemplates.map((t) => t.content).join('\n\n').trim();
-    const userText = text.trim();
-    const finalInput = [templateText, userText].filter(Boolean).join('\n\n');
+        const templateText = selectedTemplates.map((t) => t.content).join('\n\n').trim();
+        const userText = text.trim();
+        const finalInput = [templateText, userText].filter(Boolean).join('\n\n');
 
-    if (!finalInput) {
-        Alert.alert('Empty Prompt', 'Please enter a prompt first.');
-        return;
-    }
-
-    setIsLoading(true);
-    setResponse(null);
-
-    try {
-        const result = await runPrompt(finalInput); // 👈 always run as plain text
-
-        if ('error' in result) {
-            console.error(result.error);
-            setResponse(`⚠️ ${result.error}`);
-        } else {
-            setResponse(result.response ?? '[No output]');
+        if (!finalInput) {
+            Alert.alert('Empty Prompt', 'Please enter a prompt first.');
+            return;
         }
-    } catch (err) {
-        console.error('Error running prompt:', err);
-        Alert.alert('Error', 'There was a problem running the prompt.');
-        setResponse('[Error running prompt]');
-    } finally {
-        setIsLoading(false);
-    }
-};
 
+        setIsLoading(true);
+        setResponse(null);
 
+        try {
+            const result = await runPrompt(finalInput);
+            if ('error' in result) {
+                console.error(result.error);
+                setResponse(`⚠️ ${result.error}`);
+            } else {
+                setResponse(result.response ?? '[No output]');
+            }
+        } catch (err) {
+            console.error('Error running prompt:', err);
+            Alert.alert('Error', 'There was a problem running the prompt.');
+            setResponse('[Error running prompt]');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <ThemedSafeArea>
@@ -139,16 +139,51 @@ export default function QuickComposerScreen() {
                     >
                         <View style={styles.selectedList}>
                             {selectedTemplates.map((template) => (
-                                <TouchableOpacity
+                                <View
                                     key={template.id}
-                                    style={sharedStyles.chip}
-                                    onPress={() => setActiveTemplate(template)}
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingHorizontal: 12,
+                                        paddingVertical: 6,
+                                        marginBottom: 8,
+                                        backgroundColor: colors.card,
+                                        borderRadius: 999,
+                                        width: '100%',
+                                        justifyContent: 'space-between',
+                                    }}
                                 >
-                                    <Text style={sharedStyles.chipText}>{template.title}</Text>
-                                </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={() => setActiveTemplate(template)}
+                                        style={{ flexShrink: 1, flex: 1 }}
+                                    >
+                                        <Text
+                                            style={[sharedStyles.chipText, { color: colors.text }]}
+                                            numberOfLines={1}
+                                            ellipsizeMode="tail"
+                                        >
+                                            {template.title}
+                                        </Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={() => handleTemplateRemove(template.id)}
+                                        style={{
+                                            marginLeft: 8,
+                                            paddingHorizontal: 8,
+                                            paddingVertical: 4,
+                                            borderRadius: 999,
+                                            backgroundColor: colors.error ?? '#F66',
+                                        }}
+                                    >
+                                        <Text style={{ color: '#fff', fontSize: 12 }}>✕</Text>
+                                    </TouchableOpacity>
+                                </View>
+
                             ))}
                         </View>
                     </CollapsibleSection>
+
                 )}
 
                 <TextInput
@@ -164,7 +199,6 @@ export default function QuickComposerScreen() {
                     style={[styles.input, { borderColor: colors.borderThin, color: colors.text }]}
                 />
 
-                {/* Template selection modal */}
                 <BaseModal
                     visible={modalVisible}
                     onRequestClose={() => setModalVisible(false)}
@@ -188,7 +222,6 @@ export default function QuickComposerScreen() {
                     )}
                 </BaseModal>
 
-                {/* Template preview modal */}
                 <BaseModal
                     visible={!!activeTemplate}
                     onRequestClose={() => setActiveTemplate(null)}
@@ -244,11 +277,10 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             padding: 24,
         },
         selectedList: {
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            gap: 8,
-            marginBottom: 8,
+            flexDirection: 'column',
+            width: '100%',
         },
+
         input: {
             backgroundColor: colors.card,
             borderColor: colors.border,
@@ -259,7 +291,7 @@ const getStyles = (colors: ReturnType<typeof useColors>) =>
             paddingHorizontal: 16,
             textAlignVertical: 'top',
             minHeight: 200,
-            marginTop: 16
+            marginTop: 16,
         },
         modalTitle: {
             fontSize: 18,
