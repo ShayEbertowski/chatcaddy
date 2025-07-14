@@ -249,20 +249,28 @@ export default function QuickComposerScreen() {
                     <CollapsibleSection title="Selected Tags" isOpen onToggle={() => { }}>
                         <View style={styles.selectedList}>
                             {selectedTags.map((tag) => (
-                                <View key={tag} style={{
-                                    flexDirection: 'row', alignItems: 'center',
-                                    paddingHorizontal: 12, paddingVertical: 6, marginBottom: 8,
-                                    backgroundColor: colors.card, borderRadius: 999, justifyContent: 'space-between',
-                                }}>
-                                    <Text style={[sharedStyles.chipText, { color: colors.text }]}>#{tag}</Text>
-                                    <TouchableOpacity onPress={() => setSelectedTags((prev) => prev.filter(t => t !== tag))}
+                                <View key={tag} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                    <View style={{
+                                        paddingHorizontal: 12,
+                                        paddingVertical: 6,
+                                        backgroundColor: colors.card,
+                                        borderRadius: 999,
+                                    }}>
+                                        <Text style={[sharedStyles.chipText, { color: colors.text }]}>#{tag}</Text>
+                                    </View>
+                                    <TouchableOpacity
+                                        onPress={() => setSelectedTags((prev) => prev.filter(t => t !== tag))}
                                         style={{
-                                            marginLeft: 8, paddingHorizontal: 8, paddingVertical: 4,
-                                            borderRadius: 999, backgroundColor: colors.error ?? '#F66'
+                                            marginLeft: 8,
+                                            paddingHorizontal: 8,
+                                            paddingVertical: 4,
+                                            borderRadius: 999,
+                                            backgroundColor: colors.error ?? '#F66'
                                         }}>
                                         <Text style={{ color: '#fff', fontSize: 12 }}>✕</Text>
                                     </TouchableOpacity>
                                 </View>
+
                             ))}
                         </View>
                     </CollapsibleSection>
@@ -272,22 +280,41 @@ export default function QuickComposerScreen() {
                     <CollapsibleSection title="Selected Modifiers" isOpen onToggle={() => { }}>
                         <View style={styles.selectedList}>
                             {selectedModifiers.map((mod) => (
-                                <View key={mod} style={{
-                                    flexDirection: 'row', alignItems: 'center',
-                                    paddingHorizontal: 12, paddingVertical: 6, marginBottom: 8,
-                                    backgroundColor: colors.card, borderRadius: 999, justifyContent: 'space-between',
-                                }}>
-                                    <Text style={[sharedStyles.chipText, { color: colors.text }]}>{mod}</Text>
-                                    <TouchableOpacity onPress={() => setSelectedModifiers((prev) => prev.filter(m => m !== mod))}
+                                <View
+                                    key={mod}
+                                    style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}
+                                >
+                                    <View
                                         style={{
-                                            marginLeft: 8, paddingHorizontal: 8, paddingVertical: 4,
-                                            borderRadius: 999, backgroundColor: colors.error ?? '#F66'
-                                        }}>
+                                            paddingHorizontal: 12,
+                                            paddingVertical: 6,
+                                            backgroundColor: colors.card,
+                                            borderRadius: 999,
+                                        }}
+                                    >
+                                        <Text style={[sharedStyles.chipText, { color: colors.text }]}>
+                                            {mod}
+                                        </Text>
+                                    </View>
+
+                                    <TouchableOpacity
+                                        onPress={() =>
+                                            setSelectedModifiers((prev) => prev.filter((m) => m !== mod))
+                                        }
+                                        style={{
+                                            marginLeft: 8,
+                                            paddingHorizontal: 8,
+                                            paddingVertical: 4,
+                                            borderRadius: 999,
+                                            backgroundColor: colors.error ?? '#F66',
+                                        }}
+                                    >
                                         <Text style={{ color: '#fff', fontSize: 12 }}>✕</Text>
                                     </TouchableOpacity>
                                 </View>
                             ))}
                         </View>
+
                     </CollapsibleSection>
                 )}
 
