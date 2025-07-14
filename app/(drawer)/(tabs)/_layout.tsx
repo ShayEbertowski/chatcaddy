@@ -1,6 +1,6 @@
 import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { View, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity, Platform } from 'react-native';
 import UserAvatar from '../../../src/components/shared/UserAvatar';
 import { useColors } from '../../../src/hooks/useColors';
 import { useThemeStore } from '../../../src/stores/useThemeStore';
@@ -38,8 +38,12 @@ export default function TabLayout() {
                 headerTitle: labels[route.name as keyof typeof labels],
                 headerTitleStyle: { color: colors.accent },
                 headerStyle: { backgroundColor: colors.surface },
-                headerTitleAlign: 'center',
-                headerLeft: () => <UserAvatar />,
+                headerTitleAlign: Platform.OS === 'ios' ? 'center' : 'left',
+                headerLeft: () => (
+                    <View style={{ paddingLeft: Platform.OS === 'android' ? 20 : 12 }}>
+                        <UserAvatar />
+                    </View>
+                ),
                 headerRight: () => (
                     <View style={{ flexDirection: 'row', gap: 12, marginRight: 12 }}>
                         <TouchableOpacity onPress={() => router.push('/ideas')}>

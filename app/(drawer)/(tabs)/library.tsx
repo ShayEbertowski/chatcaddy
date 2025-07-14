@@ -133,6 +133,7 @@ export default function EntityLibraryScreen() {
                 <FlatList
                     data={filteredEntities}
                     keyExtractor={(item) => item.id}
+                    contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
                     renderItem={({ item }) => (
                         <EntityCard
                             entity={item}
@@ -142,6 +143,7 @@ export default function EntityLibraryScreen() {
                         />
                     )}
                 />
+
             )}
 
             <TouchableOpacity

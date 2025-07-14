@@ -154,7 +154,7 @@ export default function RunPromptScreen() {
                             <NavigationButton
                                 icon="chevron-back"
                                 onPress={() => setFocusedNodeId(nodeId as string)}
-                            />
+                            /> 
                         )}
                     </View>
 
