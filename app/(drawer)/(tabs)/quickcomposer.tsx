@@ -56,6 +56,7 @@ export default function QuickComposerScreen() {
 
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [selectedModifiers, setSelectedModifiers] = useState<string[]>([]);
+    
 
     useEffect(() => {
         async function loadEntities() {
