@@ -56,7 +56,7 @@ export default function QuickComposerScreen() {
 
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [selectedModifiers, setSelectedModifiers] = useState<string[]>([]);
-    
+
 
     useEffect(() => {
         async function loadEntities() {
@@ -343,9 +343,117 @@ export default function QuickComposerScreen() {
                     style={[styles.input, { borderColor: colors.borderThin, color: colors.text }]}
                 />
 
-                {/* ... modals + run button unchanged ... */}
+                <BaseModal
+                    visible={modalVisible}
+                    onRequestClose={() => {
+                        setModalVisible(false);
+                        setModalStep('type');
+                        setInsertType(null);
+                    }}
+                    dismissOnBackdropPress
+                >
+                    {modalStep === 'type' ? (
+                        <>
+                            <Text style={[styles.modalTitle, { color: colors.text }]}>What would you like to insert?</Text>
+                            <View style={styles.modalButtonList}>
+                                {['Prompt', 'Snippet', 'Tag', 'Modifier'].map((type) => (
+                                    <TouchableOpacity
+                                        key={type}
+                                        onPress={() => {
+                                            setInsertType(type.toLowerCase() as any);
+                                            setModalStep('select');
+                                        }}
+                                        style={styles.insertTypeButton}
+                                    >
+                                        <Text style={styles.insertTypeText}>{type}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </>
+                    ) : (
+                        <ScrollView style={{ maxHeight: 300 }}>
+                            {insertType === 'tag' || insertType === 'modifier' ? (
+                                (insertType === 'tag' ? PREDEFINED_TAGS : PREDEFINED_MODIFIERS).map((label) => (
+                                    <TouchableOpacity
+                                        key={label}
+                                        onPress={() => {
+                                            if (insertType === 'tag') {
+                                                if (!selectedTags.includes(label)) setSelectedTags((prev) => [...prev, label]);
+                                            } else {
+                                                if (!selectedModifiers.includes(label)) setSelectedModifiers((prev) => [...prev, label]);
+                                            }
+                                            setModalVisible(false);
+                                            setModalStep('type');
+                                            setInsertType(null);
+                                        }}
+                                        style={styles.insertTypeButton}
+                                    >
+                                        <Text style={styles.insertTypeText}>
+                                            {insertType === 'tag' ? `#${label}` : label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))
+                            ) : (
+                                entities
+                                    .filter((e) => e.entityType.toLowerCase() === insertType)
+                                    .map((entity) => (
+                                        <TouchableOpacity
+                                            key={entity.id}
+                                            onPress={() => handleTemplateSelect(entity)}
+                                            style={styles.insertTypeButton}
+                                        >
+                                            <Text style={styles.insertTypeText}>{entity.title}</Text>
+                                        </TouchableOpacity>
+                                    ))
+                            )}
+                        </ScrollView>
+                    )}
+                </BaseModal>
 
+                <BaseModal
+                    visible={!!activeTemplate}
+                    onRequestClose={() => setActiveTemplate(null)}
+                    dismissOnBackdropPress
+                >
+                    <Text style={[styles.modalTitle, { color: colors.text }]}>
+                        {activeTemplate?.title}
+                    </Text>
+                    <ScrollView>
+                        <Text style={[styles.templateContentText, { color: colors.secondaryText }]}>
+                            {activeTemplate?.content}
+                        </Text>
+                    </ScrollView>
+                </BaseModal>
+
+                <CollapsibleSection
+                    title="Response"
+                    isOpen={showResponse}
+                    onToggle={() => setShowResponse(prev => !prev)}
+                >
+                    {isLoading ? (
+                        <ActivityIndicator size="large" color={colors.accent} style={{ marginVertical: 20 }} />
+                    ) : (
+                        <PromptResult
+                            response={response ?? ''}
+                            isLoading={false}
+                            onClear={() => setResponse(null)}
+                        />
+                    )}
+                </CollapsibleSection>
             </ScrollView>
+
+            <View style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                padding: 16,
+                backgroundColor: colors.background,
+                borderTopColor: colors.borderThin,
+                borderTopWidth: 1,
+            }}>
+                <ThemedButton title="Run Prompt" onPress={handleRun} colorKey="primary" />
+            </View>
         </ThemedSafeArea>
     );
 }

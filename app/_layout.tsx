@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { useColors } from '../src/hooks/useColors';
 import { useThemeStore } from '../src/stores/useThemeStore';
 import { CustomDrawerContent } from './(drawer)/_layout';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 export default function DrawerLayout() {
     const colors = useColors();
@@ -34,18 +35,20 @@ export default function DrawerLayout() {
     return (
         <PaperProvider theme={paperTheme}>
             <SafeAreaProvider>
-                <ThemeProvider>
-                    <View style={{ flex: 1, backgroundColor: colors.background }}>
-                        <StatusBar
-                            barStyle={isDark ? 'light-content' : 'dark-content'}
-                            animated
-                        />
-                        <Drawer
-                            drawerContent={(props) => <CustomDrawerContent {...props} />}
-                            screenOptions={{ headerShown: false }}
-                        />
-                    </View>
-                </ThemeProvider>
+                <BottomSheetModalProvider>
+                    <ThemeProvider>
+                        <View style={{ flex: 1, backgroundColor: colors.background }}>
+                            <StatusBar
+                                barStyle={isDark ? 'light-content' : 'dark-content'}
+                                animated
+                            />
+                            <Drawer
+                                drawerContent={(props) => <CustomDrawerContent {...props} />}
+                                screenOptions={{ headerShown: false }}
+                            />
+                        </View>
+                    </ThemeProvider>
+                </BottomSheetModalProvider>
             </SafeAreaProvider>
         </PaperProvider>
     );
